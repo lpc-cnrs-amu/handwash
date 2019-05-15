@@ -49,13 +49,16 @@ class Activity
 		
 		
 		bool same_activity(Event* event);
+		unsigned identify_different_puces(std::vector<unsigned>& different_puces, unsigned& nb_SHA);
 		
 	public:
 		Activity();
 		Activity(Event* event);
+		Activity(std::vector<Event*>& vector_event);
 		Activity(Activity* copy);  		
 		~Activity();
 		
+		void activity_per_person(std::vector<Activity*>& split_activity);
 		void write_file(std::ofstream& output);
 		void print_activity();
 		void append_event_to_activity(Event* event);

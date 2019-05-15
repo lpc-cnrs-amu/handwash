@@ -4,6 +4,7 @@
 #define IN true
 #define OUT false
 #define LAST_EVENT events.size()-1
+#define MINUTE_MAX 5
 
 using namespace std;
 
@@ -41,13 +42,13 @@ Activity::Activity(Activity* copy)
 	* \brief Activity Constructor.
 	*
 	* \param filename : file containing every instances in csv format.
-*//*
-Activity::Activity(vector<Event*>& vector_event, bool correct)
+*/
+Activity::Activity(vector<Event*>& vector_event)
 {
-	correct_activity = correct;
 	for(unsigned i=0; i<vector_event.size(); ++i)
 		events.push_back( new Event(vector_event[i]) );
-}*/
+}
+
 /*
 Activity::Activity(Event* event, bool correct)
 {
@@ -120,7 +121,7 @@ bool Activity::same_activity(Event* event)
 			event->get_day() == 1 && 
 			events[LAST_EVENT]->get_hour() == 23 && 
 			event->get_hour() == 0 && 
-			event->get_minutes() <= events[LAST_EVENT]->get_minutes()+5
+			event->get_minutes() <= events[LAST_EVENT]->get_minutes()+MINUTE_MAX
 		   )
 			return true;
 		
@@ -137,7 +138,7 @@ bool Activity::same_activity(Event* event)
 					events[LAST_EVENT]->get_day() == events[LAST_EVENT]->last_day_month() &&
 					events[LAST_EVENT]->get_hour() == 23 && 
 					event->get_hour() == 0 && 
-					event->get_minutes() <= events[LAST_EVENT]->get_minutes()+5
+					event->get_minutes() <= events[LAST_EVENT]->get_minutes()+MINUTE_MAX
 				   )
 					return true;
 			}
@@ -149,7 +150,7 @@ bool Activity::same_activity(Event* event)
 				if( event->get_day() == events[LAST_EVENT]->get_day()+1 &&
 					events[LAST_EVENT]->get_hour() == 23 && 
 					event->get_hour() == 0 && 
-					event->get_minutes() <= events[LAST_EVENT]->get_minutes()+5
+					event->get_minutes() <= events[LAST_EVENT]->get_minutes()+MINUTE_MAX
 				  )
 					return true;
 			}
@@ -163,13 +164,12 @@ bool Activity::same_activity(Event* event)
 		// ex : last event = 24 avr 2018 22h59 AND new event = 24 avr 2018 23h01
 		if( event->get_hour() != events[LAST_EVENT]->get_hour() &&
 			event->get_hour() == events[LAST_EVENT]->get_hour()+1 && 
-			60 - events[LAST_EVENT]->get_minutes() + event->get_minutes() <= 5
+			60 - events[LAST_EVENT]->get_minutes() + event->get_minutes() <= MINUTE_MAX
 		   )
 			return true;
 			
 		else if( event->get_hour() == events[LAST_EVENT]->get_hour() && 
-				event->get_minutes() <= events[LAST_EVENT]->get_minutes()+5 
-			   )
+				event->get_minutes() <= events[LAST_EVENT]->get_minutes()+MINUTE_MAX)
 			return true;
 			
 	}
@@ -186,24 +186,24 @@ bool Activity::same_activity(Event* event)
 
 
 
+// L'idée est de séparer les personnes directement après avoir trouvé une activité 
+// (avant de faire activities.push_back dans activities.cpp)
 
 
-/*
 
 
 
 // On ne rajoute pas la puce 0
-unsigned Activity::identify_different_puces(unsigned num_activity, 
-	vector<unsigned>& different_puces, unsigned& nb_SHA)
+unsigned Activity::identify_different_puces(vector<unsigned>& different_puces, unsigned& nb_SHA)
 {
 	unsigned puce;
 	nb_SHA = 0;
-	for(unsigned j=0; j<activities[num_activity].size(); ++j)
+	for(unsigned i=0; i<events.size(); ++i)
 	{
-		puce = activities[num_activity][j]->get_id_puce();
+		puce = events[i]->get_id_puce();
 		if(puce==0)
 		{
-			if(activities[num_activity][j]->get_event() == 8)
+			if(events[i]->get_event() == 8)
 				++nb_SHA;
 			continue;
 		}
@@ -214,51 +214,43 @@ unsigned Activity::identify_different_puces(unsigned num_activity,
 	return different_puces.size();
 }
 
-void Activity::activity_per_person()
+
+void Activity::activity_per_person(vector<Activity*>& split_activity)
 {
 	unsigned person, nb_SHA;
-	bool correct_activity = true;
 	
-	// all activities
-	for(unsigned i=0; i<activities.size(); ++i)
-	{
-		vector<unsigned> different_puces;
-		unsigned nb_different_puces = identify_different_puces(i, different_puces, nb_SHA);
+	for(unsigned i=0; i<split_activity.size(); ++i)
+		split_activity[i]->~Activity();
 		
-		// if there is more than 1 person in 1 activity
-		if(nb_different_puces > 1)
-		{
-			correct_activity = (nb_different_puces <= nb_SHA);
-				
-			map<unsigned, vector<Event*> > different_activities;
+	cout << " SIZE " << split_activity.size() << endl;
 
-			for(unsigned j=0; j<activities[i].size(); ++j)
-			{
-				person = activities[i][j]->get_id_puce();
-				
-				if( person==0 )
-				{
-					//push dans toutes les keys
-					for(unsigned k=0; k < different_puces.size(); ++k)
-						different_activities[different_puces[k]].push_back( activities[i][j] );
-				}
-				else
-					different_activities[person].push_back( activities[i][j] );
-			}	
-			
-			activities[i].clear();
-			for(auto it = different_activities.begin(); it != different_activities.end(); ++it)
-			   activities.push_back( it->second );
-		}
-	}
+	vector<unsigned> different_puces;
+	unsigned nb_different_puces = identify_different_puces(different_puces, nb_SHA);
 	
+	// if there is more than 1 person in 1 activity
+	if(nb_different_puces > 1)
+	{
+		//correct_activity = (nb_different_puces <= nb_SHA);
+		map<unsigned, vector<Event*> > different_activities;
+
+		for(unsigned i=0; i<events.size(); ++i)
+		{
+			person = events[i]->get_id_puce();
+			
+			if( person==0 )
+			{
+				//push dans toutes les keys
+				for(unsigned k=0; k < different_puces.size(); ++k)
+					different_activities[different_puces[k]].push_back( new Event(events[i]) );
+			}
+			else
+				different_activities[person].push_back( new Event(events[i]) );
+		}	
+		
+		for(auto it = different_activities.begin(); it != different_activities.end(); ++it)
+			split_activity.push_back( new Activity(it->second) );
+		
+	}
 }
-
-
-
-*/
-
-
-
 
 

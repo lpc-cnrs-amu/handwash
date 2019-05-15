@@ -38,28 +38,53 @@ Activities::Activities(char* filename, bool excel_csv)
 	
 	while(std::getline(database, line))
 	{
-		activity_tmp->print_activity();
+		//activity_tmp->print_activity();
 		append_activity = activity_tmp->check_and_append_event_to_activity( new Event(line, excel_csv) );
 		
 		if(!append_activity)
 		{
-			activities.push_back( new Activity(activity_tmp) );
+			vector<Activity*> split_activity; 
+			activity_tmp->activity_per_person(split_activity); 
+			
+			//activity_tmp->print_activity();
+			if(split_activity.size()==0)
+				activities.push_back( new Activity(activity_tmp) );
+			else
+			{
+				for(unsigned nb_activities=0; nb_activities < split_activity.size(); ++nb_activities)
+					activities.push_back( new Activity(split_activity[nb_activities]) );
+			}
+			
+			cout << endl << endl;
+			
 			activity_tmp->~Activity();
 			activity_tmp = new Activity( new Event(line, excel_csv) );
 			append_activity = true;
+			
+			activities[activities.size()-1]->print_activity();
+			
 		}
-		
 	}
 	if(append_activity)
 	{
-		activities.push_back( new Activity(activity_tmp) );
+		vector<Activity*> split_activity;
+		activity_tmp->activity_per_person(split_activity);
+		
+		if(split_activity.size()==0)
+			activities.push_back( new Activity(activity_tmp) );
+		else
+		{
+			for(unsigned nb_activities=0; nb_activities < split_activity.size(); ++nb_activities)
+				activities.push_back( new Activity(split_activity[nb_activities]) );
+		}
+		
+		cout << endl << endl;
 		activity_tmp->~Activity();
 		activity_tmp = new Activity( new Event(line, excel_csv) );
 		append_activity = true;
 	}
 
 	database.close();
-	//activity_per_person();
 }
 
 

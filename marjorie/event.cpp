@@ -107,7 +107,7 @@ void Event::print_event()
 		 << minutes << "] seconds: ["
 		 << seconds << "] date: ["
 		 << date << "] time: ["
-		 << time << endl;
+		 << time << "]\n";
 }
 
 
