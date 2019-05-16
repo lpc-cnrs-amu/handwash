@@ -5,32 +5,33 @@
 using namespace std;
 
 
-Event::Event(unsigned id, unsigned puce, unsigned chamber, string d, string h, bool in_or_out)
+Event::Event(unsigned id, unsigned puce, unsigned chamber, string d, string h, bool in_or_out) :
+	id_event(id),
+	id_puce(puce),
+	id_chamber(chamber),
+	date(d),
+	time(h),
+	in(in_or_out)
 {
-	id_event = id;
-	id_puce = puce;
-	id_chamber = chamber;
-	date = d;
-	time = h;
-	in = in_or_out;
 	split_date();
 	split_time();
 }
 
-Event::Event(Event* event)
+Event::Event(Event* event) : 
+	this->id_event(event->id_event),
+	this->in(event->in), 
+	this->id_puce(event->id_puce),
+	this->id_chamber(event->id_chamber),
+	this->year(event->year),
+	this->month(event->month),
+	this->day(event->day),
+	this->hour(event->hour),
+	this->minutes(event->minutes),
+	this->seconds(event->seconds),
+	this->date(event->date),
+	this->time(event->time)
 {
-	this->id_event = event->id_event;
-	this->in = event->in; 
-	this->id_puce = event->id_puce;
-	this->id_chamber = event->id_chamber;
-	this->year = event->year;
-	this->month = event->month;
-	this->day = event->day;
-	this->hour = event->hour;
-	this->minutes = event->minutes;
-	this->seconds = event->seconds;
-	this->date = event->date;
-	this->time = event->time;
+
 }
 
 unsigned Event::get_id_puce() {	return id_puce; }

@@ -7,27 +7,25 @@
 #include <map>
 #include "event.hpp"
 
+#define NB_LABELS
+
 enum Label
 {
-	UNINDENTIFIED_WASH, /** we don't know who washed their hands (several persons in the room) */
+	POSSIBLE_SHA, // SHA a peut etre été pris (impossible de savoir car plusieurs personnes dans la piece)
 	
-			//WASH HANDS
-		//wash hands without alarm
-	WASH_INOUT, /** very short activity, wash their hands once */
-	WASH_IN_AND_OUT, /** wash their hands when entering the room and when exiting the room */
-	WASH_IN, /** wash their hands only when entering the room */
-	WASH_OUT, /** wash their hands only when exiting the room */
-
-		//wash hands after the alarm beeped
-	WASH_INOUT_ALARM, /** very short activity, wash their hands once */
-	WASH_IN_AND_OUT_ALARM, /** wash their hands when entering the room and when exiting the room */
-	WASH_IN_ALARM, /** wash their hands only when entering the room */
-	WASH_OUT_ALARM /** wash their hands only when exiting the room */	
+	SHA_IN_NO_OUT, //SHA pris dans le in, rien dans le out
+	SHA_OUT_NO_IN, //SHA pris dans le out, rien dans le in
+	SHA_ONLY_IN, //SHA pris dans une petite activité(que du in)
+	SHA_IN_AND_OUT, // SHA pris dans le in, SHA pris dans le out
 	
-			//NOT WASH HANDS
-		//not wash
-		
-		//not wash after the alarm beeped
+	SHA_IN_ALARM_NO_OUT, //SHA pris avec alarme dans le in, rien dans le out
+	SHA_OUT_ALARM_NO_IN, //SHA pris avec alarme dans le out, rien dans le in
+	SHA_ONLY_IN_ALARM, //SHA pris avec alarme dans une petite activité(que du in)
+	SHA_IN_ALARM_AND_OUT,	//SHA pris avec alarme dans le in, SHA pris sans alarme dans le out
+	SHA_IN_AND_OUT_ALARM, // SHA pris sans alarme dans le in, SHA pris avec alarme dans le out
+	SHA_IN_ALARM_AND_OUT_ALARM, // SHA pris avec alarme dans le in, SHA pris avec alarme dans le out
+	
+	SHA_NO_IN_ALARM, //SHA pas pris dans le in alors qu'il y a eu l'alarme, 
 	
 };
 
