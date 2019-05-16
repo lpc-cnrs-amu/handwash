@@ -1,6 +1,8 @@
 #ifndef EVENT_HPP
 #define EVENT_HPP
 #include <string>
+#define IN true
+#define OUT false
 
 /**
  * \file event.hpp
@@ -16,7 +18,7 @@ class Event
 {
 	private:
 		unsigned id_event; 
-		bool in; // in(true) => vient de rentrer, in(false) => va sortir
+		bool in = IN; // in(true) => vient de rentrer, in(false) => va sortir
 		unsigned id_puce;
 		unsigned id_chamber;
 		unsigned year;
@@ -28,6 +30,8 @@ class Event
 		std::string date;
 		std::string time;
 		
+		bool sha_sure = false;
+		
 		void split_time();
 		void split_date();
 		
@@ -38,7 +42,11 @@ class Event
 		
 		void print_event();
 		unsigned last_day_month();
-
+		int ecart_time(Event* prec);
+		
+		void set_in(bool in_or_out);
+	
+		bool get_in();
 		unsigned get_id_puce();
 		unsigned get_chamber();
 		unsigned get_event();

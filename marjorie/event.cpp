@@ -1,5 +1,6 @@
 #include <iostream>
 #include "event.hpp"
+#define SECOND_MAX 10
 
 using namespace std;
 
@@ -46,6 +47,60 @@ unsigned Event::get_day() { return day; }
 
 string Event::get_time() { return time; }
 string Event::get_date() { return date; }
+
+bool Event::get_in() { return in; }
+void Event::set_in(bool in_or_out) { in = in_or_out; }
+
+
+/** renvoie l'écart de temps en secondes entre l'event appelé et son precedent*/
+int Event::ecart_time(Event* prec)
+{	
+	unsigned difference_seconds = 0;
+	unsigned difference_mins = 0;
+	
+	unsigned sec = this->seconds;
+	int min =  (int) this->minutes;
+	int h =  (int) this->hour;
+		
+	if(h >= (int)prec->hour)
+	{
+		if(prec->seconds > sec)
+		{
+			-- min;
+			if( min == -1 )
+				min = 0;
+			sec += 60;
+		}
+
+		difference_seconds = sec - prec->seconds;
+		if((int)prec->minutes > min)
+		{
+			min += 60;
+		}
+		difference_mins = (min - prec->minutes) * 60;
+		
+		return difference_mins + difference_seconds;
+	}
+	else
+	{
+		if(prec->seconds > sec)
+		{
+			-- min;
+			if( min == -1 )
+				min = 0;
+			sec += 60;
+		}		
+		
+		difference_seconds = sec - prec->seconds;
+		difference_mins = 60 - prec->minutes + min -1;
+		
+		return difference_seconds + difference_mins;
+	}
+	return -1;
+}
+
+
+
 
 
 

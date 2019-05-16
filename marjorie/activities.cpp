@@ -55,13 +55,13 @@ Activities::Activities(char* filename, bool excel_csv)
 					activities.push_back( new Activity(split_activity[nb_activities]) );
 			}
 			
-			cout << endl << endl;
 			
 			activity_tmp->~Activity();
 			activity_tmp = new Activity( new Event(line, excel_csv) );
 			append_activity = true;
 			
 			activities[activities.size()-1]->print_activity();
+			cout << endl << endl;
 			
 		}
 	}
@@ -78,10 +78,12 @@ Activities::Activities(char* filename, bool excel_csv)
 				activities.push_back( new Activity(split_activity[nb_activities]) );
 		}
 		
-		cout << endl << endl;
+		
 		activity_tmp->~Activity();
 		activity_tmp = new Activity( new Event(line, excel_csv) );
-		append_activity = true;
+		
+		activities[activities.size()-1]->print_activity();
+		cout << endl << endl;
 	}
 
 	database.close();
@@ -100,9 +102,7 @@ void Activities::write_file(char* filename)
 	}
 	
 	for(unsigned i=0; i<activities.size(); ++i)
-	{
-		output << "ACTIVITY " << i+1 << endl;
 		activities[i]->write_file(output);
-	}	
+	
 	output.close();
 }

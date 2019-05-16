@@ -1,10 +1,14 @@
 #include "activity.hpp"
 #include <algorithm>
 #include <map>
-#define IN true
-#define OUT false
 #define LAST_EVENT events.size()-1
 #define MINUTE_MAX 5
+#define CODE_SHA 8
+#define SHA_SURE true
+#define SHA_POSSIBLE false
+#define CODE_OPEN_DOOR 5
+#define CODE_CLOSE_DOOR 6
+#define MIN_SECONDS 5
 
 using namespace std;
 
@@ -33,9 +37,18 @@ Activity::Activity(){ }
 
 Activity::Activity(Activity* copy)
 {
+	unsigned i;
+	
+	this->main_person = copy->main_person;
 	this->label_activity = copy->label_activity;
-	for(unsigned i=0; i < copy->events.size(); ++i)
+	this->nb_SHA_sure = copy->nb_SHA_sure;
+	this->nb_SHA_possible = copy->nb_SHA_possible;
+			
+	for(i=0; i < copy->events.size(); ++i)
 		this->events.push_back( new Event(copy->events[i]) );
+		
+	for(i=0; i < copy->persons.size(); ++i)
+		this->persons.push_back( copy->persons[i] );
 }
 
 /**
@@ -43,10 +56,17 @@ Activity::Activity(Activity* copy)
 	*
 	* \param filename : file containing every instances in csv format.
 */
-Activity::Activity(vector<Event*>& vector_event)
+Activity::Activity(vector<Event*>& vector_event, unsigned p, vector<unsigned>& different_persons)
 {
-	for(unsigned i=0; i<vector_event.size(); ++i)
+	unsigned i;
+	
+	main_person = p;
+	
+	for(i=0; i < vector_event.size(); ++i)
 		events.push_back( new Event(vector_event[i]) );
+		
+	for(i=0; i < different_persons.size(); ++i)
+		persons.push_back( different_persons[i] );
 }
 
 /*
@@ -63,21 +83,54 @@ Activity::Activity(Event* event)
 
 void Activity::write_file(ofstream& output)
 {
-	for(unsigned i=0; i<events.size(); ++i)
+	unsigned i;
+	
+	output << "PERSON: " << main_person << endl;
+	output << "\tNUMBER OF PERSON: " << persons.size() << endl << "\t";
+	
+	for(i=0; i < persons.size(); ++i)
+		output << persons[i] << " ";
+	output << endl;
+	
+	output << "\tNUMBER SHA : " << nb_SHA_sure << endl;
+	output << "\tNUMBER SHA POSSIBLE : " << nb_SHA_possible << endl;
+	
+	for(i=0; i<events.size(); ++i)
 	{
 		output << "\t" 
 			   << events[i]->get_event()   << " "
 			   << events[i]->get_chamber() << " "
 			   << events[i]->get_id_puce() << " "
 			   << events[i]->get_date()    << " "
-			   << events[i]->get_time()    << endl;
+			   << events[i]->get_time()    << " "
+			   << events[i]->get_in()	   << endl;
 	}
 }
 
 void Activity::print_activity()
 {
-	for(unsigned i=0; i<events.size(); ++i)
-		events[i]->print_event();
+	unsigned i;
+	
+	cout << "PERSON: " << main_person << endl;
+	cout << "\tNUMBER OF PERSON: " << persons.size() << endl << "\t";
+	
+	for(i=0; i < persons.size(); ++i)
+		cout << persons[i] << " ";
+	cout << endl;
+	
+	cout << "\tNUMBER SHA : " << nb_SHA_sure << endl;
+	cout << "\tNUMBER SHA POSSIBLE : " << nb_SHA_possible << endl;
+	
+	for(i=0; i<events.size(); ++i)
+	{
+		cout << "\t" 
+			 << events[i]->get_event()   << " "
+			 << events[i]->get_chamber() << " "
+			 << events[i]->get_id_puce() << " "
+			 << events[i]->get_date()    << " "
+			 << events[i]->get_time()    << " "
+			 << events[i]->get_in()	   << endl;
+	}
 }
 
 
@@ -95,7 +148,10 @@ void Activity::append_event_to_activity(Event* event)
 	events.push_back( new Event(event) );
 }
 
-
+unsigned Activity::get_person()
+{
+	return main_person;
+}
 
 
 
@@ -194,17 +250,28 @@ bool Activity::same_activity(Event* event)
 
 
 // On ne rajoute pas la puce 0
-unsigned Activity::identify_different_puces(vector<unsigned>& different_puces, unsigned& nb_SHA)
+unsigned Activity::identify_different_puces(vector<unsigned>& different_puces, 
+	map<unsigned, vector<bool> >& puces_to_SHA)
 {
 	unsigned puce;
-	nb_SHA = 0;
 	for(unsigned i=0; i<events.size(); ++i)
 	{
 		puce = events[i]->get_id_puce();
+		
 		if(puce==0)
 		{
-			if(events[i]->get_event() == 8)
-				++nb_SHA;
+			if(events[i]->get_event() == CODE_SHA)
+			{
+				//accorder le SHA à different_puces[0]
+				if(different_puces.size() == 1)
+					puces_to_SHA[different_puces[0]].push_back( SHA_SURE );
+
+				//accorder le SHA à toutes les different_puces
+				else if(different_puces.size() > 1)
+					for(unsigned k=0; k<different_puces.size(); ++k)
+						puces_to_SHA[different_puces[k]].push_back( SHA_POSSIBLE );
+			
+			}
 			continue;
 		}
 		if(std::find(different_puces.begin(), different_puces.end(), puce) == different_puces.end())
@@ -217,21 +284,21 @@ unsigned Activity::identify_different_puces(vector<unsigned>& different_puces, u
 
 void Activity::activity_per_person(vector<Activity*>& split_activity)
 {
-	unsigned person, nb_SHA;
+	unsigned person;
 	
 	for(unsigned i=0; i<split_activity.size(); ++i)
 		split_activity[i]->~Activity();
-		
-	cout << " SIZE " << split_activity.size() << endl;
 
 	vector<unsigned> different_puces;
-	unsigned nb_different_puces = identify_different_puces(different_puces, nb_SHA);
+	map<unsigned, vector<bool> > puces_to_SHA;
+	unsigned nb_different_puces = identify_different_puces(different_puces, puces_to_SHA);
+	
 	
 	// if there is more than 1 person in 1 activity
 	if(nb_different_puces > 1)
 	{
 		//correct_activity = (nb_different_puces <= nb_SHA);
-		map<unsigned, vector<Event*> > different_activities;
+		map<unsigned, vector<Event*> > different_activities; // key = person, value = vector of events
 
 		for(unsigned i=0; i<events.size(); ++i)
 		{
@@ -247,10 +314,97 @@ void Activity::activity_per_person(vector<Activity*>& split_activity)
 				different_activities[person].push_back( new Event(events[i]) );
 		}	
 		
-		for(auto it = different_activities.begin(); it != different_activities.end(); ++it)
-			split_activity.push_back( new Activity(it->second) );
+		for(auto it = different_activities.begin(); it != different_activities.end(); ++it) 
+		{			
+			split_activity.push_back( new Activity(it->second, it->first, different_puces) );
+			for(auto it2 = puces_to_SHA.begin(); it2 != puces_to_SHA.end(); ++it2) 
+			{
+				if( it->first == it2->first )
+					split_activity[split_activity.size()-1]->count_SHA(it2->second);
+			}
+		}
+		
 		
 	}
+	else
+	{
+		if(nb_different_puces == 1)
+			main_person = different_puces[0];
+		else
+			main_person = 0;
+			
+		persons.push_back(main_person);
+		count_SHA_and_deciding_in_or_out();
+	}
+		
 }
 
 
+void Activity::count_SHA_and_deciding_in_or_out()
+{
+	events[0]->set_in(true);
+	unsigned event_out = 0;
+	int ecart_in_seconds = 0;
+	int ecart_max = 0;
+	bool only_5_or_6 = true;
+	
+	for(unsigned i=0; i < events.size(); ++i)
+	{
+		if( events[i]->get_event() == CODE_SHA )
+			++nb_SHA_sure;
+		
+		if( events[i]->get_event() != CODE_OPEN_DOOR && events[i]->get_event() != CODE_CLOSE_DOOR )
+			only_5_or_6 = false;
+			
+		if( i > 0 )
+		{
+			ecart_in_seconds = events[i]->ecart_time(events[i-1]);
+			if(!only_5_or_6 && ecart_in_seconds >= ecart_max )
+			{
+				ecart_max = ecart_in_seconds;
+				event_out = i;
+			}
+		}
+	}
+	
+	if( ecart_max > MIN_SECONDS )
+		events[event_out]->set_in(OUT);
+}
+
+
+void Activity::count_SHA(vector<bool>& sha)
+{
+	for(unsigned i=0; i < sha.size(); ++i)
+	{
+		if(sha[i])
+			++nb_SHA_sure;
+		else
+			++nb_SHA_possible;
+	}
+	
+	
+	events[0]->set_in(true);
+	unsigned event_out = 0;
+	int ecart_in_seconds = 0;
+	int ecart_max = 0;
+	bool only_5_or_6 = true;
+	
+	for(unsigned i=0; i < events.size(); ++i)
+	{
+		if( events[i]->get_event() != CODE_OPEN_DOOR && events[i]->get_event() != CODE_CLOSE_DOOR )
+			only_5_or_6 = false;
+			
+		if( i > 0 )
+		{
+			ecart_in_seconds = events[i]->ecart_time(events[i-1]);
+			if(!only_5_or_6 && ecart_in_seconds >= ecart_max )
+			{
+				ecart_max = ecart_in_seconds;
+				event_out = i;
+			}
+		}
+	}
+	
+	if( ecart_max > MIN_SECONDS )
+		events[event_out]->set_in(OUT);
+}

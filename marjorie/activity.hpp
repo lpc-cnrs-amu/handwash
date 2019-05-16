@@ -4,6 +4,7 @@
 #include <iostream>
 #include <fstream>
 #include <vector>
+#include <map>
 #include "event.hpp"
 
 enum Label
@@ -45,18 +46,29 @@ class Activity
 {
 	private:
 		std::vector<Event*> events;
+		std::vector<unsigned> persons;
+		
+		unsigned main_person;
+		unsigned nb_SHA_sure = 0;
+		unsigned nb_SHA_possible = 0;
+		
 		Label label_activity = UNINDENTIFIED_WASH;
+
 		
 		
 		bool same_activity(Event* event);
-		unsigned identify_different_puces(std::vector<unsigned>& different_puces, unsigned& nb_SHA);
+		unsigned identify_different_puces(std::vector<unsigned>& different_puces, std::map<unsigned, std::vector<bool> >& puces_to_SHA);
+		void count_SHA(std::vector<bool>& sha);
+		void count_SHA_and_deciding_in_or_out();
 		
 	public:
 		Activity();
 		Activity(Event* event);
-		Activity(std::vector<Event*>& vector_event);
+		Activity(std::vector<Event*>& vector_event, unsigned p, std::vector<unsigned>& different_persons);
 		Activity(Activity* copy);  		
 		~Activity();
+		
+		unsigned get_person();
 		
 		void activity_per_person(std::vector<Activity*>& split_activity);
 		void write_file(std::ofstream& output);
