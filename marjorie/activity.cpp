@@ -8,6 +8,8 @@
 #define SHA_POSSIBLE false
 #define CODE_OPEN_DOOR 5
 #define CODE_CLOSE_DOOR 6
+#define CODE_ALARM 7
+#define CODE_SHA_DURING_ALARM 10
 #define MIN_SECONDS 5
 
 using namespace std;
@@ -40,9 +42,21 @@ Activity::Activity(Activity* copy)
 	unsigned i;
 	
 	this->main_person = copy->main_person;
-	this->label_activity = copy->label_activity;
-	this->nb_SHA_sure = copy->nb_SHA_sure;
-	this->nb_SHA_possible = copy->nb_SHA_possible;
+	//this->label_activity = copy->label_activity;
+
+	this->nb_SHA_sure_in = copy->nb_SHA_sure_in;
+	this->nb_SHA_sure_out = copy->nb_SHA_sure_out;
+	
+	this->nb_SHA_possible_in = copy->nb_SHA_possible_in;
+	this->nb_SHA_possible_out = copy->nb_SHA_possible_out;
+	
+	this->nb_SHA_sure_inout = copy->nb_SHA_sure_inout;
+	this->nb_SHA_possible_inout = copy->nb_SHA_possible_inout;
+	
+	this->inout = copy->inout;
+	this->SHA_not_taken_in = copy->SHA_not_taken_in;
+	this->SHA_not_taken_out = copy->SHA_not_taken_out;
+	this->SHA_not_taken_inout = copy->SHA_not_taken_inout;
 			
 	for(i=0; i < copy->events.size(); ++i)
 		this->events.push_back( new Event(copy->events[i]) );
@@ -81,6 +95,27 @@ Activity::Activity(Event* event)
 	events.push_back( new Event(event) );
 }
 
+
+
+
+unsigned Activity::get_nb_SHA_sure_in() { return nb_SHA_sure_in; }
+unsigned Activity::get_nb_SHA_sure_out() { return nb_SHA_sure_out; }
+unsigned Activity::get_nb_SHA_possible_in() { return nb_SHA_possible_in; }
+unsigned Activity::get_nb_SHA_possible_out() { return nb_SHA_possible_out; }
+
+unsigned Activity::get_nb_SHA_sure_inout() { return nb_SHA_sure_inout; }
+unsigned Activity::get_nb_SHA_possible_inout() { return nb_SHA_possible_inout; }
+
+
+bool Activity::get_SHA_not_taken_in() { return SHA_not_taken_in; }
+bool Activity::get_SHA_not_taken_out() { return SHA_not_taken_out; }
+bool Activity::get_SHA_not_taken_inout() { return SHA_not_taken_inout; }
+
+
+
+
+
+
 void Activity::write_file(ofstream& output)
 {
 	unsigned i;
@@ -92,8 +127,27 @@ void Activity::write_file(ofstream& output)
 		output << persons[i] << " ";
 	output << endl;
 	
-	output << "\tNUMBER SHA : " << nb_SHA_sure << endl;
-	output << "\tNUMBER SHA POSSIBLE : " << nb_SHA_possible << endl;
+	/*output << "\tNUMBER SHA : " << nb_SHA_sure << endl;
+	output << "\tNUMBER SHA POSSIBLE : " << nb_SHA_possible << endl;*/
+
+	
+	output << "\tNUMBER SHA SURE IN : " << nb_SHA_sure_in << endl;
+
+	output << "\tNUMBER SHA SURE OUT : " << nb_SHA_sure_out << endl;
+
+
+	output << "\tNUMBER SHA POSSIBLE IN : " << nb_SHA_possible_in << endl;
+
+	output << "\tNUMBER SHA POSSIBLE OUT : " << nb_SHA_possible_out << endl;
+	
+
+	output << "\tNUMBER SHA SURE INOUT : " << nb_SHA_sure_inout << endl;
+
+	output << "\tNUMBER SHA POSSIBLE INOUT : " << nb_SHA_possible_inout << endl;
+		
+	output << "SHA NOT TAKEN IN : " << SHA_not_taken_in << endl;
+	output << "SHA NOT TAKEN OUT : " << SHA_not_taken_out << endl;
+	output << "SHA NOT TAKEN INOUT : " << SHA_not_taken_inout << endl;
 	
 	for(i=0; i<events.size(); ++i)
 	{
@@ -258,22 +312,22 @@ unsigned Activity::identify_different_puces(vector<unsigned>& different_puces,
 	{
 		puce = events[i]->get_id_puce();
 		
-		if(puce==0)
+		if(events[i]->get_event() == CODE_SHA)
 		{
-			if(events[i]->get_event() == CODE_SHA)
-			{
-				//accorder le SHA à different_puces[0]
-				if(different_puces.size() == 1)
-					puces_to_SHA[different_puces[0]].push_back( SHA_SURE );
+			//accorder le SHA à different_puces[0]
+			if(different_puces.size() == 1)
+				puces_to_SHA[different_puces[0]].push_back( SHA_SURE );
 
-				//accorder le SHA à toutes les different_puces
-				else if(different_puces.size() > 1)
-					for(unsigned k=0; k<different_puces.size(); ++k)
-						puces_to_SHA[different_puces[k]].push_back( SHA_POSSIBLE );
-			
-			}
+			//accorder le SHA à toutes les different_puces
+			else if(different_puces.size() > 1)
+				for(unsigned k=0; k<different_puces.size(); ++k)
+					puces_to_SHA[different_puces[k]].push_back( SHA_POSSIBLE );
+		
+		}		
+		
+		if(puce==0)
 			continue;
-		}
+		
 		if(std::find(different_puces.begin(), different_puces.end(), puce) == different_puces.end())
 			different_puces.push_back(puce);
 	}
@@ -340,10 +394,21 @@ void Activity::activity_per_person(vector<Activity*>& split_activity)
 }
 
 
+
+
+
+
+
+
+
+
+// il n'y a pas de SHA possible quand il y a 1 seule personne dans la chambre
+// (que des SHA surs)
 void Activity::count_SHA_and_deciding_in_or_out()
 {
 	events[0]->set_in(true);
 	unsigned event_out = 0;
+	unsigned index_out = 0;
 	int ecart_in_seconds = 0;
 	int ecart_max = 0;
 	bool only_5_or_6 = true;
@@ -368,26 +433,37 @@ void Activity::count_SHA_and_deciding_in_or_out()
 	}
 	
 	if( ecart_max > MIN_SECONDS )
+	{
+		index_out = event_out;
 		events[event_out]->set_in(OUT);
+	}
+	
+	inout = false;
+	if(index_out == 0)
+		inout = true;
+		
+	if(inout)
+		nb_SHA_sure_inout = nb_SHA_sure;
+	else
+		count_SHA_in_and_out(index_out);
+		
+	set_SHA_not_taken();
 }
 
 
 void Activity::count_SHA(vector<bool>& sha)
 {
-	for(unsigned i=0; i < sha.size(); ++i)
-	{
-		if(sha[i])
-			++nb_SHA_sure;
-		else
-			++nb_SHA_possible;
-	}
+	// Count number of SHA sure and SHA possible
+	count_SHA_sure_and_possible(sha);
 	
-	
+	// Search where is the out
 	events[0]->set_in(true);
 	unsigned event_out = 0;
+	unsigned index_out = 0;
 	int ecart_in_seconds = 0;
 	int ecart_max = 0;
 	bool only_5_or_6 = true;
+	
 	
 	for(unsigned i=0; i < events.size(); ++i)
 	{
@@ -406,5 +482,219 @@ void Activity::count_SHA(vector<bool>& sha)
 	}
 	
 	if( ecart_max > MIN_SECONDS )
+	{
+		index_out = event_out;
 		events[event_out]->set_in(OUT);
+	}
+	
+	inout = false;
+	if(index_out == 0)
+		inout = true;
+	
+	// number of SHA sure/possible in : inout
+	if(inout)
+	{
+		nb_SHA_possible_inout = nb_SHA_possible;
+		nb_SHA_sure_inout = nb_SHA_sure;
+	}
+	// number of SHA sure/possible in : in and out
+	else
+		count_SHA_in_and_out(index_out);
+		
+	set_SHA_not_taken();
 }
+
+
+// Count number of SHA sure/possible 
+void Activity::count_SHA_sure_and_possible(vector<bool>& sha)
+{
+	for(unsigned i=0; i < sha.size(); ++i)
+	{
+		if(sha[i])
+			++nb_SHA_sure;
+		else
+			++nb_SHA_possible;
+	}
+}
+
+
+// Count number of SHA sure/possible in : in, out and inout
+void Activity::count_SHA_in_and_out(unsigned index_out)
+{
+	bool out=false;
+	unsigned n_sha = 0;
+	unsigned id_e;
+	for(unsigned i=0; i < events.size(); ++i)
+	{
+		if( i!=0 && i == index_out )
+		{
+			n_sha = 0;
+			out=true;
+		}
+		
+		id_e = events[i]->get_event();
+		
+		// Prise du SHA
+		if( id_e == CODE_SHA || id_e == CODE_SHA_DURING_ALARM )
+		{
+			++n_sha;
+			
+			//c'est un SHA possible
+			if( n_sha > nb_SHA_sure )
+			{
+				if(!out)
+					++ nb_SHA_possible_in;
+				else
+					++ nb_SHA_possible_out;
+			}
+			//c'est un SHA sure
+			else
+			{
+				if(!out)
+					++ nb_SHA_sure_in;
+				else
+					++ nb_SHA_sure_out;			
+			}
+		}
+	}	
+}
+
+
+void Activity::set_SHA_not_taken()
+{
+	if(inout)
+	{
+		if( nb_SHA_sure_inout == 0 && nb_SHA_possible_inout == 0 )
+			SHA_not_taken_inout = true;
+	}
+	else
+	{
+		if( nb_SHA_sure_in == 0 && nb_SHA_possible_in == 0 )
+			SHA_not_taken_in = true;
+		if( nb_SHA_sure_out == 0 && nb_SHA_possible_out == 0 )
+			SHA_not_taken_out = true;
+	}
+}
+
+
+
+
+
+
+/** ANALYSES PLUS POUSSEES ET PLUS COMPLETES */
+/** ================================================================================
+
+void Activity::give_labels()
+{
+	unsigned id_e;
+	bool is_in = true;
+	bool only_in = false;
+	vector<unsigned> index_SHA_in;
+	vector<unsigned> index_alarm_in;
+	vector<unsigned> index_SHA_out;
+	vector<unsigned> index_alarm_out;
+	
+	vector<unsigned> index_SHA_during_alarm_in;
+	vector<unsigned> index_SHA_during_alarm_out;
+		
+	for(unsigned i=0; i < events.size(); ++i)
+	{
+		id_e = events[i]->get_event();
+		if( !events[i]->get_in() )
+			is_in = false;
+		
+		if(is_in)
+		{
+			if( id_e == CODE_ALARM )
+				index_alarm_in.push_back(i);
+			else if( id_e == CODE_SHA )
+				index_SHA_in.push_back(i);
+			else if( id_e == CODE_SHA_DURING_ALARM )
+				index_SHA_during_alarm_in.push_back(i);
+		}
+		else
+		{
+			if( id_e == CODE_ALARM )
+				index_alarm_out.push_back(i);
+			else if( id_e == CODE_SHA )
+				index_SHA_out.push_back(i);		
+			else if( id_e == CODE_SHA_DURING_ALARM )
+				index_SHA_during_alarm_out.push_back(i);				
+		}
+	
+	}
+	if( is_in )
+		only_in = true;
+	
+	
+	if(only_in)
+		analyse_only_in(index_SHA_in, index_alarm_in, index_SHA_during_alarm_in);
+	else
+		analyse_activity(index_SHA_in, index_alarm_in, index_SHA_out, index_alarm_out, only_in);
+	
+}
+
+
+
+
+void Activity::analyse_activity(vector<unsigned>& index_SHA_in,
+	vector<unsigned>& index_alarm_in, vector<unsigned>& index_SHA_out,
+	vector<unsigned>& index_alarm_out, bool only_in)
+{
+
+}
+
+
+// Analyse les petites activités (on considère : entrée = sortie).
+void Activity::analyse_only_in(
+	vector<unsigned>& index_SHA_in, 
+	vector<unsigned>& index_alarm_in, 
+	vector<unsigned>& index_SHA_during_alarm_in)
+{
+	
+
+	//Le SHA n’a pas été pris
+	if( index_alarm_in.empty() && index_SHA_in.empty() )
+		label_activity.push_back( SHA_NO_ONLY_IN ); 	
+	
+	//Le SHA a été pris
+	else if( index_alarm_in.empty() && !index_SHA_in.empty() )
+		for(unsigned i=0; i<index_SHA_in.size(); ++i)
+			label_activity.push_back( SHA_ONLY_IN ); 
+	
+	//Le SHA n'a pas été pris avec l'alarme
+	else if( !index_alarm_in.empty() && index_SHA_in.empty() )
+		label_activity.push_back( SHA_NO_ONLY_IN_ALARM );
+
+	//Le SHA a été pris pendant l'alarme
+	else if( index_alarm_in.empty() && index_SHA_in.empty() && !index_SHA_during_alarm_in.empty())
+		for(unsigned i=0; i < index_SHA_during_alarm_in.size(); ++i)
+			label_activity.push_back( SHA_DURING_ONLY_IN );
+	
+	
+	
+	
+	//Le SHA a été pris avec l’alarme
+	//else if( !index_alarm_in.empty() && !index_SHA_in.empty() )
+	//{
+		//for(unsigned i=0; i < index_SHA_in.size(); ++i)
+		//{
+			//for(unsigned j=0; j < index_alarm_in.size(); ++j)
+			//{
+			//	if( index_SHA_in[i] < index_alarm_in[j] ) // Si on a pris le SHA avant l'alarme
+			//}
+		//}
+	//}
+
+		
+	
+	else
+		label_activity.push_back( UNUSUAL );
+}
+
+
+======================================================================================
+*/
+
+
+

@@ -1,15 +1,18 @@
 CC=g++
 CFLAGS=-W -Wall -std=c++11 -pedantic -O3 
 LDFLAGS=
-EXEC=generate_activities
+EXEC=generate_activities persons_stats
 
 all: $(EXEC)
 
-generate_activities: main.o event.o activities.o activity.o
-	$(CC) -o generate_activities main.o event.o activities.o activity.o $(LDFLAGS)
+persons_stats: main_write_persons_stats.o event.o activities.o activity.o person.o
+	$(CC) -o persons_stats main_write_persons_stats.o event.o activities.o activity.o person.o $(LDFLAGS)
+
+generate_activities: main_write_activities.o event.o activities.o activity.o
+	$(CC) -o generate_activities main_write_activities.o event.o activities.o activity.o $(LDFLAGS)
 	
-main.o: main.cpp activities.hpp
-	$(CC) -o main.o -c main.cpp $(CFLAGS)
+main_write_activities.o: main_write_activities.cpp activities.hpp
+	$(CC) -o main_write_activities.o -c main_write_activities.cpp $(CFLAGS)
 
 event.o: event.cpp event.hpp
 	$(CC) -o event.o -c event.cpp $(CFLAGS)
@@ -19,7 +22,14 @@ activity.o: activity.cpp activity.hpp event.hpp
 	
 activities.o: activities.cpp activities.hpp activity.hpp
 	$(CC) -o activities.o -c activities.cpp $(CFLAGS)
-
+	
+main_write_persons_stats.o: main_write_persons_stats.cpp activity.hpp person.hpp
+	$(CC) -o main_write_persons_stats.o -c main_write_persons_stats.cpp $(CFLAGS)
+	
+person.o: person.cpp person.hpp
+	$(CC) -o person.o -c person.cpp $(CFLAGS)
+	
+	
 clean:
 	rm -rf *.o
 rmproper: clean
