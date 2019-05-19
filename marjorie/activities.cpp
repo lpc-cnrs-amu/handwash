@@ -15,6 +15,7 @@ Activities::~Activities()
 		activities[i] = NULL;
 	}
 	activities.clear();
+	cout << "Destroying all activities... " << endl;
 }
 
 /**

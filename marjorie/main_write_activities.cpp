@@ -17,7 +17,6 @@ int main(int argc, char** argv)
 		excel = true;
 	Activities act(argv[1], excel);
 	act.write_file(argv[3]);
-	act.~Activities();
 
 	return 0;
 }

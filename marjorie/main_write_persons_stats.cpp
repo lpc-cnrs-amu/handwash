@@ -29,14 +29,6 @@ void update_persons_stats(Activity* activity_tmp, map<unsigned, Person*>& person
 		person_stats[ p ]->incr_not_taken_inout();	
 }
 
-void destroy_split_activity(vector<Activity*>& split_activity)
-{
-	for(unsigned i=0; i<split_activity.size(); ++i)
-		split_activity[i]->~Activity();
-		
-	split_activity.clear();
-}
-
 /**
 	* \brief Activity Constructor.
 	*
@@ -59,12 +51,13 @@ void get_persons_stats(char* filename, bool excel_csv, map<unsigned, Person*>& p
 	while(std::getline(database, line))
 	{
 		
+		// add to the current activity
 		append_activity = activity_tmp->check_and_append_event_to_activity( new Event(line, excel_csv) );
 		
+		// the current event is in another activity
 		if(!append_activity)
 		{
-			destroy_split_activity(split_activity);
-			activity_tmp->activity_per_person(split_activity); 
+			activity_tmp->activity_per_person(split_activity);
 			
 			if(split_activity.size()==0)
 				update_persons_stats(activity_tmp, person_stats, activity_tmp->get_person());
@@ -72,7 +65,7 @@ void get_persons_stats(char* filename, bool excel_csv, map<unsigned, Person*>& p
 			else
 			{
 				for(unsigned nb_activities=0; nb_activities < split_activity.size(); ++nb_activities)
-					update_persons_stats(split_activity[nb_activities], person_stats, activity_tmp->get_person());
+					update_persons_stats(split_activity[nb_activities], person_stats, split_activity[nb_activities]->get_person());
 			}
 			
 			activity_tmp->~Activity();
@@ -82,7 +75,6 @@ void get_persons_stats(char* filename, bool excel_csv, map<unsigned, Person*>& p
 	}
 	if(append_activity)
 	{
-		destroy_split_activity(split_activity);
 		activity_tmp->activity_per_person(split_activity);
 		
 		if(split_activity.size()==0)
@@ -151,10 +143,8 @@ int main(int argc, char** argv)
 	
 	map<unsigned, Person*> person_stats; //key = id de la personne
 	get_persons_stats(argv[1], excel, person_stats);
-
 	write_file(person_stats, argv[3]);
 	
 	destroy_persons(person_stats);
-
 	return 0;
 }

@@ -342,6 +342,7 @@ void Activity::activity_per_person(vector<Activity*>& split_activity)
 	
 	for(unsigned i=0; i<split_activity.size(); ++i)
 		split_activity[i]->~Activity();
+	split_activity.clear();
 
 	vector<unsigned> different_puces;
 	map<unsigned, vector<bool> > puces_to_SHA;
