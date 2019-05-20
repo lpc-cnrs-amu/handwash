@@ -33,7 +33,13 @@ class Person
 		unsigned nb_not_taken_in = 0;
 		unsigned nb_not_taken_out = 0;
 		unsigned nb_not_taken_inout = 0;
-
+		
+		unsigned nb_SHA_inout_sure_total = 0;
+		unsigned nb_SHA_inout_possible_total = 0;
+		unsigned nb_SHA_in_sure_total = 0;
+		unsigned nb_SHA_out_sure_total = 0;
+		unsigned nb_SHA_in_possible_total = 0;	
+		unsigned nb_SHA_out_possible_total = 0;
 		
 	
 		Person(	unsigned SHA_sure_in = 0,
@@ -61,6 +67,16 @@ class Person
 		void incr_not_taken_in();
 		void incr_not_taken_out();
 		void incr_not_taken_inout();
+
+		
+		void incr_nb_SHA_inout_sure_total();
+		void incr_nb_SHA_inout_possible_total();
+		void incr_nb_SHA_in_sure_total();
+		void incr_nb_SHA_out_sure_total();
+		void incr_nb_SHA_in_possible_total();	
+		void incr_nb_SHA_out_possible_total();
+
+
 
 		void print_person();
 		void write_file(std::ofstream& output);

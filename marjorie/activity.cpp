@@ -110,8 +110,14 @@ unsigned Activity::get_nb_SHA_possible_inout() { return nb_SHA_possible_inout; }
 bool Activity::get_SHA_not_taken_in() { return SHA_not_taken_in; }
 bool Activity::get_SHA_not_taken_out() { return SHA_not_taken_out; }
 bool Activity::get_SHA_not_taken_inout() { return SHA_not_taken_inout; }
+bool Activity::get_inout() { return inout; }
 
-
+bool Activity::get_theres_SHA_sure_in() { return theres_SHA_sure_in; }
+bool Activity::get_theres_SHA_sure_out() { return theres_SHA_sure_out; }
+bool Activity::get_theres_SHA_sure_inout() { return theres_SHA_sure_inout; }
+bool Activity::get_theres_SHA_possible_in () { return theres_SHA_possible_in; }
+bool Activity::get_theres_SHA_possible_out () { return theres_SHA_possible_out; }
+bool Activity::get_theres_SHA_possible_inout () { return theres_SHA_possible_inout; }
 
 
 
@@ -304,25 +310,47 @@ bool Activity::same_activity(Event* event)
 
 
 // On ne rajoute pas la puce 0
+/**
+	* \name identify_different_puces
+	* \brief Identifies all the persons in the current activity.
+	* 
+	* Fills the "different_puces" vector with all the persons in the current activity.
+	* Doesn't add the person "0".
+	* 
+	* Knows who are the first person who has entered the room.
+	* 
+	* Accords the SHAs to the persons. 
+	* 
+	* \param different_puces : vector filled with all the persons (not the "0"). 
+	* \param puces_to_SHA : map with key=id of a person, value=vector of SHA (true = SHA sure, false = SHA possible).
+	* \param first_person_id : first person who has entered the room.
+	* 
+	* \return The number of persons on the current activity.
+*/
 unsigned Activity::identify_different_puces(vector<unsigned>& different_puces, 
-	map<unsigned, vector<bool> >& puces_to_SHA)
+	map<unsigned, vector<bool> >& puces_to_SHA, unsigned& first_person_id)
 {
 	unsigned puce;
 	for(unsigned i=0; i<events.size(); ++i)
 	{
 		puce = events[i]->get_id_puce();
 		
-		if(events[i]->get_event() == CODE_SHA)
+		if(events[i]->get_event() == CODE_SHA || events[i]->get_event() == CODE_SHA_DURING_ALARM)
 		{
-			//accorder le SHA à different_puces[0]
-			if(different_puces.size() == 1)
-				puces_to_SHA[different_puces[0]].push_back( SHA_SURE );
+			if( puce != 0 )
+				puces_to_SHA[puce].push_back( SHA_SURE );
+				
+			else
+			{
+				//accorder le SHA à different_puces[0] s'il y a qu'une seule personne pour l'instant
+				if(different_puces.size() == 1)
+					puces_to_SHA[different_puces[0]].push_back( SHA_SURE );
 
-			//accorder le SHA à toutes les different_puces
-			else if(different_puces.size() > 1)
-				for(unsigned k=0; k<different_puces.size(); ++k)
-					puces_to_SHA[different_puces[k]].push_back( SHA_POSSIBLE );
-		
+				//accorder le SHA à toutes les different_puces
+				else if(different_puces.size() > 1)
+					for(unsigned k=0; k<different_puces.size(); ++k)
+						puces_to_SHA[different_puces[k]].push_back( SHA_POSSIBLE );
+			}
 		}		
 		
 		if(puce==0)
@@ -332,59 +360,84 @@ unsigned Activity::identify_different_puces(vector<unsigned>& different_puces,
 			different_puces.push_back(puce);
 	}
 	
+	
+	for(unsigned i=0; i<different_puces.size(); ++i)
+	{
+		if(puces_to_SHA.find(different_puces[i]) == puces_to_SHA.end())
+			puces_to_SHA[different_puces[i]] = {};
+	}
+	
+	
+	if(different_puces.size() > 0)
+		first_person_id = different_puces[0];
+	else
+		first_person_id = 0;
+	
 	return different_puces.size();
 }
 
 
 void Activity::activity_per_person(vector<Activity*>& split_activity)
 {
-	unsigned person;
-	
+	// Removes all activities not related to our business
 	for(unsigned i=0; i<split_activity.size(); ++i)
 		split_activity[i]->~Activity();
 	split_activity.clear();
 
+	// Who are the person(s) in the current activity ?
+	unsigned person;
 	vector<unsigned> different_puces;
 	map<unsigned, vector<bool> > puces_to_SHA;
-	unsigned nb_different_puces = identify_different_puces(different_puces, puces_to_SHA);
+	unsigned first_person_id = 0;
+	unsigned nb_different_puces = identify_different_puces(different_puces, puces_to_SHA, first_person_id);
 	
 	
-	// if there is more than 1 person in 1 activity
+	// if there is more than 1 person in the current activity
 	if(nb_different_puces > 1)
 	{
-		//correct_activity = (nb_different_puces <= nb_SHA);
 		map<unsigned, vector<Event*> > different_activities; // key = person, value = vector of events
 
+		
+		// Accords events to each persons
 		for(unsigned i=0; i<events.size(); ++i)
 		{
 			person = events[i]->get_id_puce();
 			
+			// this event is related to everyone
 			if( person==0 )
 			{
-				//push dans toutes les keys
 				for(unsigned k=0; k < different_puces.size(); ++k)
 					different_activities[different_puces[k]].push_back( new Event(events[i]) );
 			}
+			// this event is related to a specific person
 			else
 				different_activities[person].push_back( new Event(events[i]) );
 		}	
 		
+		// Create activities for each persons with the events we accorded to each persons
 		for(auto it = different_activities.begin(); it != different_activities.end(); ++it) 
 		{			
 			split_activity.push_back( new Activity(it->second, it->first, different_puces) );
+			if( it->first == first_person_id )
+				split_activity[split_activity.size()-1]->first_person = true;
+			
+			// Count the SHAs for the Activity we just created
 			for(auto it2 = puces_to_SHA.begin(); it2 != puces_to_SHA.end(); ++it2) 
-			{
 				if( it->first == it2->first )
 					split_activity[split_activity.size()-1]->count_SHA(it2->second);
-			}
+			
 		}
 		
 		
 	}
+	
+	// If there is not several person in the current activity
 	else
 	{
+		// If there is just 1 person in the current activity
 		if(nb_different_puces == 1)
 			main_person = different_puces[0];
+		// If there is no one in the current activity (all id = 0)
 		else
 			main_person = 0;
 			
@@ -406,7 +459,7 @@ void Activity::activity_per_person(vector<Activity*>& split_activity)
 // il n'y a pas de SHA possible quand il y a 1 seule personne dans la chambre
 // (que des SHA surs)
 void Activity::count_SHA_and_deciding_in_or_out()
-{
+{	
 	events[0]->set_in(true);
 	unsigned event_out = 0;
 	unsigned index_out = 0;
@@ -443,20 +496,71 @@ void Activity::count_SHA_and_deciding_in_or_out()
 	if(index_out == 0)
 		inout = true;
 		
+	// number of SHA sure/possible in : inout
 	if(inout)
-		nb_SHA_sure_inout = nb_SHA_sure;
-	else
-		count_SHA_in_and_out(index_out);
+	{
+		theres_SHA_sure_inout = true;
+		if(nb_SHA_sure==0)	
+			SHA_not_taken_inout = true;	
+		else
+			nb_SHA_sure_inout = true;
 		
-	set_SHA_not_taken();
+	}
+	// number of SHA sure/possible in : in and out
+	else
+	{
+		theres_SHA_sure_in = true;
+		theres_SHA_sure_out = true;
+		
+		// no SHA taken : it's SURE the person didn't take sha (in and out)
+		if(nb_SHA_sure==0)
+		{
+			SHA_not_taken_in = true;
+			SHA_not_taken_out = true;
+		}
+		else
+			count_SHA_in_and_out(index_out);
+	}
+		
+	//set_SHA_not_taken();
+}
+
+void Activity::count_SHA_in_and_out(unsigned index_out)
+{
+	bool out=false;
+	unsigned id_e;
+	
+	for(unsigned i=0; i < events.size(); ++i)
+	{
+		if( i!=0 && i == index_out )
+			out=true;
+		
+		id_e = events[i]->get_event();
+		
+		// Prise du SHA
+		if( id_e == CODE_SHA || id_e == CODE_SHA_DURING_ALARM )
+		{
+			if(out)
+			{
+				if(nb_SHA_sure_out==0)
+					++ nb_SHA_sure_out;
+			}
+			else
+			{
+				if(nb_SHA_sure_in==0)
+					++ nb_SHA_sure_in;
+			}
+		}
+	}	
+	if( nb_SHA_sure_in == 0 )
+		SHA_not_taken_in = true;
+	if( nb_SHA_sure_out == 0 )
+		SHA_not_taken_out = true;
 }
 
 
 void Activity::count_SHA(vector<bool>& sha)
 {
-	// Count number of SHA sure and SHA possible
-	count_SHA_sure_and_possible(sha);
-	
 	// Search where is the out
 	events[0]->set_in(true);
 	unsigned event_out = 0;
@@ -495,72 +599,127 @@ void Activity::count_SHA(vector<bool>& sha)
 	// number of SHA sure/possible in : inout
 	if(inout)
 	{
-		nb_SHA_possible_inout = nb_SHA_possible;
-		nb_SHA_sure_inout = nb_SHA_sure;
+		if(sha.size()==0)
+		{
+			theres_SHA_sure_inout = true;
+			SHA_not_taken_inout = true;
+		}		
+		else
+			at_least_one_SHA_sure(sha);
 	}
 	// number of SHA sure/possible in : in and out
 	else
-		count_SHA_in_and_out(index_out);
+	{
+		// no SHA taken : it's SURE the person didn't take sha (in and out)
+		if(sha.size()==0)
+		{
+			theres_SHA_sure_in = true;
+			theres_SHA_sure_out = true;
+			SHA_not_taken_in = true;
+			SHA_not_taken_out = true;
+		}
+		else
+			count_SHA_in_and_out(sha, index_out);
+	}
+	
 		
-	set_SHA_not_taken();
+	//set_SHA_not_taken();
 }
 
-
-// Count number of SHA sure/possible 
-void Activity::count_SHA_sure_and_possible(vector<bool>& sha)
+void Activity::at_least_one_SHA_sure(vector<bool>& sha)
 {
-	for(unsigned i=0; i < sha.size(); ++i)
+	for(unsigned i=0; i<sha.size(); ++i)
 	{
 		if(sha[i])
-			++nb_SHA_sure;
-		else
-			++nb_SHA_possible;
+		{
+			theres_SHA_sure_inout = true;
+			++ nb_SHA_sure_inout;
+			break;
+		}
+	}
+	if(!theres_SHA_sure_inout)
+	{
+		theres_SHA_possible_inout = true;
+		++ nb_SHA_possible_inout;
 	}
 }
 
-
 // Count number of SHA sure/possible in : in, out and inout
-void Activity::count_SHA_in_and_out(unsigned index_out)
+void Activity::count_SHA_in_and_out(vector<bool>& sha, unsigned index_out)
 {
+	
 	bool out=false;
-	unsigned n_sha = 0;
 	unsigned id_e;
+	unsigned j=0;
+	
 	for(unsigned i=0; i < events.size(); ++i)
 	{
 		if( i!=0 && i == index_out )
-		{
-			n_sha = 0;
 			out=true;
-		}
 		
 		id_e = events[i]->get_event();
 		
 		// Prise du SHA
 		if( id_e == CODE_SHA || id_e == CODE_SHA_DURING_ALARM )
 		{
-			++n_sha;
+				if( j >= sha.size() )
+				{
+					cerr << " ERROR SHA - event : ";
+					events[i]->print_event();
+					cout << endl;
+				}
 			
-			//c'est un SHA possible
-			if( n_sha > nb_SHA_sure )
-			{
-				if(!out)
-					++ nb_SHA_possible_in;
+				if (sha[j])
+				{
+					if(out)
+					{
+						if(nb_SHA_sure_out==0)
+							++ nb_SHA_sure_out;
+						theres_SHA_sure_out = true;
+						if(theres_SHA_possible_out)
+							theres_SHA_possible_out = false;
+					}
+					else
+					{
+						if(nb_SHA_sure_in==0)
+							++ nb_SHA_sure_in;
+						theres_SHA_sure_in = true;
+					}
+				}	
 				else
-					++ nb_SHA_possible_out;
-			}
-			//c'est un SHA sure
-			else
-			{
-				if(!out)
-					++ nb_SHA_sure_in;
-				else
-					++ nb_SHA_sure_out;			
-			}
+				{
+					if(out && !theres_SHA_sure_out)
+					{
+						if(nb_SHA_possible_out==0)
+							++ nb_SHA_possible_out;						
+						theres_SHA_possible_out = true;
+					}
+					else if(!out && !theres_SHA_sure_in)
+					{
+						if(nb_SHA_possible_in==0)
+							++ nb_SHA_possible_in;
+						theres_SHA_possible_in = true;				
+					}
+				}
+				++j;
 		}
 	}	
+	
+	if(!theres_SHA_possible_in && !theres_SHA_sure_in)
+	{
+		theres_SHA_sure_in = true;
+		SHA_not_taken_in = true;
+	}
+	
+	if(!theres_SHA_possible_out && !theres_SHA_sure_out)
+	{
+		theres_SHA_sure_out = true;
+		SHA_not_taken_out = true;
+	}
+		
 }
 
-
+/*
 void Activity::set_SHA_not_taken()
 {
 	if(inout)
@@ -576,7 +735,7 @@ void Activity::set_SHA_not_taken()
 			SHA_not_taken_out = true;
 	}
 }
-
+*/
 
 
 

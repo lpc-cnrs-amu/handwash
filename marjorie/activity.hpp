@@ -69,17 +69,27 @@ class Activity
 		bool SHA_not_taken_out = false;
 		bool SHA_not_taken_inout = false;
 		
+		bool theres_SHA_sure_in = false;
+		bool theres_SHA_sure_out = false;
+		bool theres_SHA_sure_inout = false;
+		bool theres_SHA_possible_in = false;
+		bool theres_SHA_possible_out = false;
+		bool theres_SHA_possible_inout = false;
+				
+		bool first_person = false;
 				
 		//std::vector<Label> label_activity;
 
 		
 		bool same_activity(Event* event);
-		unsigned identify_different_puces(std::vector<unsigned>& different_puces, std::map<unsigned, std::vector<bool> >& puces_to_SHA);
+		unsigned identify_different_puces(std::vector<unsigned>& different_puces, std::map<unsigned, std::vector<bool> >& puces_to_SHA, unsigned& first_person_id);
 		void count_SHA_and_deciding_in_or_out();
 		void count_SHA(std::vector<bool>& sha);
 		void count_SHA_sure_and_possible(std::vector<bool>& sha);
 		void count_SHA_in_and_out(unsigned index_out);
-		void set_SHA_not_taken();
+		void count_SHA_in_and_out(std::vector<bool>& sha, unsigned index_out);
+		void at_least_one_SHA_sure(std::vector<bool>& sha);
+		//void set_SHA_not_taken();
 		
 	public:
 		Activity();
@@ -108,6 +118,13 @@ class Activity
 		bool get_SHA_not_taken_in();
 		bool get_SHA_not_taken_out();
 		bool get_SHA_not_taken_inout();
+		bool get_inout();
+		bool get_theres_SHA_sure_in();
+		bool get_theres_SHA_sure_out();
+		bool get_theres_SHA_sure_inout();
+		bool get_theres_SHA_possible_in ();
+		bool get_theres_SHA_possible_out ();
+		bool get_theres_SHA_possible_inout ();
 };
 	
 

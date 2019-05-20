@@ -61,8 +61,8 @@ Activities::Activities(char* filename, bool excel_csv)
 			activity_tmp = new Activity( new Event(line, excel_csv) );
 			append_activity = true;
 			
-			activities[activities.size()-1]->print_activity();
-			cout << endl << endl;
+			//activities[activities.size()-1]->print_activity();
+			//cout << endl << endl;
 			
 		}
 	}
@@ -83,8 +83,8 @@ Activities::Activities(char* filename, bool excel_csv)
 		activity_tmp->~Activity();
 		activity_tmp = new Activity( new Event(line, excel_csv) );
 		
-		activities[activities.size()-1]->print_activity();
-		cout << endl << endl;
+		//activities[activities.size()-1]->print_activity();
+		//cout << endl << endl;
 	}
 
 	database.close();

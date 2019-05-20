@@ -27,6 +27,29 @@ void update_persons_stats(Activity* activity_tmp, map<unsigned, Person*>& person
 		person_stats[ p ]->incr_not_taken_out();
 	if(activity_tmp->get_SHA_not_taken_inout())
 		person_stats[ p ]->incr_not_taken_inout();	
+		
+	
+	if( activity_tmp->get_inout() )
+	{
+		if( activity_tmp->get_theres_SHA_sure_inout() )
+			person_stats[ p ]->incr_nb_SHA_inout_sure_total();
+		if( activity_tmp->get_theres_SHA_possible_inout() )
+			person_stats[ p ]->incr_nb_SHA_inout_possible_total();
+	}
+	else
+	{
+		if( activity_tmp->get_theres_SHA_sure_in() )
+			person_stats[ p ]->incr_nb_SHA_in_sure_total();
+		
+		if( activity_tmp->get_theres_SHA_sure_out() )
+			person_stats[ p ]->incr_nb_SHA_out_sure_total();
+		
+		if( activity_tmp->get_theres_SHA_possible_in() )
+			person_stats[ p ]->incr_nb_SHA_in_possible_total();
+			
+		if( activity_tmp->get_theres_SHA_possible_out() )
+			person_stats[ p ]->incr_nb_SHA_out_possible_total();	
+	}	
 }
 
 /**
@@ -115,7 +138,71 @@ void write_file(map<unsigned, Person*>& person_stats, char* filename)
 			   
 			   << "\t nb_SHA_possible_in: " << it->second->nb_SHA_possible_in << endl
 			   << "\t nb_SHA_possible_out: " << it->second->nb_SHA_possible_out << endl
-			   << "\t nb_SHA_possible_inout: " << it->second->nb_SHA_possible_inout << endl << endl; 
+			   << "\t nb_SHA_possible_inout: " << it->second->nb_SHA_possible_inout << endl
+			   
+			   
+			   << "\t\tPERCENT" << endl;
+			   
+		if (it->second->nb_SHA_in_sure_total == 0)
+			output << "\t SHA_NOT_TAKEN_IN: 0 %" << endl;
+		else
+			output << "\t SHA_NOT_TAKEN_IN: " << 100*it->second->nb_not_taken_in / it->second->nb_SHA_in_sure_total << " %" << endl;
+		//output << "\t\t nb_SHA_in_sure_total: " << it->second->nb_SHA_in_sure_total <<  endl;
+			
+		if(it->second->nb_SHA_out_sure_total == 0)	
+			output << "\t SHA_NOT_TAKEN_OUT: 0 %" << endl;
+		else
+			output << "\t SHA_NOT_TAKEN_OUT: " << 100*it->second->nb_not_taken_out / it->second->nb_SHA_out_sure_total << " %" << endl;
+		//output << "\t\t nb_SHA_out_sure_total " << it->second->nb_SHA_out_sure_total << endl;
+			
+		if(it->second->nb_SHA_inout_sure_total == 0)	
+			output << "\t SHA_NOT_TAKEN_INOUT: 0 %" << endl;
+		else
+			output << "\t SHA_NOT_TAKEN_INOUT: " << 100*it->second->nb_not_taken_inout / it->second->nb_SHA_inout_sure_total << " %" << endl;
+		//output << "\t\t nb_SHA_inout_sure_total: " << it->second->nb_SHA_inout_sure_total << endl;
+			   
+			   
+		if(it->second->nb_SHA_in_sure_total == 0)	   
+			output<< "\t nb_SHA_sure_in: 0 %" << endl;
+		else
+			output<< "\t nb_SHA_sure_in: " << 100*it->second->nb_SHA_sure_in / it->second->nb_SHA_in_sure_total << " %" << endl;
+		//output<< "\t\t nb_SHA_in_sure_total: " << it->second->nb_SHA_in_sure_total << endl;
+			
+		
+		if(it->second->nb_SHA_out_sure_total == 0)
+			output << "\t nb_SHA_sure_out: 0 %" << endl;
+		else
+			output << "\t nb_SHA_sure_out: " << 100*it->second->nb_SHA_sure_out / it->second->nb_SHA_out_sure_total << " %" << endl;
+		//output << "\t\t nb_SHA_out_sure_total: " << it->second->nb_SHA_out_sure_total << endl;
+			
+			
+			
+		if(it->second->nb_SHA_inout_sure_total == 0)
+			output << "\t nb_SHA_sure_inout: 0 %" << endl;
+		else
+			output << "\t nb_SHA_sure_inout: " << 100*it->second->nb_SHA_sure_inout / it->second->nb_SHA_inout_sure_total << " %" << endl;
+		//output << "\t\t nb_SHA_inout_sure_total: " <<  it->second->nb_SHA_inout_sure_total <<  endl;
+			   
+			   
+		if(it->second->nb_SHA_in_possible_total == 0)
+			output << "\t nb_SHA_possible_in: 0 %" << endl;
+		else
+			output << "\t nb_SHA_possible_in: " << 100*it->second->nb_SHA_possible_in/ it->second->nb_SHA_in_possible_total << " %" << endl;
+		//output << "\t\t nb_SHA_in_possible_total: " << it->second->nb_SHA_in_possible_total << endl;
+			
+		if(it->second->nb_SHA_out_possible_total == 0)
+			output << "\t nb_SHA_possible_out: 0 %" << endl;
+		else
+			output << "\t nb_SHA_possible_out: " << 100*it->second->nb_SHA_possible_out / it->second->nb_SHA_out_possible_total << " %" << endl;
+		//output << "\t\t nb_SHA_out_possible_total: " <<  it->second->nb_SHA_out_possible_total << endl;
+			
+			
+		if(it->second->nb_SHA_inout_possible_total == 0)
+			output << "\t nb_SHA_possible_inout: 0 %" << endl ;
+		else
+			output << "\t nb_SHA_possible_inout: " << 100*it->second->nb_SHA_possible_inout / it->second->nb_SHA_inout_possible_total << " %" << endl << endl;
+		//output << "\t\t nb_SHA_inout_possible_total: " <<  it->second->nb_SHA_inout_possible_total << endl << endl;
+			   
 	}	
 	
 	

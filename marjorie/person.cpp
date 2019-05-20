@@ -47,6 +47,13 @@ void Person::incr_not_taken_in() { ++nb_not_taken_in; }
 void Person::incr_not_taken_out() { ++nb_not_taken_out; }
 void Person::incr_not_taken_inout() { ++nb_not_taken_inout; }
 
+void Person::incr_nb_SHA_inout_sure_total() { ++ nb_SHA_inout_sure_total; }
+void Person::incr_nb_SHA_inout_possible_total() { ++ nb_SHA_inout_possible_total; }
+void Person::incr_nb_SHA_in_sure_total() { ++ nb_SHA_in_sure_total; }
+void Person::incr_nb_SHA_out_sure_total() { ++ nb_SHA_out_sure_total; }
+void Person::incr_nb_SHA_in_possible_total() { ++ nb_SHA_in_possible_total; }	
+void Person::incr_nb_SHA_out_possible_total() { ++ nb_SHA_out_possible_total; }
+
 void Person::print_person()
 {
 	cout << 
