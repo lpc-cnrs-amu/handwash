@@ -83,21 +83,14 @@ Activity::Activity(vector<Event*>& vector_event, unsigned p, vector<unsigned>& d
 		persons.push_back( different_persons[i] );
 }
 
-/*
-Activity::Activity(Event* event, bool correct)
-{
-	correct_activity = correct;
-	events.push_back( new Event(event) );
-}*/
-
 Activity::Activity(Event* event)
 {
 	events.push_back( new Event(event) );
 }
 
+	/* Getters */
 
-
-
+unsigned Activity::get_person() { return main_person; }
 unsigned Activity::get_nb_SHA_sure_in() { return nb_SHA_sure_in; }
 unsigned Activity::get_nb_SHA_sure_out() { return nb_SHA_sure_out; }
 unsigned Activity::get_nb_SHA_possible_in() { return nb_SHA_possible_in; }
@@ -120,37 +113,31 @@ bool Activity::get_theres_SHA_possible_out () { return theres_SHA_possible_out; 
 bool Activity::get_theres_SHA_possible_inout () { return theres_SHA_possible_inout; }
 
 
+	/* Print functions */
 
 
+/**
+	* \name write_file
+	* \brief Write all activities in a file.
+	* 
+	* \param output : the file.
+*/
 void Activity::write_file(ofstream& output)
 {
 	unsigned i;
 	
 	output << "PERSON: " << main_person << endl;
-	output << "\tNUMBER OF PERSON: " << persons.size() << endl << "\t";
-	
+	output << "\tNUMBER OF PERSON: " << persons.size() << endl << "\t";	
 	for(i=0; i < persons.size(); ++i)
 		output << persons[i] << " ";
 	output << endl;
-	
-	/*output << "\tNUMBER SHA : " << nb_SHA_sure << endl;
-	output << "\tNUMBER SHA POSSIBLE : " << nb_SHA_possible << endl;*/
 
-	
 	output << "\tNUMBER SHA SURE IN : " << nb_SHA_sure_in << endl;
-
 	output << "\tNUMBER SHA SURE OUT : " << nb_SHA_sure_out << endl;
-
-
 	output << "\tNUMBER SHA POSSIBLE IN : " << nb_SHA_possible_in << endl;
-
 	output << "\tNUMBER SHA POSSIBLE OUT : " << nb_SHA_possible_out << endl;
-	
-
 	output << "\tNUMBER SHA SURE INOUT : " << nb_SHA_sure_inout << endl;
-
 	output << "\tNUMBER SHA POSSIBLE INOUT : " << nb_SHA_possible_inout << endl;
-		
 	output << "SHA NOT TAKEN IN : " << SHA_not_taken_in << endl;
 	output << "SHA NOT TAKEN OUT : " << SHA_not_taken_out << endl;
 	output << "SHA NOT TAKEN INOUT : " << SHA_not_taken_inout << endl;
@@ -167,19 +154,29 @@ void Activity::write_file(ofstream& output)
 	}
 }
 
+/**
+	* \name print_activity
+	* \brief Write all activities in the console.
+*/
 void Activity::print_activity()
 {
 	unsigned i;
 	
 	cout << "PERSON: " << main_person << endl;
-	cout << "\tNUMBER OF PERSON: " << persons.size() << endl << "\t";
-	
+	cout << "\tNUMBER OF PERSON: " << persons.size() << endl << "\t";	
 	for(i=0; i < persons.size(); ++i)
 		cout << persons[i] << " ";
 	cout << endl;
-	
-	cout << "\tNUMBER SHA : " << nb_SHA_sure << endl;
-	cout << "\tNUMBER SHA POSSIBLE : " << nb_SHA_possible << endl;
+
+	cout << "\tNUMBER SHA SURE IN : " << nb_SHA_sure_in << endl;
+	cout << "\tNUMBER SHA SURE OUT : " << nb_SHA_sure_out << endl;
+	cout << "\tNUMBER SHA POSSIBLE IN : " << nb_SHA_possible_in << endl;
+	cout << "\tNUMBER SHA POSSIBLE OUT : " << nb_SHA_possible_out << endl;
+	cout << "\tNUMBER SHA SURE INOUT : " << nb_SHA_sure_inout << endl;
+	cout << "\tNUMBER SHA POSSIBLE INOUT : " << nb_SHA_possible_inout << endl;
+	cout << "SHA NOT TAKEN IN : " << SHA_not_taken_in << endl;
+	cout << "SHA NOT TAKEN OUT : " << SHA_not_taken_out << endl;
+	cout << "SHA NOT TAKEN INOUT : " << SHA_not_taken_inout << endl;
 	
 	for(i=0; i<events.size(); ++i)
 	{
@@ -194,6 +191,17 @@ void Activity::print_activity()
 }
 
 
+	/* Append event to the current activity */
+
+
+/**
+	* \name check_and_append_event_to_activity
+	* \brief Check if the event can be appended and do it if it can.
+	* 
+	* \param event : an event.
+	* 
+	* \return True if we have appended the event to the activity, else false
+*/
 bool Activity::check_and_append_event_to_activity(Event* event)
 {
 	if( !same_activity(event) )
@@ -203,19 +211,30 @@ bool Activity::check_and_append_event_to_activity(Event* event)
 	return true;
 }
 
+/**
+	* \name append_event_to_activity
+	* \brief Append the event to the current activity.
+	* 
+	* \param event : an event.
+*/
 void Activity::append_event_to_activity(Event* event)
 {
 	events.push_back( new Event(event) );
 }
 
-unsigned Activity::get_person()
-{
-	return main_person;
-}
+
+	/* Check if an event is in an activity */
 
 
-
-// Verifie si c'est le même horaire (return true si oui, false sinon)
+/**
+	* \name same_activity
+	* \brief Check if the event is in the same current activity's schedule 
+	* to know if we can append this event or not.
+	* 
+	* \param event : an event.
+	* 
+	* \return True if we can append this event, else false.
+*/
 bool Activity::same_activity(Event* event)
 {
 	if(events.empty())
@@ -294,22 +313,11 @@ bool Activity::same_activity(Event* event)
 }
 
 
-
-
-
-
-
-
+	/* Split activities if there is several persons in one activity */
 
 
 // L'idée est de séparer les personnes directement après avoir trouvé une activité 
 // (avant de faire activities.push_back dans activities.cpp)
-
-
-
-
-
-// On ne rajoute pas la puce 0
 /**
 	* \name identify_different_puces
 	* \brief Identifies all the persons in the current activity.
@@ -319,10 +327,10 @@ bool Activity::same_activity(Event* event)
 	* 
 	* Knows who are the first person who has entered the room.
 	* 
-	* Accords the SHAs to the persons. 
+	* Gives the SHAs to the persons. 
 	* 
-	* \param different_puces : vector filled with all the persons (not the "0"). 
-	* \param puces_to_SHA : map with key=id of a person, value=vector of SHA (true = SHA sure, false = SHA possible).
+	* \param different_puces : vector to be filled with all the persons (not the "0"). 
+	* \param puces_to_SHA : map to be filled with key=id of a person, value=vector of SHA (true = SHA sure, false = SHA possible).
 	* \param first_person_id : first person who has entered the room.
 	* 
 	* \return The number of persons on the current activity.
@@ -342,32 +350,33 @@ unsigned Activity::identify_different_puces(vector<unsigned>& different_puces,
 				
 			else
 			{
-				//accorder le SHA à different_puces[0] s'il y a qu'une seule personne pour l'instant
+				//gives the SHA to different_puces[0] if there is no one else
 				if(different_puces.size() == 1)
 					puces_to_SHA[different_puces[0]].push_back( SHA_SURE );
 
-				//accorder le SHA à toutes les different_puces
+				//gives the SHA to all persons who are in the room
 				else if(different_puces.size() > 1)
 					for(unsigned k=0; k<different_puces.size(); ++k)
 						puces_to_SHA[different_puces[k]].push_back( SHA_POSSIBLE );
 			}
 		}		
 		
+		// we don't add the "0"
 		if(puce==0)
 			continue;
 		
+		// if we didn't add the person yet (first time entering the room) we add them to different_puces
 		if(std::find(different_puces.begin(), different_puces.end(), puce) == different_puces.end())
 			different_puces.push_back(puce);
 	}
 	
-	
+	// Gives empty vector on the puces_to_SHA map for people who don't have a SHA
 	for(unsigned i=0; i<different_puces.size(); ++i)
-	{
 		if(puces_to_SHA.find(different_puces[i]) == puces_to_SHA.end())
 			puces_to_SHA[different_puces[i]] = {};
-	}
 	
 	
+	// Identify who is the first person who has entered the room
 	if(different_puces.size() > 0)
 		first_person_id = different_puces[0];
 	else
@@ -377,6 +386,12 @@ unsigned Activity::identify_different_puces(vector<unsigned>& different_puces,
 }
 
 
+/**
+	* \name activity_per_person
+	* \brief Split activities if there is several persons in one activity.
+	* 
+	* \param split_activity : vector to be filled with the activities split from the current activity.
+*/
 void Activity::activity_per_person(vector<Activity*>& split_activity)
 {
 	// Removes all activities not related to our business
@@ -397,7 +412,6 @@ void Activity::activity_per_person(vector<Activity*>& split_activity)
 	{
 		map<unsigned, vector<Event*> > different_activities; // key = person, value = vector of events
 
-		
 		// Accords events to each persons
 		for(unsigned i=0; i<events.size(); ++i)
 		{
@@ -405,10 +419,9 @@ void Activity::activity_per_person(vector<Activity*>& split_activity)
 			
 			// this event is related to everyone
 			if( person==0 )
-			{
 				for(unsigned k=0; k < different_puces.size(); ++k)
 					different_activities[different_puces[k]].push_back( new Event(events[i]) );
-			}
+			
 			// this event is related to a specific person
 			else
 				different_activities[person].push_back( new Event(events[i]) );
@@ -425,9 +438,10 @@ void Activity::activity_per_person(vector<Activity*>& split_activity)
 			for(auto it2 = puces_to_SHA.begin(); it2 != puces_to_SHA.end(); ++it2) 
 				if( it->first == it2->first )
 					split_activity[split_activity.size()-1]->count_SHA(it2->second);
-			
 		}
 		
+		// Release the allocated memory for the different_activities map
+		destroy_map_different_activities(different_activities);
 		
 	}
 	
@@ -441,19 +455,31 @@ void Activity::activity_per_person(vector<Activity*>& split_activity)
 		else
 			main_person = 0;
 			
+		// Add the person to the vector
 		persons.push_back(main_person);
+		// Count the SHAs for the Activity
 		count_SHA_and_deciding_in_or_out();
 	}
 		
 }
 
 
+/**
+	* \name destroy_map_different_activities
+	* \brief Release the allocated memory for the different_activities map
+	* 
+	* \param different_activities : the map to destroy.
+*/
+void Activity::destroy_map_different_activities(map<unsigned, vector<Event*> >& different_activities)
+{
+	unsigned i;
+	for(auto it = different_activities.begin(); it != different_activities.end(); ++it) 
+		for(i=0; i < it->second.size(); ++i)
+			it->second[i]->~Event();
+}
 
 
-
-
-
-
+	/* Counting SHAs */
 
 
 // il n'y a pas de SHA possible quand il y a 1 seule personne dans la chambre
@@ -521,8 +547,6 @@ void Activity::count_SHA_and_deciding_in_or_out()
 		else
 			count_SHA_in_and_out(index_out);
 	}
-		
-	//set_SHA_not_taken();
 }
 
 void Activity::count_SHA_in_and_out(unsigned index_out)
@@ -621,9 +645,6 @@ void Activity::count_SHA(vector<bool>& sha)
 		else
 			count_SHA_in_and_out(sha, index_out);
 	}
-	
-		
-	//set_SHA_not_taken();
 }
 
 void Activity::at_least_one_SHA_sure(vector<bool>& sha)
@@ -719,23 +740,28 @@ void Activity::count_SHA_in_and_out(vector<bool>& sha, unsigned index_out)
 		
 }
 
-/*
-void Activity::set_SHA_not_taken()
-{
-	if(inout)
-	{
-		if( nb_SHA_sure_inout == 0 && nb_SHA_possible_inout == 0 )
-			SHA_not_taken_inout = true;
-	}
-	else
-	{
-		if( nb_SHA_sure_in == 0 && nb_SHA_possible_in == 0 )
-			SHA_not_taken_in = true;
-		if( nb_SHA_sure_out == 0 && nb_SHA_possible_out == 0 )
-			SHA_not_taken_out = true;
-	}
-}
-*/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

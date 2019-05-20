@@ -83,6 +83,9 @@ class Activity
 		
 		bool same_activity(Event* event);
 		unsigned identify_different_puces(std::vector<unsigned>& different_puces, std::map<unsigned, std::vector<bool> >& puces_to_SHA, unsigned& first_person_id);
+		
+		void destroy_map_different_activities(std::map<unsigned, std::vector<Event*> >& different_activities);
+		
 		void count_SHA_and_deciding_in_or_out();
 		void count_SHA(std::vector<bool>& sha);
 		void count_SHA_sure_and_possible(std::vector<bool>& sha);
