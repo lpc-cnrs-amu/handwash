@@ -121,58 +121,58 @@ void calcul_percent(Person* current_person, float& taken_sure_in, float& taken_s
 	float& taken_possible_in, float& taken_possible_out, float& taken_possible_inout, float& not_taken_in, 
 	float& not_taken_out, float& not_taken_inout)	
 {
-	if( current_person->nb_SHA_in_sure_total == 0 )
+	if( current_person->get_nb_SHA_in_sure_total() == 0 )
 		taken_sure_in = -1;
 	else
-		taken_sure_in = 100*current_person->nb_SHA_sure_in / (float)current_person->nb_SHA_in_sure_total;
+		taken_sure_in = 100*current_person->get_nb_SHA_sure_in() / (float)current_person->get_nb_SHA_in_sure_total();
 		
 		
-	if( current_person->nb_SHA_out_sure_total == 0 ) 
+	if( current_person->get_nb_SHA_out_sure_total() == 0 ) 
 		taken_sure_out = -1;
 	else
-		taken_sure_out = 100*current_person->nb_SHA_sure_out / (float)current_person->nb_SHA_out_sure_total;
+		taken_sure_out = 100*current_person->get_nb_SHA_sure_out() / (float)current_person->get_nb_SHA_out_sure_total();
 	
 	
-	if( current_person->nb_SHA_inout_sure_total == 0 )
+	if( current_person->get_nb_SHA_inout_sure_total() == 0 )
 		taken_sure_inout = -1;
 	else
-		taken_sure_inout = 100*current_person->nb_SHA_sure_inout / (float)current_person->nb_SHA_inout_sure_total;
+		taken_sure_inout = 100*current_person->get_nb_SHA_sure_inout() / (float)current_person->get_nb_SHA_inout_sure_total();
 	
 
-	if( current_person->nb_SHA_in_possible_total == 0 )
+	if( current_person->get_nb_SHA_in_possible_total() == 0 )
 		taken_possible_in = -1;
 	else
-		taken_possible_in = 100*current_person->nb_SHA_possible_in/ (float)current_person->nb_SHA_in_possible_total;
+		taken_possible_in = 100*current_person->get_nb_SHA_possible_in/ (float)current_person->get_nb_SHA_in_possible_total();
 		
 	
-	if( current_person->nb_SHA_out_possible_total == 0 )
+	if( current_person->get_nb_SHA_out_possible_total() == 0 )
 		taken_possible_out = -1;
 	else
-		taken_possible_out = 100*current_person->nb_SHA_possible_out / (float)current_person->nb_SHA_out_possible_total;
+		taken_possible_out = 100*current_person->get_nb_SHA_possible_out() / (float)current_person->get_nb_SHA_out_possible_total();
 		
 		
-	if( current_person->nb_SHA_inout_possible_total == 0 )
+	if( current_person->get_nb_SHA_inout_possible_total() == 0 )
 		taken_possible_inout = -1;
 	else
-		taken_possible_inout = 100*current_person->nb_SHA_possible_inout / (float)current_person->nb_SHA_inout_possible_total;
+		taken_possible_inout = 100*current_person->get_nb_SHA_possible_inout() / (float)current_person->get_nb_SHA_inout_possible_total();
 	
 	
-	if( current_person->nb_SHA_in_sure_total == 0 )
+	if( current_person->get_nb_SHA_in_sure_total() == 0 )
 		not_taken_in = -1;
 	else
-		not_taken_in = 100*current_person->nb_not_taken_in / (float)current_person->nb_SHA_in_sure_total;
+		not_taken_in = 100*current_person->get_nb_not_taken_in() / (float)current_person->get_nb_SHA_in_sure_total();
 		
 		
-	if( current_person->nb_SHA_out_sure_total == 0 )
+	if( current_person->get_nb_SHA_out_sure_total() == 0 )
 		not_taken_out = -1;
 	else
-		not_taken_out = 100*current_person->nb_not_taken_out / (float)current_person->nb_SHA_out_sure_total;
+		not_taken_out = 100*current_person->get_nb_not_taken_out() / (float)current_person->get_nb_SHA_out_sure_total();
 		
 	
-	if( current_person->nb_SHA_inout_sure_total == 0 )
+	if( current_person->get_nb_SHA_inout_sure_total() == 0 )
 		not_taken_inout = -1;
 	else
-		not_taken_inout = 100*current_person->nb_not_taken_inout / (float)current_person->nb_SHA_inout_sure_total;
+		not_taken_inout = 100*current_person->get_nb_not_taken_inout() / (float)current_person->get_nb_SHA_inout_sure_total();
 }
 
 
@@ -185,6 +185,16 @@ void write_file(map<unsigned, Person*>& person_stats, char* filename)
 		exit(EXIT_FAILURE);		
 	}
 	
+	float taken_sure_in;
+	float taken_sure_out;
+	float taken_sure_inout; 
+	float taken_possible_in;
+	float taken_possible_out;
+	float taken_possible_inout;
+	float not_taken_in;
+	float not_taken_out;
+	float not_taken_inout;	
+	
 	output << "      |                      SHA taken                        |            SHA not taken            |" << endl;
 	output << "      |_______________________________________________________|_____________________________________|" << endl;
 	output << "  ID  |           sure            |       possible            |                 sure                |" << endl;
@@ -194,18 +204,7 @@ void write_file(map<unsigned, Person*>& person_stats, char* filename)
 	
 	
 	for(auto it = person_stats.begin(); it != person_stats.end(); it++ )
-	{
-		float taken_sure_in;
-		float taken_sure_out;
-		float taken_sure_inout; 
-		float taken_possible_in;
-		float taken_possible_out;
-		float taken_possible_inout;
-		float not_taken_in;
-		float not_taken_out;
-		float not_taken_inout;
-	
-
+	{	
 		calcul_percent(it->second, taken_sure_in, taken_sure_out, taken_sure_inout, 
 			taken_possible_in, taken_possible_out, taken_possible_inout, not_taken_in, 
 			not_taken_out, not_taken_inout);
@@ -221,7 +220,6 @@ void write_file(map<unsigned, Person*>& person_stats, char* filename)
 			" |   " << setfill(' ') << setw (6) << std::fixed << std::setprecision(2) << not_taken_in << "  " <<
 			" |   " << setfill(' ') << setw (6) << std::fixed << std::setprecision(2) << not_taken_out << "  " <<
 			" |   " << setfill(' ') << setw (6) << std::fixed << std::setprecision(2) << not_taken_inout << "  |" <<endl;
-
 	}	
 	
 	

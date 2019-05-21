@@ -18,7 +18,7 @@
 */
 class Person
 {
-	public:
+	private:
 		//unsigned id_person;
 		
 		unsigned nb_SHA_sure_in = 0;
@@ -41,7 +41,7 @@ class Person
 		unsigned nb_SHA_in_possible_total = 0;	
 		unsigned nb_SHA_out_possible_total = 0;
 		
-	
+	public:
 		Person(	unsigned SHA_sure_in = 0,
 				unsigned SHA_sure_out = 0,
 				
@@ -57,26 +57,47 @@ class Person
 
 		void add_nb_SHA_sure_in			(unsigned nb);
 		void add_nb_SHA_sure_out		(unsigned nb);
-
+		void add_nb_SHA_sure_inout		(unsigned nb);
+		
 		void add_nb_SHA_possible_in		(unsigned nb);
 		void add_nb_SHA_possible_out	(unsigned nb);
-
-		void add_nb_SHA_sure_inout		(unsigned nb);
 		void add_nb_SHA_possible_inout	(unsigned nb);
 		
 		void incr_not_taken_in();
 		void incr_not_taken_out();
 		void incr_not_taken_inout();
 
-		
-		void incr_nb_SHA_inout_sure_total();
-		void incr_nb_SHA_inout_possible_total();
+
+
 		void incr_nb_SHA_in_sure_total();
-		void incr_nb_SHA_out_sure_total();
+		void incr_nb_SHA_out_sure_total();		
+		void incr_nb_SHA_inout_sure_total();
+
 		void incr_nb_SHA_in_possible_total();	
-		void incr_nb_SHA_out_possible_total();
+		void incr_nb_SHA_out_possible_total();		
+		void incr_nb_SHA_inout_possible_total();
 
 
+
+		unsigned get_nb_SHA_sure_in();
+		unsigned get_nb_SHA_sure_out();
+
+		unsigned get_nb_SHA_possible_in();
+		unsigned get_nb_SHA_possible_out();
+
+		unsigned get_nb_SHA_sure_inout();
+		unsigned get_nb_SHA_possible_inout();	
+
+		unsigned get_nb_not_taken_in();
+		unsigned get_nb_not_taken_out();
+		unsigned get_nb_not_taken_inout();
+
+		unsigned get_nb_SHA_inout_sure_total();
+		unsigned get_nb_SHA_inout_possible_total();
+		unsigned get_nb_SHA_in_sure_total();
+		unsigned get_nb_SHA_out_sure_total();
+		unsigned get_nb_SHA_in_possible_total();
+		unsigned get_nb_SHA_out_possible_total();
 
 		void print_person();
 		void write_file(std::ofstream& output);

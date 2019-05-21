@@ -33,6 +33,26 @@ Person::Person(
 
 }
 
+unsigned Person::get_nb_SHA_sure_in() { return nb_SHA_sure_in; }
+unsigned Person::get_nb_SHA_sure_out() { return nb_SHA_sure_out; }
+
+unsigned Person::get_nb_SHA_possible_in() { return nb_SHA_possible_in; }
+unsigned Person::get_nb_SHA_possible_out() { return nb_SHA_possible_out; }
+
+unsigned Person::get_nb_SHA_sure_inout() { return nb_SHA_sure_inout; }
+unsigned Person::get_nb_SHA_possible_inout() { return nb_SHA_possible_inout; }		
+
+unsigned Person::get_nb_not_taken_in() { return nb_not_taken_in; }
+unsigned Person::get_nb_not_taken_out() { return nb_not_taken_out; }
+unsigned Person::get_nb_not_taken_inout() { return nb_not_taken_inout; }
+
+unsigned Person::get_nb_SHA_inout_sure_total() { return nb_SHA_inout_sure_total; }
+unsigned Person::get_nb_SHA_inout_possible_total() { return nb_SHA_inout_possible_total; }
+unsigned Person::get_nb_SHA_in_sure_total() { return nb_SHA_in_sure_total; }
+unsigned Person::get_nb_SHA_out_sure_total() { return nb_SHA_out_sure_total; }
+unsigned Person::get_nb_SHA_in_possible_total() { return nb_SHA_in_possible_total; }	
+unsigned Person::get_nb_SHA_out_possible_total() { return nb_SHA_out_possible_total; }
+		
 
 void Person::add_nb_SHA_sure_in(unsigned nb) { nb_SHA_sure_in += nb; }
 void Person::add_nb_SHA_sure_out(unsigned nb) { nb_SHA_sure_out += nb; }
