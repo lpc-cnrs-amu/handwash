@@ -4,7 +4,7 @@
 
 using namespace std;
 
-
+/*
 Event::Event(unsigned id, unsigned puce, unsigned chamber, string d, string h, bool in_or_out) :
 	id_event(id),
 	id_puce(puce),
@@ -15,10 +15,11 @@ Event::Event(unsigned id, unsigned puce, unsigned chamber, string d, string h, b
 {
 	split_date();
 	split_time();
-}
+}*/
 
 Event::Event(Event* event)
 {
+	this->unique_id = event->unique_id;
 	this->id_event = event->id_event;
 	this->in = event->in; 
 	this->id_puce = event->id_puce;
@@ -34,6 +35,7 @@ Event::Event(Event* event)
 }
 
 unsigned Event::get_id_puce() {	return id_puce; }
+unsigned Event::get_unique_id() { return unique_id; }
 unsigned Event::get_chamber() { return id_chamber; }
 unsigned Event::get_event() { return id_event; }
 
@@ -120,10 +122,13 @@ Event::Event(string line, bool excel_csv)
 		token = line.substr(0, pos);
 		
 		// Remove "" (first and last letter in token)
-		if(cpt > 0 && token[0]=='"' && token[token.length()-1]=='"')
+		if(token[0]=='"' && token[token.length()-1]=='"')
 			token = token.substr(1, token.length() - 2);
 		
-		if(cpt==1)
+		if(cpt==0)
+			unique_id = stoi( token );
+			
+		else if(cpt==1)
 			id_puce = stoi( token );
 		
 		else if(cpt==4)

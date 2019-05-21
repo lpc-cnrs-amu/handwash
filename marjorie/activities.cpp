@@ -103,7 +103,9 @@ void Activities::write_file(char* filename)
 	}
 	
 	for(unsigned i=0; i<activities.size(); ++i)
-		activities[i]->write_file(output);
-	
+	{
+		if(activities[i]->get_person() == 4341 /*&& activities[i]->get_nb_persons() != 1*/)
+			activities[i]->write_file(output);
+	}
 	output.close();
 }

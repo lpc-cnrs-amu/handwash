@@ -17,8 +17,9 @@
 class Event
 {
 	private:
-		unsigned id_event; 
-		bool in = IN; // in(true) => vient de rentrer, in(false) => va sortir
+		unsigned unique_id; // id for the line
+		unsigned id_event;  // id for the event corresponding to a code event (8 = SHA, 5 = door open, etc)
+		bool in = true;
 		unsigned id_puce;
 		unsigned id_chamber;
 		unsigned year;
@@ -36,7 +37,7 @@ class Event
 		void split_date();
 		
 	public:
-		Event(unsigned id, unsigned puce, unsigned chamber, std::string d, std::string h, bool in_or_out);
+		//Event(unsigned id, unsigned puce, unsigned chamber, std::string d, std::string h, bool in_or_out);
 		Event(Event* event);
 		Event(std::string line, bool excel_csv);
 		
@@ -47,6 +48,7 @@ class Event
 		void set_in(bool in_or_out);
 	
 		bool get_in();
+		unsigned get_unique_id();
 		unsigned get_id_puce();
 		unsigned get_chamber();
 		unsigned get_event();

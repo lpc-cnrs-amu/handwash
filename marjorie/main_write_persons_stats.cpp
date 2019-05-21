@@ -5,9 +5,10 @@
 #include <iomanip>
 #include "person.hpp"
 #include "activity.hpp"
+#include <chrono> 
 
 using namespace std;
-
+using namespace std::chrono;
 
 
 void update_persons_stats(Activity* activity_tmp, map<unsigned, Person*>& person_stats, unsigned p)
@@ -116,6 +117,64 @@ void get_persons_stats(char* filename, bool excel_csv, map<unsigned, Person*>& p
 	database.close();
 }
 
+void calcul_percent(Person* current_person, float& taken_sure_in, float& taken_sure_out, float& taken_sure_inout, 
+	float& taken_possible_in, float& taken_possible_out, float& taken_possible_inout, float& not_taken_in, 
+	float& not_taken_out, float& not_taken_inout)	
+{
+	if( current_person->nb_SHA_in_sure_total == 0 )
+		taken_sure_in = -1;
+	else
+		taken_sure_in = 100*current_person->nb_SHA_sure_in / (float)current_person->nb_SHA_in_sure_total;
+		
+		
+	if( current_person->nb_SHA_out_sure_total == 0 ) 
+		taken_sure_out = -1;
+	else
+		taken_sure_out = 100*current_person->nb_SHA_sure_out / (float)current_person->nb_SHA_out_sure_total;
+	
+	
+	if( current_person->nb_SHA_inout_sure_total == 0 )
+		taken_sure_inout = -1;
+	else
+		taken_sure_inout = 100*current_person->nb_SHA_sure_inout / (float)current_person->nb_SHA_inout_sure_total;
+	
+
+	if( current_person->nb_SHA_in_possible_total == 0 )
+		taken_possible_in = -1;
+	else
+		taken_possible_in = 100*current_person->nb_SHA_possible_in/ (float)current_person->nb_SHA_in_possible_total;
+		
+	
+	if( current_person->nb_SHA_out_possible_total == 0 )
+		taken_possible_out = -1;
+	else
+		taken_possible_out = 100*current_person->nb_SHA_possible_out / (float)current_person->nb_SHA_out_possible_total;
+		
+		
+	if( current_person->nb_SHA_inout_possible_total == 0 )
+		taken_possible_inout = -1;
+	else
+		taken_possible_inout = 100*current_person->nb_SHA_possible_inout / (float)current_person->nb_SHA_inout_possible_total;
+	
+	
+	if( current_person->nb_SHA_in_sure_total == 0 )
+		not_taken_in = -1;
+	else
+		not_taken_in = 100*current_person->nb_not_taken_in / (float)current_person->nb_SHA_in_sure_total;
+		
+		
+	if( current_person->nb_SHA_out_sure_total == 0 )
+		not_taken_out = -1;
+	else
+		not_taken_out = 100*current_person->nb_not_taken_out / (float)current_person->nb_SHA_out_sure_total;
+		
+	
+	if( current_person->nb_SHA_inout_sure_total == 0 )
+		not_taken_inout = -1;
+	else
+		not_taken_inout = 100*current_person->nb_not_taken_inout / (float)current_person->nb_SHA_inout_sure_total;
+}
+
 
 void write_file(map<unsigned, Person*>& person_stats, char* filename)
 {
@@ -125,98 +184,44 @@ void write_file(map<unsigned, Person*>& person_stats, char* filename)
 		cerr << "Impossible to open the file " << filename << endl;
 		exit(EXIT_FAILURE);		
 	}
-	/*
 	
-	output << "      |            SHA taken                                  |            SHA not taken            |" << endl;
+	output << "      |                      SHA taken                        |            SHA not taken            |" << endl;
 	output << "      |_______________________________________________________|_____________________________________|" << endl;
-	output << "  ID  |           sur             |       possible            |                 sure                |" << endl;
+	output << "  ID  |           sure            |       possible            |                 sure                |" << endl;
 	output << "      |___________________________|___________________________|_____________________________________|" << endl;
 	output << "      |   in   |   out  |  inout  |   in   |   out  |  inout  |     in     |     out    |   inout   |" << endl;
 	output << "______|________|________|_________|________|________|_________|____________|____________|___________|" << endl;
-	*/
+	
 	
 	for(auto it = person_stats.begin(); it != person_stats.end(); it++ )
-	{/*
-		float sure_out = 100*it->second->nb_SHA_sure_out / it->second->nb_SHA_out_sure_total;
-		
-		
-		output << setfill(' ') << setw (3) << it->first << " | " << setfill(' ') << setw (3) << 100*it->second->nb_SHA_sure_in / it->second->nb_SHA_in_sure_total << 
-			" | " << setfill(' ') << setw (3) << 100*it->second->nb_SHA_sure_out / it->second->nb_SHA_out_sure_total
-		*/
-		
-		
-		
-		
-		
-		
-		
-		output << "PERSON : " << it->first << endl
-			   << "\t SHA_NOT_TAKEN_IN: " << it->second->nb_not_taken_in << endl
-			   << "\t SHA_NOT_TAKEN_OUT: " << it->second->nb_not_taken_out << endl
-			   << "\t SHA_NOT_TAKEN_INOUT: " << it->second->nb_not_taken_inout << endl
-			   
-			   << "\t nb_SHA_sure_in: " << it->second->nb_SHA_sure_in << endl
-			   << "\t nb_SHA_sure_out: " << it->second->nb_SHA_sure_out << endl
-			   << "\t nb_SHA_sure_inout: " << it->second->nb_SHA_sure_inout << endl
-			   
-			   << "\t nb_SHA_possible_in: " << it->second->nb_SHA_possible_in << endl
-			   << "\t nb_SHA_possible_out: " << it->second->nb_SHA_possible_out << endl
-			   << "\t nb_SHA_possible_inout: " << it->second->nb_SHA_possible_inout << endl
-			   
-			   
-			   << "\t\tPERCENT" << endl;
-			   
-		if (it->second->nb_SHA_in_sure_total == 0)
-			output << "\t SHA_NOT_TAKEN_IN: 0 %" << endl;
-		else
-			output << "\t SHA_NOT_TAKEN_IN: " << 100*it->second->nb_not_taken_in / it->second->nb_SHA_in_sure_total << " %" << endl;
-			
-		if(it->second->nb_SHA_out_sure_total == 0)	
-			output << "\t SHA_NOT_TAKEN_OUT: 0 %" << endl;
-		else
-			output << "\t SHA_NOT_TAKEN_OUT: " << 100*it->second->nb_not_taken_out / it->second->nb_SHA_out_sure_total << " %" << endl;
-			
-		if(it->second->nb_SHA_inout_sure_total == 0)	
-			output << "\t SHA_NOT_TAKEN_INOUT: 0 %" << endl;
-		else
-			output << "\t SHA_NOT_TAKEN_INOUT: " << 100*it->second->nb_not_taken_inout / it->second->nb_SHA_inout_sure_total << " %" << endl;
-			   
-			   
-		if(it->second->nb_SHA_in_sure_total == 0)	   
-			output<< "\t nb_SHA_sure_in: 0 %" << endl;
-		else
-			output<< "\t nb_SHA_sure_in: " << 100*it->second->nb_SHA_sure_in / it->second->nb_SHA_in_sure_total << " %" << endl;
+	{
+		float taken_sure_in;
+		float taken_sure_out;
+		float taken_sure_inout; 
+		float taken_possible_in;
+		float taken_possible_out;
+		float taken_possible_inout;
+		float not_taken_in;
+		float not_taken_out;
+		float not_taken_inout;
+	
+
+		calcul_percent(it->second, taken_sure_in, taken_sure_out, taken_sure_inout, 
+			taken_possible_in, taken_possible_out, taken_possible_inout, not_taken_in, 
+			not_taken_out, not_taken_inout);
 			
 		
-		if(it->second->nb_SHA_out_sure_total == 0)
-			output << "\t nb_SHA_sure_out: 0 %" << endl;
-		else
-			output << "\t nb_SHA_sure_out: " << 100*it->second->nb_SHA_sure_out / it->second->nb_SHA_out_sure_total << " %" << endl;
-			
-			
-			
-		if(it->second->nb_SHA_inout_sure_total == 0)
-			output << "\t nb_SHA_sure_inout: 0 %" << endl;
-		else
-			output << "\t nb_SHA_sure_inout: " << 100*it->second->nb_SHA_sure_inout / it->second->nb_SHA_inout_sure_total << " %" << endl;
-			   
-			   
-		if(it->second->nb_SHA_in_possible_total == 0)
-			output << "\t nb_SHA_possible_in: 0 %" << endl;
-		else
-			output << "\t nb_SHA_possible_in: " << 100*it->second->nb_SHA_possible_in/ it->second->nb_SHA_in_possible_total << " %" << endl;
-			
-		if(it->second->nb_SHA_out_possible_total == 0)
-			output << "\t nb_SHA_possible_out: 0 %" << endl;
-		else
-			output << "\t nb_SHA_possible_out: " << 100*it->second->nb_SHA_possible_out / it->second->nb_SHA_out_possible_total << " %" << endl;
-			
-			
-		if(it->second->nb_SHA_inout_possible_total == 0)
-			output << "\t nb_SHA_possible_inout: 0 %" << endl ;
-		else
-			output << "\t nb_SHA_possible_inout: " << 100*it->second->nb_SHA_possible_inout / it->second->nb_SHA_inout_possible_total << " %" << endl << endl;
-			   
+		output << setfill(' ') << setw (5) << it->first << 
+			" | " << setfill(' ') << setw (6) << std::fixed << std::setprecision(2) << taken_sure_in << 
+			" | " << setfill(' ') << setw (6) << std::fixed << std::setprecision(2) << taken_sure_out << 
+			" | " << setfill(' ') << setw (6) << std::fixed << std::setprecision(2) << taken_sure_inout << " " <<
+			" | " << setfill(' ') << setw (6) << std::fixed << std::setprecision(2) << taken_possible_in << 
+			" | " << setfill(' ') << setw (6) << std::fixed << std::setprecision(2) << taken_possible_out << 
+			" | " << setfill(' ') << setw (6) << std::fixed << std::setprecision(2) << taken_possible_inout << " " <<
+			" |   " << setfill(' ') << setw (6) << std::fixed << std::setprecision(2) << not_taken_in << "  " <<
+			" |   " << setfill(' ') << setw (6) << std::fixed << std::setprecision(2) << not_taken_out << "  " <<
+			" |   " << setfill(' ') << setw (6) << std::fixed << std::setprecision(2) << not_taken_inout << "  |" <<endl;
+
 	}	
 	
 	
@@ -242,10 +247,17 @@ int main(int argc, char** argv)
 	if( !strcmp(argv[2],"1") )
 		excel = true;
 	
+	auto start = high_resolution_clock::now();
 	map<unsigned, Person*> person_stats; //key = id de la personne
 	get_persons_stats(argv[1], excel, person_stats);
 	write_file(person_stats, argv[3]);
 	
 	destroy_persons(person_stats);
+	auto stop = high_resolution_clock::now(); 
+	auto duration = duration_cast<std::chrono::minutes>(stop - start);
+	auto duration_seconds = duration_cast<std::chrono::seconds>(stop - start);
+	cout << "Time taken : " << endl;
+	cout << duration.count() << " minutes" << endl; 
+	cout << "(so : " << duration_seconds.count() << " seconds)" << endl; 
 	return 0;
 }

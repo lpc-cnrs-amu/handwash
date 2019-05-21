@@ -6,7 +6,8 @@
 #include <vector>
 #include <map>
 #include "event.hpp"
-
+#include "sha.hpp"
+/*
 #define NB_LABELS
 
 enum Label
@@ -34,7 +35,7 @@ enum Label
 	SHA_NO_IN_NO_OUT, //SHA pas pris dans le in, SHA pas pris dans le out mais jamais eu d'alarme
 	SHA_NO_ONLY_IN //SHA pas pris dans une petite activité (que du in) mais pas eu d'alarme
 };
-
+*/
 
 /**
  * \file activities.hpp
@@ -82,17 +83,17 @@ class Activity
 
 		
 		bool same_activity(Event* event);
-		unsigned identify_different_puces(std::vector<unsigned>& different_puces, std::map<unsigned, std::vector<bool> >& puces_to_SHA, unsigned& first_person_id);
+		unsigned identify_different_puces(std::vector<unsigned>& different_puces, std::map<unsigned, std::vector<Sha*> >& puces_to_SHA, unsigned& first_person_id);
 		
 		void destroy_map_different_activities(std::map<unsigned, std::vector<Event*> >& different_activities);
+		void destroy_map_puces_to_SHA(std::map<unsigned, std::vector<Sha*> >& puces_to_SHA);
 		
 		void count_SHA_and_deciding_in_or_out();
-		void count_SHA(std::vector<bool>& sha);
-		void count_SHA_sure_and_possible(std::vector<bool>& sha);
+		void count_SHA(std::vector<Sha*>& sha);
+		void count_SHA_sure_and_possible(std::vector<Sha*>& sha);
 		void count_SHA_in_and_out(unsigned index_out);
-		void count_SHA_in_and_out(std::vector<bool>& sha, unsigned index_out);
-		void at_least_one_SHA_sure(std::vector<bool>& sha);
-		//void set_SHA_not_taken();
+		void count_SHA_in_and_out(std::vector<Sha*>& sha, unsigned index_out);
+		void at_least_one_SHA_sure(std::vector<Sha*>& sha);
 		
 	public:
 		Activity();
@@ -102,6 +103,7 @@ class Activity
 		~Activity();
 		
 		unsigned get_person();
+		unsigned get_nb_persons();
 		
 		void activity_per_person(std::vector<Activity*>& split_activity);
 		void write_file(std::ofstream& output);

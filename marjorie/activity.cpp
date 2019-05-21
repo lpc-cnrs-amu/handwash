@@ -2,7 +2,7 @@
 #include <algorithm>
 #include <map>
 #define LAST_EVENT events.size()-1
-#define MINUTE_MAX 5
+#define MINUTE_MAX 2
 #define CODE_SHA 8
 #define SHA_SURE true
 #define SHA_POSSIBLE false
@@ -91,6 +91,7 @@ Activity::Activity(Event* event)
 	/* Getters */
 
 unsigned Activity::get_person() { return main_person; }
+unsigned Activity::get_nb_persons() { return persons.size(); }
 unsigned Activity::get_nb_SHA_sure_in() { return nb_SHA_sure_in; }
 unsigned Activity::get_nb_SHA_sure_out() { return nb_SHA_sure_out; }
 unsigned Activity::get_nb_SHA_possible_in() { return nb_SHA_possible_in; }
@@ -336,7 +337,7 @@ bool Activity::same_activity(Event* event)
 	* \return The number of persons on the current activity.
 */
 unsigned Activity::identify_different_puces(vector<unsigned>& different_puces, 
-	map<unsigned, vector<bool> >& puces_to_SHA, unsigned& first_person_id)
+	map<unsigned, vector<Sha*> >& puces_to_SHA, unsigned& first_person_id)
 {
 	unsigned puce;
 	for(unsigned i=0; i<events.size(); ++i)
@@ -346,18 +347,19 @@ unsigned Activity::identify_different_puces(vector<unsigned>& different_puces,
 		if(events[i]->get_event() == CODE_SHA || events[i]->get_event() == CODE_SHA_DURING_ALARM)
 		{
 			if( puce != 0 )
-				puces_to_SHA[puce].push_back( SHA_SURE );
+				puces_to_SHA[puce].push_back( new Sha(events[i]->get_unique_id(), SHA_SURE) );
 				
 			else
 			{
 				//gives the SHA to different_puces[0] if there is no one else
 				if(different_puces.size() == 1)
-					puces_to_SHA[different_puces[0]].push_back( SHA_SURE );
+					puces_to_SHA[different_puces[0]].push_back( new Sha(events[i]->get_unique_id(), SHA_SURE) );
 
 				//gives the SHA to all persons who are in the room
 				else if(different_puces.size() > 1)
 					for(unsigned k=0; k<different_puces.size(); ++k)
-						puces_to_SHA[different_puces[k]].push_back( SHA_POSSIBLE );
+						puces_to_SHA[different_puces[k]].push_back( new Sha(events[i]->get_unique_id(), SHA_POSSIBLE) );
+
 			}
 		}		
 		
@@ -402,7 +404,7 @@ void Activity::activity_per_person(vector<Activity*>& split_activity)
 	// Who are the person(s) in the current activity ?
 	unsigned person;
 	vector<unsigned> different_puces;
-	map<unsigned, vector<bool> > puces_to_SHA;
+	map<unsigned, vector<Sha*> > puces_to_SHA;
 	unsigned first_person_id = 0;
 	unsigned nb_different_puces = identify_different_puces(different_puces, puces_to_SHA, first_person_id);
 	
@@ -442,7 +444,6 @@ void Activity::activity_per_person(vector<Activity*>& split_activity)
 		
 		// Release the allocated memory for the different_activities map
 		destroy_map_different_activities(different_activities);
-		
 	}
 	
 	// If there is not several person in the current activity
@@ -460,6 +461,7 @@ void Activity::activity_per_person(vector<Activity*>& split_activity)
 		// Count the SHAs for the Activity
 		count_SHA_and_deciding_in_or_out();
 	}
+	destroy_map_puces_to_SHA(puces_to_SHA);
 		
 }
 
@@ -478,6 +480,14 @@ void Activity::destroy_map_different_activities(map<unsigned, vector<Event*> >& 
 			it->second[i]->~Event();
 }
 
+
+void Activity::destroy_map_puces_to_SHA(map<unsigned, vector<Sha*> >& puces_to_SHA)
+{
+	unsigned i;
+	for(auto it = puces_to_SHA.begin(); it != puces_to_SHA.end(); ++it) 
+		for(i=0; i < it->second.size(); ++i)
+			it->second[i]->~Sha();
+}
 
 	/* Counting SHAs */
 
@@ -583,7 +593,7 @@ void Activity::count_SHA_in_and_out(unsigned index_out)
 }
 
 
-void Activity::count_SHA(vector<bool>& sha)
+void Activity::count_SHA(vector<Sha*>& sha)
 {
 	// Search where is the out
 	events[0]->set_in(true);
@@ -647,31 +657,33 @@ void Activity::count_SHA(vector<bool>& sha)
 	}
 }
 
-void Activity::at_least_one_SHA_sure(vector<bool>& sha)
+void Activity::at_least_one_SHA_sure(vector<Sha*>& sha)
 {
 	for(unsigned i=0; i<sha.size(); ++i)
 	{
-		if(sha[i])
+		if(sha[i]->get_sure())
 		{
 			theres_SHA_sure_inout = true;
-			++ nb_SHA_sure_inout;
+			if(nb_SHA_sure_inout == 0)
+				++ nb_SHA_sure_inout;
 			break;
 		}
 	}
 	if(!theres_SHA_sure_inout)
 	{
 		theres_SHA_possible_inout = true;
-		++ nb_SHA_possible_inout;
+		if(nb_SHA_possible_inout==0)
+			++ nb_SHA_possible_inout;
 	}
 }
 
 // Count number of SHA sure/possible in : in, out and inout
-void Activity::count_SHA_in_and_out(vector<bool>& sha, unsigned index_out)
+void Activity::count_SHA_in_and_out(vector<Sha*>& sha, unsigned index_out)
 {
 	
 	bool out=false;
-	unsigned id_e;
-	unsigned j=0;
+	unsigned id_e, id_line_event;
+	//unsigned j=0;
 	
 	for(unsigned i=0; i < events.size(); ++i)
 	{
@@ -679,50 +691,61 @@ void Activity::count_SHA_in_and_out(vector<bool>& sha, unsigned index_out)
 			out=true;
 		
 		id_e = events[i]->get_event();
+		id_line_event = events[i]->get_unique_id();
 		
 		// Prise du SHA
 		if( id_e == CODE_SHA || id_e == CODE_SHA_DURING_ALARM )
 		{
-				if( j >= sha.size() )
+				for(unsigned k=0; k < sha.size(); ++k)
 				{
-					cerr << " ERROR SHA - event : ";
-					events[i]->print_event();
-					cout << endl;
+					if( sha[k]->get_unique_id() == id_line_event )
+					{
+						if (sha[k]->get_sure())
+						{
+							if(out)
+							{
+								if(nb_SHA_sure_out==0)
+									++ nb_SHA_sure_out;
+								theres_SHA_sure_out = true;
+								if(theres_SHA_possible_out)
+								{
+									theres_SHA_possible_out = false;
+									nb_SHA_possible_out = 0;
+								}
+							}
+							else
+							{
+								if(nb_SHA_sure_in==0)
+									++ nb_SHA_sure_in;
+								theres_SHA_sure_in = true;
+								if(theres_SHA_possible_in)
+								{
+									theres_SHA_possible_in = false;		
+									nb_SHA_possible_in = 0;
+								}						
+							}
+						}	
+						else
+						{
+							if(out && !theres_SHA_sure_out)
+							{
+								if(nb_SHA_possible_out==0)
+									++ nb_SHA_possible_out;						
+								theres_SHA_possible_out = true;
+							}
+							else if(!out && !theres_SHA_sure_in)
+							{
+								if(nb_SHA_possible_in==0)
+									++ nb_SHA_possible_in;
+								theres_SHA_possible_in = true;				
+							}
+						}						
+						
+						break;
+					}
+					
 				}
-			
-				if (sha[j])
-				{
-					if(out)
-					{
-						if(nb_SHA_sure_out==0)
-							++ nb_SHA_sure_out;
-						theres_SHA_sure_out = true;
-						if(theres_SHA_possible_out)
-							theres_SHA_possible_out = false;
-					}
-					else
-					{
-						if(nb_SHA_sure_in==0)
-							++ nb_SHA_sure_in;
-						theres_SHA_sure_in = true;
-					}
-				}	
-				else
-				{
-					if(out && !theres_SHA_sure_out)
-					{
-						if(nb_SHA_possible_out==0)
-							++ nb_SHA_possible_out;						
-						theres_SHA_possible_out = true;
-					}
-					else if(!out && !theres_SHA_sure_in)
-					{
-						if(nb_SHA_possible_in==0)
-							++ nb_SHA_possible_in;
-						theres_SHA_possible_in = true;				
-					}
-				}
-				++j;
+		
 		}
 	}	
 	
