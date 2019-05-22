@@ -1,8 +1,7 @@
-Infos : 
-Everything is in %.
--1 : the person has no activity in the given category (ex : -1 for 'possible in' ==> the person does not have a 'possible in').
-The ID '0' corresponds to no one in particular (could be the patient or visitors).
-
+%Infos : 
+%Everything is in %.
+%-1 : the person has no activity in the given category (ex : -1 for 'possible in' ==> the person does not have a 'possible in').
+%The ID '0' corresponds to no one in particular (could be the patient or visitors).
 
 
 
