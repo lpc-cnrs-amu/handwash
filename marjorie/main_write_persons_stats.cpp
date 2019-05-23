@@ -142,7 +142,7 @@ void calcul_percent(Person* current_person, float& taken_sure_in, float& taken_s
 	if( current_person->get_nb_SHA_in_possible_total() == 0 )
 		taken_possible_in = -1;
 	else
-		taken_possible_in = 100*current_person->get_nb_SHA_possible_in/ (float)current_person->get_nb_SHA_in_possible_total();
+		taken_possible_in = 100*current_person->get_nb_SHA_possible_in() / (float)current_person->get_nb_SHA_in_possible_total();
 		
 	
 	if( current_person->get_nb_SHA_out_possible_total() == 0 )

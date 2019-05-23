@@ -5,10 +5,15 @@ Created on Wed May 22 13:52:56 2019
 @author: Marjorie
 """
 import re
+import sys
 import matplotlib.pyplot as plt
 import matplotlib.backends.backend_pdf
 import pandas as pd
  
+if len(sys.argv) != 2 :
+    print("Usage : {} {}".format( sys.argv[0], "file_generated_by_cpp" ))
+    sys.exit()
+
 
 column_in = []
 column_out = []
@@ -22,7 +27,7 @@ puce_list = []
 def has_numbers(str_input):
     return bool(re.search(r'\d', str_input))
 
-with open("../Docs/output_persons_2018.txt", "r") as file:
+with open(sys.argv[1], "r") as file:
     for line in file:
         line = line.rstrip('\n')
         
