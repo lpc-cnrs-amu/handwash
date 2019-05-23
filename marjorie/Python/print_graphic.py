@@ -4,11 +4,11 @@ Created on Wed May 22 13:52:56 2019
 
 @author: Marjorie
 """
-
 import re
 import matplotlib.pyplot as plt
 import matplotlib.backends.backend_pdf
 import pandas as pd
+ 
 
 column_in = []
 column_out = []
@@ -69,6 +69,8 @@ pdf = matplotlib.backends.backend_pdf.PdfPages("SHA_pie.pdf")
 
 for ind in df.index:
     fig = plt.figure(figsize=(8,5.3))
+    print_in = False
+    print_out = False
     
     if df.loc[ind,'in'] != -1 and df.loc[ind,'not in'] != -1:   
         ax1 = plt.subplot2grid((1,3),(0,0))
@@ -76,18 +78,29 @@ for ind in df.index:
         ax1.axis('equal')
         ax1.legend(labels=labels, loc='center left', bbox_to_anchor=(0.5, 0., 0.5, 0.5))
         ax1.set_title('in', pad=0.1)
+        print_in = True
     
     if df.loc[ind,'out'] != -1 and df.loc[ind,'not out'] != -1:
         ax2 = plt.subplot2grid((1,3),(0,1))
-        ax2.pie(df.loc[ind, ['out', 'not out']], autopct='%1.2f%%', colors=colors, labels=None)
+        if print_in:
+            ax2.pie(df.loc[ind, ['out', 'not out']], autopct='%1.2f%%', colors=colors, labels=None)
+        else:
+            df.loc[ind, ['out', 'not out']].plot(kind='pie', ax=ax2, autopct='%1.2f%%', colors=colors, labels=None)
+            ax2.legend(labels=labels, loc='center left', bbox_to_anchor=(0.5, 0., 0.5, 0.5))
         ax2.axis('equal')
         ax2.set_title('out', pad=0.1)
+        print_out = True
     
     if df.loc[ind,'inout'] != -1 and df.loc[ind,'not inout'] != -1:
         ax3 = plt.subplot2grid((1,3),(0,2))
-        ax3.pie(df.loc[ind, ['inout', 'not inout']], autopct='%1.2f%%', colors=colors, labels=None)
+        if print_in or print_out:
+            ax3.pie(df.loc[ind, ['inout', 'not inout']], autopct='%1.2f%%', colors=colors, labels=None)
+        else:
+            df.loc[ind, ['inout', 'not inout']].plot(kind='pie', ax=ax3, autopct='%1.2f%%', colors=colors, labels=None)
+            ax3.legend(labels=labels, loc='center left', bbox_to_anchor=(0.5, 0., 0.5, 0.5))
         ax3.axis('equal')
-        ax3.set_title('inout', pad=0.1)        
+        ax3.set_title('inout', pad=0.1)     
+        
 
     pdf.savefig( fig )
     plt.clf()
