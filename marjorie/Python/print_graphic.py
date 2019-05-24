@@ -15,20 +15,36 @@ if len(sys.argv) != 2 :
     sys.exit()
 
 
+
 # percent
 column_taken_sure_in_percent = []
 column_taken_sure_out_percent = []
 column_taken_sure_inout_percent = []
+column_taken_possible_in_percent = []
+column_taken_possible_out_percent = []
+column_taken_possible_inout_percent = []
+column_not_taken_in_percent = []
+column_not_taken_out_percent = []
+column_not_taken_inout_percent = []
 
 # number
 column_taken_sure_in_nb = []
 column_taken_sure_out_nb = []
 column_taken_sure_inout_nb = []
+column_taken_possible_in_nb = []
+column_taken_possible_out_nb = []
+column_taken_possible_inout_nb = []
+column_not_taken_in_nb = []
+column_not_taken_out_nb = []
+column_not_taken_inout_nb = []
 
 # total
 column_taken_sure_in_total = []
 column_taken_sure_out_total = []
 column_taken_sure_inout_total = []
+column_not_taken_in_total = []
+column_not_taken_out_total = []
+column_not_taken_inout_total = []
 
 puce_list = []
 
@@ -86,6 +102,9 @@ with open(sys.argv[1], "r") as file:
         # puce
         puce_list.append(puce)
         
+        
+        
+        """ APPEND faire les not taken"""
         #percent
         column_taken_sure_in_percent.append(taken_sure_in_percent)
         column_taken_sure_out_percent.append(taken_sure_out_percent)
