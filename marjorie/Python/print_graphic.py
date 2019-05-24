@@ -15,12 +15,21 @@ if len(sys.argv) != 2 :
     sys.exit()
 
 
-column_in = []
-column_out = []
-column_inout = []
-column_not_in = []
-column_not_out = []
-column_not_inout = []
+# percent
+column_taken_sure_in_percent = []
+column_taken_sure_out_percent = []
+column_taken_sure_inout_percent = []
+
+# number
+column_taken_sure_in_nb = []
+column_taken_sure_out_nb = []
+column_taken_sure_inout_nb = []
+
+# total
+column_taken_sure_in_total = []
+column_taken_sure_out_total = []
+column_taken_sure_inout_total = []
+
 puce_list = []
 
 
@@ -38,33 +47,94 @@ with open(sys.argv[1], "r") as file:
         line = line.split()
         puce = line[0]
         
-        taken_sure_in = float(line[2])
-        taken_sure_out = float(line[4])
-        taken_sure_inout = float(line[6])
+        # SHA SURE
+        taken_sure_in_percent = float(line[2]) #
+        taken_sure_in_nb = int(line[4])
+        taken_sure_in_total = int(line[6])
+         
+        taken_sure_out_percent = float(line[8]) #
+        taken_sure_out_nb = int(line[10])
+        taken_sure_out_total = int(line[12])    
         
-        not_taken_in = float(line[14])
-        not_taken_out = float(line[16])
-        not_taken_inout = float(line[18])
+        taken_sure_inout_percent = float(line[14]) #
+        taken_sure_inout_nb = int(line[16])
+        taken_sure_inout_total = int(line[18])
+        
+        # SHA POSSIBLE
+        taken_possible_in_percent = float(line[20])
+        taken_possible_in_nb = int(line[22])
+        
+        taken_possible_out_percent = float(line[24])
+        taken_possible_out_nb = int(line[26])
+        
+        taken_possible_inout_percent = float(line[28])
+        taken_possible_inout_nb = int(line[30])      
+        
+        # SHA NOT TAKEN
+        not_taken_in_percent = float(line[32])
+        not_taken_in_nb = int(line[34])
+        not_taken_in_total = int(line[36])
+         
+        not_taken_out_percent = float(line[38])
+        not_taken_out_nb = int(line[40])
+        not_taken_out_total = int(line[42])    
+        
+        not_taken_inout_percent = float(line[44])
+        not_taken_inout_nb = int(line[46])
+        not_taken_inout_total = int(line[48])
           
-        
+        # puce
         puce_list.append(puce)
-        column_in.append(taken_sure_in)
-        column_out.append(taken_sure_out)
-        column_inout.append(taken_sure_inout)
         
-        column_not_in.append(not_taken_in)
-        column_not_out.append(not_taken_out)
-        column_not_inout.append(not_taken_inout)
+        #percent
+        column_taken_sure_in_percent.append(taken_sure_in_percent)
+        column_taken_sure_out_percent.append(taken_sure_out_percent)
+        column_taken_sure_inout_percent.append(taken_sure_inout_percent)
+        
+        # number
+        column_taken_sure_in_nb.append(taken_sure_in_nb)
+        column_taken_sure_out_nb.append(taken_sure_out_nb)
+        column_taken_sure_inout_nb.append(taken_sure_inout_nb)
+        
+        # total
+        column_taken_sure_in_total.append(taken_sure_in_total)
+        column_taken_sure_out_total.append(taken_sure_out_total)
+        column_taken_sure_inout_total.append(taken_sure_inout_total)
+        
 
-
-df = pd.DataFrame( {'in': column_in,\
-    'not in': column_not_in,\
-    'out': column_out,\
-    'not out': column_not_out,\
-    'inout': column_inout,\
-    'not inout': column_not_inout,\
+# si ya toutes les colonnes du tableau alors c ok
+df = pd.DataFrame( {'taken in sure percent': column_taken_sure_in_percent,\
+    'taken in sure number': column_taken_sure_in_nb,\
+    'taken in sure total': column_taken_sure_in_total,\
+    'taken in possible percent': ,\
+    'taken in possible number': ,\
+    
+    'taken out sure percent': ,\
+    'taken out sure number': ,\
+    'taken out sure total': ,\
+    'taken out possible percent': ,\
+    'taken out possible number': ,\    
+    
+    'taken inout sure percent': ,\
+    'taken inout sure number': ,\
+    'taken inout sure total': ,\
+    'taken inout possible percent': ,\
+    'taken inout possible number': ,\     
+    
+  
+    'not taken in percent': ,\
+    'not taken in number': ,\
+    'not taken in total': ,\  
+    
+    'not taken out percent': ,\
+    'not taken out number': ,\
+    'not taken out total': ,\     
+    
+    'not taken inout percent': ,\
+    'not taken inout number': ,\
+    'not taken inout total': ,\    
     },\
-    columns=['in', 'not in', 'out', 'not out', 'inout', 'not inout'],\
+    columns=['taken in sure percent', 'not in', 'out', 'not out', 'inout', 'not inout'],\
     index = ['puce '+p for p in puce_list])
     
 
@@ -74,9 +144,9 @@ def make_autopct(values):
             return '{p:.2f}%'.format(p=pct)
     return my_autopct
 
-colors = ['yellowgreen', 'lightcoral']
-labels = ['SHA taken', 'SHA not taken']
-pdf = matplotlib.backends.backend_pdf.PdfPages("SHA_pie.pdf")
+colors = ['yellowgreen', 'lightcoral', 'gold']
+labels = ['SHA taken', 'SHA not taken', 'SHA possibly taken']
+pdf = matplotlib.backends.backend_pdf.PdfPages(sys.argv[2])
 
 for ind in df.index:
     fig = plt.figure(figsize=(8,5.3))

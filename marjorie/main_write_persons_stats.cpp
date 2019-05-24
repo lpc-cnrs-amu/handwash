@@ -117,10 +117,65 @@ void get_persons_stats(char* filename, bool excel_csv, map<unsigned, Person*>& p
 	database.close();
 }
 
+
+// Changer tableau pour prendre en compte % des possibles OK
+// Renvoyer aussi le nb de in sure en plus du total in
+
+
 void calcul_percent(Person* current_person, float& taken_sure_in, float& taken_sure_out, float& taken_sure_inout, 
 	float& taken_possible_in, float& taken_possible_out, float& taken_possible_inout, float& not_taken_in, 
-	float& not_taken_out, float& not_taken_inout)	
+	float& not_taken_out, float& not_taken_inout, unsigned& total_in, unsigned& total_out, unsigned& total_inout)	
 {
+	total_in = current_person->get_nb_SHA_in_sure_total() + 
+		current_person->get_nb_SHA_in_possible_total();
+		
+	total_out = current_person->get_nb_SHA_out_sure_total() + 
+		current_person->get_nb_SHA_out_possible_total();
+		
+	total_inout = current_person->get_nb_SHA_inout_sure_total() + 
+		current_person->get_nb_SHA_inout_possible_total();
+	
+	if(total_in == 0)
+	{
+		taken_sure_in = 0;
+		taken_possible_in = 0;
+		not_taken_in = 0;
+	}
+	else
+	{
+		taken_sure_in = 100*current_person->get_nb_SHA_sure_in() / (float)total_in;
+		taken_possible_in = current_person->get_nb_SHA_in_possible_total() / (float)total_in;
+		not_taken_in = 100*current_person->get_nb_not_taken_in() / (float)total_in;
+	}
+	
+	if(total_out == 0)
+	{
+		taken_sure_out = 0;
+		taken_possible_out = 0;
+		not_taken_out = 0;
+	}
+	else
+	{
+		taken_sure_out = 100*current_person->get_nb_SHA_sure_out() / (float)total_out;
+		taken_possible_out = current_person->get_nb_SHA_out_possible_total() / (float)total_out;
+		not_taken_out = 100*current_person->get_nb_not_taken_out() / (float)total_out;
+	}
+	
+	if(total_inout == 0)
+	{
+		taken_sure_inout = 0;
+		taken_possible_inout = 0;
+		not_taken_inout = 0;
+	}
+	else
+	{
+		taken_sure_inout = 100*current_person->get_nb_SHA_sure_inout() / (float)total_inout;
+		taken_possible_inout = current_person->get_nb_SHA_inout_possible_total() / (float)total_inout;
+		not_taken_inout = 100*current_person->get_nb_not_taken_inout() / (float)total_inout;	
+	}
+
+		
+/*	
 	if( current_person->get_nb_SHA_in_sure_total() == 0 )
 		taken_sure_in = -1;
 	else
@@ -142,21 +197,19 @@ void calcul_percent(Person* current_person, float& taken_sure_in, float& taken_s
 	if( current_person->get_nb_SHA_in_possible_total() == 0 )
 		taken_possible_in = -1;
 	else
-		taken_possible_in = 100*current_person->get_nb_SHA_possible_in() / (float)current_person->get_nb_SHA_in_possible_total();
+		taken_possible_in = current_person->get_nb_SHA_in_possible_total();
 		
 	
 	if( current_person->get_nb_SHA_out_possible_total() == 0 )
 		taken_possible_out = -1;
 	else
-		taken_possible_out = 100*current_person->get_nb_SHA_possible_out() / (float)current_person->get_nb_SHA_out_possible_total();
-		
-		
+		taken_possible_out = current_person->get_nb_SHA_out_possible_total();
+			
 	if( current_person->get_nb_SHA_inout_possible_total() == 0 )
 		taken_possible_inout = -1;
 	else
-		taken_possible_inout = 100*current_person->get_nb_SHA_possible_inout() / (float)current_person->get_nb_SHA_inout_possible_total();
-	
-	
+		taken_possible_inout = current_person->get_nb_SHA_inout_possible_total();
+			
 	if( current_person->get_nb_SHA_in_sure_total() == 0 )
 		not_taken_in = -1;
 	else
@@ -173,6 +226,9 @@ void calcul_percent(Person* current_person, float& taken_sure_in, float& taken_s
 		not_taken_inout = -1;
 	else
 		not_taken_inout = 100*current_person->get_nb_not_taken_inout() / (float)current_person->get_nb_SHA_inout_sure_total();
+*/		
+		
+
 }
 
 
@@ -185,41 +241,78 @@ void write_file(map<unsigned, Person*>& person_stats, char* filename)
 		exit(EXIT_FAILURE);		
 	}
 	
-	float taken_sure_in;
-	float taken_sure_out;
-	float taken_sure_inout; 
-	float taken_possible_in;
-	float taken_possible_out;
-	float taken_possible_inout;
-	float not_taken_in;
-	float not_taken_out;
-	float not_taken_inout;	
+	float taken_sure_in_percent;
+	float taken_sure_out_percent;
+	float taken_sure_inout_percent; 
+	float taken_possible_in_percent;
+	float taken_possible_out_percent;
+	float taken_possible_inout_percent;
+	float not_taken_in_percent;
+	float not_taken_out_percent;
+	float not_taken_inout_percent;	
 	
-	output << "      |                      SHA taken                        |            SHA not taken            |" << endl;
-	output << "      |_______________________________________________________|_____________________________________|" << endl;
-	output << "  ID  |           sure            |       possible            |                 sure                |" << endl;
-	output << "      |___________________________|___________________________|_____________________________________|" << endl;
-	output << "      |   in   |   out  |  inout  |   in   |   out  |  inout  |     in     |     out    |   inout   |" << endl;
-	output << "______|________|________|_________|________|________|_________|____________|____________|___________|" << endl;
+	unsigned total_in;
+	unsigned total_out;
+	unsigned total_inout;
 	
+	output << "%Infos :" << endl;
+	output << "%Everything after a '%' in the same line is a comment, if you want to write anything put a '%' first !" << endl 
+		   << "%The ID '0' corresponds to no one in particular (could be the patient or visitors)." << endl << endl;
+	 
+	output << "      |                                                              SHA taken                                                               |                                  SHA not taken                                 |" << endl;
+	output << "      |______________________________________________________________________________________________________________________________________|________________________________________________________________________________|" << endl;
+	output << "  ID  |                                       sure                                     |                     possible                        |                                       sure                                     |" << endl;
+	output << "      |________________________________________________________________________________|_____________________________________________________|________________________________________________________________________________|" << endl;
+	output << "      |             in           |             out          |           inout          |       in        |       out       |      inout      |             in           |            out           |          inout           |" << endl;
+	output << "      |__________________________|__________________________|__________________________|_________________|_________________|_________________|__________________________|__________________________|__________________________|" << endl;
+	output << "      |    %   |   nb   |  total |    %   |   nb   |  total |    %   |   nb   |  total |    %   |   nb   |    %   |   nb   |    %   |   nb   |    %   |   nb   |  total |    %   |   nb   |  total |    %   |   nb   |  total |" << endl;	
+	output << "______|________|________|______ _|________|________|________|________|________|________|________|________|________|________|________|________|________|________|________|________|________|________|________|________|________|" << endl;
+
 	
 	for(auto it = person_stats.begin(); it != person_stats.end(); it++ )
 	{	
-		calcul_percent(it->second, taken_sure_in, taken_sure_out, taken_sure_inout, 
-			taken_possible_in, taken_possible_out, taken_possible_inout, not_taken_in, 
-			not_taken_out, not_taken_inout);
-			
+		calcul_percent(it->second, taken_sure_in_percent, taken_sure_out_percent, taken_sure_inout_percent, 
+			taken_possible_in_percent, taken_possible_out_percent, taken_possible_inout_percent, not_taken_in_percent, 
+			not_taken_out_percent, not_taken_inout_percent, total_in, total_out, total_inout);
 		
-		output << setfill(' ') << setw (5) << it->first << 
-			" | " << setfill(' ') << setw (6) << std::fixed << std::setprecision(2) << taken_sure_in << 
-			" | " << setfill(' ') << setw (6) << std::fixed << std::setprecision(2) << taken_sure_out << 
-			" | " << setfill(' ') << setw (6) << std::fixed << std::setprecision(2) << taken_sure_inout << " " <<
-			" | " << setfill(' ') << setw (6) << std::fixed << std::setprecision(2) << taken_possible_in << 
-			" | " << setfill(' ') << setw (6) << std::fixed << std::setprecision(2) << taken_possible_out << 
-			" | " << setfill(' ') << setw (6) << std::fixed << std::setprecision(2) << taken_possible_inout << " " <<
-			" |   " << setfill(' ') << setw (6) << std::fixed << std::setprecision(2) << not_taken_in << "  " <<
-			" |   " << setfill(' ') << setw (6) << std::fixed << std::setprecision(2) << not_taken_out << "  " <<
-			" |   " << setfill(' ') << setw (6) << std::fixed << std::setprecision(2) << not_taken_inout << "  |" <<endl;
+		
+		output << setfill(' ') << setw (5) << it->first; // ID
+		
+		// SHA taken sure
+		output << " | " << setfill(' ') << setw (6) << std::fixed << std::setprecision(2) << taken_sure_in_percent; //in %
+		output << " | " << setfill(' ') << setw (6) << std::fixed << it->second->get_nb_SHA_sure_in(); // in calcul (nominateur)
+		output << " | " << setfill(' ') << setw (6) << std::fixed << it->second->get_nb_SHA_in_sure_total(); // in calcul (denominateur)	
+			
+		output << " | " << setfill(' ') << setw (6) << std::fixed << std::setprecision(2) << taken_sure_out_percent; // out %
+		output << " | " << setfill(' ') << setw (6) << std::fixed << it->second->get_nb_SHA_sure_out(); // out calcul (nominateur)
+		output << " | " << setfill(' ') << setw (6) << std::fixed << it->second->get_nb_SHA_out_sure_total(); // out calcul (denominateur)			
+		
+		output << " | " << setfill(' ') << setw (6) << std::fixed << std::setprecision(2) << taken_sure_inout_percent; // inout %
+		output << " | " << setfill(' ') << setw (6) << std::fixed << it->second->get_nb_SHA_sure_inout(); // inout calcul (nominateur)
+		output << " | " << setfill(' ') << setw (6) << std::fixed << it->second->get_nb_SHA_inout_sure_total(); // inout calcul (denominateur)		
+		
+		// SHA taken possible
+		output << " | " << setfill(' ') << setw (6) << std::fixed << taken_possible_in_percent;
+		output << " | " << setfill(' ') << setw (6) << std::fixed << it->second->get_nb_SHA_in_possible_total();
+		
+		output << " | " << setfill(' ') << setw (6) << std::fixed << taken_possible_out_percent; 
+		output << " | " << setfill(' ') << setw (6) << std::fixed << it->second->get_nb_SHA_out_possible_total();
+		
+		output << " | " << setfill(' ') << setw (6) << std::fixed << taken_possible_inout_percent;
+		output << " | " << setfill(' ') << setw (6) << std::fixed << it->second->get_nb_SHA_inout_possible_total();
+		
+		// SHA not taken
+		output << " | " << setfill(' ') << setw (6) << std::fixed << std::setprecision(2) << not_taken_in_percent; //in %
+		output << " | " << setfill(' ') << setw (6) << std::fixed << it->second->get_nb_not_taken_in(); // in calcul (nominateur)
+		output << " | " << setfill(' ') << setw (6) << std::fixed << it->second->get_nb_SHA_in_sure_total(); // in calcul (denominateur)	
+			
+		output << " | " << setfill(' ') << setw (6) << std::fixed << std::setprecision(2) << not_taken_out_percent; // out %
+		output << " | " << setfill(' ') << setw (6) << std::fixed << it->second->get_nb_not_taken_out(); // out calcul (nominateur)
+		output << " | " << setfill(' ') << setw (6) << std::fixed << it->second->get_nb_SHA_out_sure_total(); // out calcul (denominateur)			
+		
+		output << " | " << setfill(' ') << setw (6) << std::fixed << std::setprecision(2) << not_taken_inout_percent; // inout %
+		output << " | " << setfill(' ') << setw (6) << std::fixed << it->second->get_nb_not_taken_inout(); // inout calcul (nominateur)
+		output << " | " << setfill(' ') << setw (6) << std::fixed << it->second->get_nb_SHA_inout_sure_total() << " | " << endl; // inout calcul (denominateur)			
 	}	
 	
 	
