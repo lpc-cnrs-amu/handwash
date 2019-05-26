@@ -144,7 +144,7 @@ void calcul_percent(Person* current_person, float& taken_sure_in, float& taken_s
 	else
 	{
 		taken_sure_in = 100*current_person->get_nb_SHA_sure_in() / (float)total_in;
-		taken_possible_in = current_person->get_nb_SHA_in_possible_total() / (float)total_in;
+		taken_possible_in = 100*current_person->get_nb_SHA_in_possible_total() / (float)total_in;
 		not_taken_in = 100*current_person->get_nb_not_taken_in() / (float)total_in;
 	}
 	
@@ -157,7 +157,7 @@ void calcul_percent(Person* current_person, float& taken_sure_in, float& taken_s
 	else
 	{
 		taken_sure_out = 100*current_person->get_nb_SHA_sure_out() / (float)total_out;
-		taken_possible_out = current_person->get_nb_SHA_out_possible_total() / (float)total_out;
+		taken_possible_out = 100*current_person->get_nb_SHA_out_possible_total() / (float)total_out;
 		not_taken_out = 100*current_person->get_nb_not_taken_out() / (float)total_out;
 	}
 	
@@ -170,7 +170,7 @@ void calcul_percent(Person* current_person, float& taken_sure_in, float& taken_s
 	else
 	{
 		taken_sure_inout = 100*current_person->get_nb_SHA_sure_inout() / (float)total_inout;
-		taken_possible_inout = current_person->get_nb_SHA_inout_possible_total() / (float)total_inout;
+		taken_possible_inout = 100*current_person->get_nb_SHA_inout_possible_total() / (float)total_inout;
 		not_taken_inout = 100*current_person->get_nb_not_taken_inout() / (float)total_inout;	
 	}
 
