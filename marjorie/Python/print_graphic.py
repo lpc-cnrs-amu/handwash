@@ -135,7 +135,7 @@ with open(sys.argv[1], "r") as file:
         column_not_taken_out_total.append(not_taken_out_total)
         column_not_taken_inout_total.append(not_taken_inout_total)       
 
-# si ya toutes les colonnes du tableau alors c ok
+
 df = pd.DataFrame( {'taken in sure percent': column_taken_sure_in_percent,\
     'taken in sure number': column_taken_sure_in_nb,\
     'taken in sure total': column_taken_sure_in_total,\
@@ -210,7 +210,6 @@ for ind in df.index:
         df.loc[ind, ['taken in sure percent', 'not taken in percent', 'taken in possible percent']].plot\
             (kind='pie', ax=ax1, autopct=make_autopct(df.loc[ind, ['taken in sure percent', 'not taken in percent', 'taken in possible percent']]),\
             colors=colors, labels=None)
-        #ax1.axis('equal')
         ax1.legend(labels=labels, loc='upper center', bbox_to_anchor=(0.5, -0.05))
         ax1.set_title('in :\ntotal sure = '+\
             str(df.loc[ind, 'taken in sure total'])+\
@@ -239,7 +238,6 @@ for ind in df.index:
             'not taken out percent','taken out possible percent']]), colors=colors, labels=None)
             ax2.legend(labels=labels, loc='upper center', bbox_to_anchor=(0.5, -0.05))
         
-        #ax2.axis('equal')
         ax2.set_title('out :\ntotal sure = '+\
             str(df.loc[ind, 'taken out sure total'])+\
             '\ntotal possible = '+\
@@ -269,7 +267,6 @@ for ind in df.index:
             'taken inout possible percent']]), colors=colors, labels=None)
             ax3.legend(labels=labels, loc='upper center', bbox_to_anchor=(0.5, -0.05))
             
-        #ax3.axis('equal')
         ax3.set_title('inout :\ntotal sure = '+\
             str(df.loc[ind, 'taken inout sure total'])+\
             '\ntotal possible = '+\

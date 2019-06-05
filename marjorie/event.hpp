@@ -11,25 +11,25 @@
 
 /** 
  * \class Event
- * \brief Class representing an event  
- * from the hygiene csv file. 
+ * \brief Class representing an event 
+ * from the hygiene csv file (a line in the file). 
 */
 class Event
 {
 	private:
-		unsigned unique_id; // id for the line
-		unsigned id_event;  // id for the event corresponding to a code event (8 = SHA, 5 = door open, etc)
-		bool in = true;
-		unsigned id_puce;
-		unsigned id_chamber;
+		unsigned unique_id; 	// id for the line
+		unsigned id_event;  	// id for the event corresponding to a code event (8 = SHA, 5 = door open, etc)
+		bool in = true; 		// is the event in the "in" section or the "out" section ?
+		unsigned id_puce;		// id of the puce (representing a person)
+		unsigned id_chamber;	// id of the chamber
 		unsigned year;
-		unsigned month;
+		unsigned month;	
 		unsigned day;
 		unsigned hour;
 		unsigned minutes;
 		unsigned seconds;
-		std::string date;
-		std::string time;
+		std::string date;		// date like 2018-01-17
+		std::string time;		// time like 16:29:02.100
 		
 		bool sha_sure = false;
 		
@@ -37,7 +37,6 @@ class Event
 		void split_date();
 		
 	public:
-		//Event(unsigned id, unsigned puce, unsigned chamber, std::string d, std::string h, bool in_or_out);
 		Event(Event* event);
 		Event(std::string line, bool excel_csv);
 		

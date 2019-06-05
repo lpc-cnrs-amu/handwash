@@ -7,35 +7,47 @@
 #include <map>
 #include "event.hpp"
 #include "sha.hpp"
-/*
-#define NB_LABELS
 
+#define NB_LABELS 24
 enum Label
 {
-	POSSIBLE_SHA, // SHA a peut etre été pris (impossible de savoir car plusieurs personnes dans la piece)
+	// SHA pris dans le in (sur)
+	IN_NO_ALARM,
+	IN_AFTER_ALARM,
+	IN_DURING_ALARM,
+	// SHA pris dans le out (sur)
+	OUT_NO_ALARM,
+	OUT_AFTER_ALARM,
+	OUT_DURING_ALARM,	
+	// SHA pris dans le inout (sur)
+	INOUT_NO_ALARM,
+	INOUT_AFTER_ALARM,
+	INOUT_DURING_ALARM,	
 	
-	SHA_IN_NO_OUT, //SHA pris dans le in, SHA pas pris dans le out
-	SHA_OUT_NO_IN, //SHA pris dans le out, SHA pas pris dans le in
-	SHA_ONLY_IN, //SHA pris dans une petite activité(que du in)
-	SHA_IN_AND_OUT, // SHA pris dans le in, SHA pris dans le out
+	// SHA possiblement pris dans le in
+	IN_POSSIBLE_NO_ALARM,
+	IN_POSSIBLE_AFTER_ALARM,
+	IN_POSSIBLE_DURING_ALARM,
+	// SHA possiblement pris dans le out
+	OUT_POSSIBLE_NO_ALARM,
+	OUT_POSSIBLE_AFTER_ALARM,
+	OUT_POSSIBLE_DURING_ALARM,
+	// SHA possiblement pris dans le inout
+	INOUT_POSSIBLE_NO_ALARM,
+	INOUT_POSSIBLE_AFTER_ALARM,
+	INOUT_POSSIBLE_DURING_ALARM,
 	
-	SHA_IN_ALARM_NO_OUT, //SHA pris avec alarme dans le in, rien dans le out
-	SHA_OUT_ALARM_NO_IN, //SHA pris avec alarme dans le out, rien dans le in
-	SHA_ONLY_IN_ALARM, //SHA pris avec alarme dans une petite activité(que du in)
-	
-	SHA_IN_ALARM_AND_OUT,	//SHA pris avec alarme dans le in, SHA pris sans alarme dans le out
-	SHA_IN_AND_OUT_ALARM, // SHA pris sans alarme dans le in, SHA pris avec alarme dans le out
-	SHA_IN_ALARM_AND_OUT_ALARM, // SHA pris avec alarme dans le in, SHA pris avec alarme dans le out
-	
-	SHA_NO_IN_ALARM_NO_OUT, //SHA pas pris dans le in alors qu'il y a eu l'alarme, rien dans le out
-	SHA_NO_OUT_ALARM_NO_IN, //SHA pas pris dans le out alors qu'il y a eu l'alarme, rien dans le in
-	SHA_NO_IN_ALARM_NO_OUT_ALARM, //SHA pas pris dans le in alors qu'il y a eu l'alarme, SHA pas pris dans le out alors qu'il y a eu l'alarme
-	
-	SHA_NO_ONLY_IN_ALARM, //SHA pas pris dans une petite activité (que du in) avec alarme
-	SHA_NO_IN_NO_OUT, //SHA pas pris dans le in, SHA pas pris dans le out mais jamais eu d'alarme
-	SHA_NO_ONLY_IN //SHA pas pris dans une petite activité (que du in) mais pas eu d'alarme
+	// SHA pas pris dans le in
+	NOT_IN_NO_ALARM,
+	NOT_IN_ALARM,
+	// SHA pas pris dans le out
+	NOT_OUT_NO_ALARM,
+	NOT_OUT_ALARM,
+	// SHA pas pris dans le inout
+	NOT_INOUT_NO_ALARM,
+	NOT_INOUT_ALARM
 };
-*/
+
 
 /**
  * \file activities.hpp
@@ -44,8 +56,10 @@ enum Label
 
 /** 
  * \class Activity
- * \brief Class representing an instance  
- * from the hygiene csv file. 
+ * \brief Class representing an instance 
+ * from the hygiene csv file. An activity is a group of events. 
+ * An activity is associated to a person. If there is more than n>1 person, 
+ * then we split the activity into n activity.
 */
 class Activity
 {
@@ -53,22 +67,8 @@ class Activity
 		std::vector<Event*> events;
 		std::vector<unsigned> persons;
 		
-		unsigned main_person;
-		unsigned nb_SHA_sure = 0;
-		unsigned nb_SHA_possible = 0;
-		
-		unsigned nb_SHA_sure_in = 0;
-		unsigned nb_SHA_sure_out = 0;
-		unsigned nb_SHA_possible_in = 0;
-		unsigned nb_SHA_possible_out = 0;
-		
-		unsigned nb_SHA_sure_inout = 0;
-		unsigned nb_SHA_possible_inout = 0;
-		
-		bool inout = false;
-		bool SHA_not_taken_in = false;
-		bool SHA_not_taken_out = false;
-		bool SHA_not_taken_inout = false;
+		unsigned main_person;	
+		bool inout = false; // true => the activity is a very short one, false => there is an in and an out
 		
 		bool theres_SHA_sure_in = false;
 		bool theres_SHA_sure_out = false;
@@ -79,7 +79,7 @@ class Activity
 				
 		bool first_person = false;
 				
-		//std::vector<Label> label_activity;
+		std::vector<Label> label_activity;
 
 		
 		bool same_activity(Event* event);
@@ -88,12 +88,11 @@ class Activity
 		void destroy_map_different_activities(std::map<unsigned, std::vector<Event*> >& different_activities);
 		void destroy_map_puces_to_SHA(std::map<unsigned, std::vector<Sha*> >& puces_to_SHA);
 		
-		void count_SHA_and_deciding_in_or_out();
-		void count_SHA(std::vector<Sha*>& sha);
-		void count_SHA_sure_and_possible(std::vector<Sha*>& sha);
-		void count_SHA_in_and_out(unsigned index_out);
-		void count_SHA_in_and_out(std::vector<Sha*>& sha, unsigned index_out);
-		void at_least_one_SHA_sure(std::vector<Sha*>& sha);
+		unsigned finding_in_out_inout();
+		void finding_labels(std::vector<Sha*>& SHA);
+		void finding_label_in(unsigned index_ending, std::vector<Sha*>& SHA);
+		void finding_label_out(unsigned index_begining);
+		void finding_label_inout();
 		
 	public:
 		Activity();
@@ -111,6 +110,7 @@ class Activity
 		void append_event_to_activity(Event* event);
 		bool check_and_append_event_to_activity(Event* event);
 		
+		/* A CHANGER */
 		unsigned get_nb_SHA_sure_in();
 		unsigned get_nb_SHA_sure_out();
 		unsigned get_nb_SHA_possible_in();

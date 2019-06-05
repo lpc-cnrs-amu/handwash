@@ -4,18 +4,6 @@
 
 using namespace std;
 
-/*
-Event::Event(unsigned id, unsigned puce, unsigned chamber, string d, string h, bool in_or_out) :
-	id_event(id),
-	id_puce(puce),
-	id_chamber(chamber),
-	date(d),
-	time(h),
-	in(in_or_out)
-{
-	split_date();
-	split_time();
-}*/
 
 Event::Event(Event* event)
 {
