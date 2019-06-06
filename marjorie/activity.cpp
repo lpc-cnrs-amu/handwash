@@ -42,20 +42,14 @@ Activity::Activity(Activity* copy)
 	unsigned i;
 	
 	this->main_person = copy->main_person;
-
-	this->nb_SHA_sure_in = copy->nb_SHA_sure_in;
-	this->nb_SHA_sure_out = copy->nb_SHA_sure_out;
-	
-	this->nb_SHA_possible_in = copy->nb_SHA_possible_in;
-	this->nb_SHA_possible_out = copy->nb_SHA_possible_out;
-	
-	this->nb_SHA_sure_inout = copy->nb_SHA_sure_inout;
-	this->nb_SHA_possible_inout = copy->nb_SHA_possible_inout;
-	
 	this->inout = copy->inout;
-	this->SHA_not_taken_in = copy->SHA_not_taken_in;
-	this->SHA_not_taken_out = copy->SHA_not_taken_out;
-	this->SHA_not_taken_inout = copy->SHA_not_taken_inout;
+	this->theres_SHA_sure_in = copy->theres_SHA_sure_in;
+	this->theres_SHA_sure_out = copy->theres_SHA_sure_out;
+	this->theres_SHA_sure_inout = copy->theres_SHA_sure_inout;
+	this->theres_SHA_possible_in = copy->theres_SHA_possible_in;
+	this->theres_SHA_possible_out = copy->theres_SHA_possible_out;
+	this->theres_SHA_possible_inout = copy->theres_SHA_possible_inout;
+
 			
 	for(i=0; i < copy->events.size(); ++i)
 		this->events.push_back( new Event(copy->events[i]) );
@@ -92,21 +86,15 @@ Activity::Activity(Event* event)
 
 	/* Getters */
 
+Label Activity::get_label(unsigned num)
+{
+	return label_activity[num];
+}
+unsigned Activity::get_nb_label() { return label_activity.size(); }
+bool Activity::get_inout() { return inout; }
+
 unsigned Activity::get_person() { return main_person; }
 unsigned Activity::get_nb_persons() { return persons.size(); }
-unsigned Activity::get_nb_SHA_sure_in() { return nb_SHA_sure_in; }
-unsigned Activity::get_nb_SHA_sure_out() { return nb_SHA_sure_out; }
-unsigned Activity::get_nb_SHA_possible_in() { return nb_SHA_possible_in; }
-unsigned Activity::get_nb_SHA_possible_out() { return nb_SHA_possible_out; }
-
-unsigned Activity::get_nb_SHA_sure_inout() { return nb_SHA_sure_inout; }
-unsigned Activity::get_nb_SHA_possible_inout() { return nb_SHA_possible_inout; }
-
-
-bool Activity::get_SHA_not_taken_in() { return SHA_not_taken_in; }
-bool Activity::get_SHA_not_taken_out() { return SHA_not_taken_out; }
-bool Activity::get_SHA_not_taken_inout() { return SHA_not_taken_inout; }
-bool Activity::get_inout() { return inout; }
 
 bool Activity::get_theres_SHA_sure_in() { return theres_SHA_sure_in; }
 bool Activity::get_theres_SHA_sure_out() { return theres_SHA_sure_out; }
@@ -135,15 +123,6 @@ void Activity::write_file(ofstream& output)
 		output << persons[i] << " ";
 	output << endl;
 
-	output << "\tNUMBER SHA SURE IN : " << nb_SHA_sure_in << endl;
-	output << "\tNUMBER SHA SURE OUT : " << nb_SHA_sure_out << endl;
-	output << "\tNUMBER SHA POSSIBLE IN : " << nb_SHA_possible_in << endl;
-	output << "\tNUMBER SHA POSSIBLE OUT : " << nb_SHA_possible_out << endl;
-	output << "\tNUMBER SHA SURE INOUT : " << nb_SHA_sure_inout << endl;
-	output << "\tNUMBER SHA POSSIBLE INOUT : " << nb_SHA_possible_inout << endl;
-	output << "SHA NOT TAKEN IN : " << SHA_not_taken_in << endl;
-	output << "SHA NOT TAKEN OUT : " << SHA_not_taken_out << endl;
-	output << "SHA NOT TAKEN INOUT : " << SHA_not_taken_inout << endl;
 	
 	for(i=0; i<events.size(); ++i)
 	{
@@ -171,15 +150,6 @@ void Activity::print_activity()
 		cout << persons[i] << " ";
 	cout << endl;
 
-	cout << "\tNUMBER SHA SURE IN : " << nb_SHA_sure_in << endl;
-	cout << "\tNUMBER SHA SURE OUT : " << nb_SHA_sure_out << endl;
-	cout << "\tNUMBER SHA POSSIBLE IN : " << nb_SHA_possible_in << endl;
-	cout << "\tNUMBER SHA POSSIBLE OUT : " << nb_SHA_possible_out << endl;
-	cout << "\tNUMBER SHA SURE INOUT : " << nb_SHA_sure_inout << endl;
-	cout << "\tNUMBER SHA POSSIBLE INOUT : " << nb_SHA_possible_inout << endl;
-	cout << "SHA NOT TAKEN IN : " << SHA_not_taken_in << endl;
-	cout << "SHA NOT TAKEN OUT : " << SHA_not_taken_out << endl;
-	cout << "SHA NOT TAKEN INOUT : " << SHA_not_taken_inout << endl;
 	
 	for(i=0; i<events.size(); ++i)
 	{
@@ -461,9 +431,11 @@ void Activity::activity_per_person(vector<Activity*>& split_activity)
 		// Add the person to the vector
 		persons.push_back(main_person);
 		// Finding labels
-		finding_labels(puces_to_SHA);
+		map<unsigned, vector<Sha*> >::iterator it_sha;
+		it_sha = puces_to_SHA.begin();
+		finding_labels(it_sha->second);
 	}
-	destroy_map_puces_to_SHA(puces_to_SHA->second); // a revoir pour comment envoyer la valeur de la map
+	destroy_map_puces_to_SHA(puces_to_SHA); 
 		
 }
 
@@ -535,20 +507,20 @@ unsigned Activity::finding_in_out_inout()
 	return index_out;
 }
 
-// Fonctions quand il y a qu'1 personne dans l'activité de base
+
 void Activity::finding_labels(vector<Sha*>& SHA)
 {	
 	unsigned index_out = finding_in_out_inout();
 		
 	// label sure : inout
 	if(inout)
-		finding_label_inout();
+		finding_label_inout(SHA);
 	
 	// label sure : in and out
 	else
 	{
-		finding_label_in(index_out);
-		finding_label_out(index_out);
+		finding_label_in(index_out, SHA);
+		finding_label_out(index_out, SHA);
 	}
 	
 }
@@ -702,7 +674,7 @@ void Activity::finding_label_in(unsigned index_ending, vector<Sha*>& SHA)
 	
 	else if(alarm_index != -1 && SHA_index_sure == -1 && SHA_during_alarm_index_sure != -1 && SHA_index_possible != -1 && SHA_during_alarm_index_possible == -1)
 	{
-		if(SHA_during_alarm_index_sure < alarm_index && alarm_index < SHA_index_possible || alarm_index < SHA_index_possible && SHA_index_possible < SHA_during_alarm_index_sure)
+		if( (SHA_during_alarm_index_sure < alarm_index && alarm_index < SHA_index_possible) || (alarm_index < SHA_index_possible && SHA_index_possible < SHA_during_alarm_index_sure) )
 		{
 			theres_SHA_sure_in = true;
 			label_activity.push_back( IN_DURING_ALARM );
@@ -871,7 +843,7 @@ void Activity::finding_label_in(unsigned index_ending, vector<Sha*>& SHA)
 	}
 	else if(alarm_index != -1 && SHA_index_sure != -1 && SHA_during_alarm_index_sure != -1 && SHA_index_possible != -1 && SHA_during_alarm_index_possible != -1)
 	{
-		if(SHA_during_alarm_index_sure < SHA_index_sure &&S HA_during_alarm_index_sure < alarm_index)
+		if(SHA_during_alarm_index_sure < SHA_index_sure && SHA_during_alarm_index_sure < alarm_index)
 		{
 			theres_SHA_sure_in = true;
 			label_activity.push_back(IN_DURING_ALARM);
@@ -884,7 +856,7 @@ void Activity::finding_label_in(unsigned index_ending, vector<Sha*>& SHA)
 		cerr << "CAS IMPOSSIBLE NON PRIS EN COMPTE" << endl;
 	
 }
-void Activity::finding_label_out(unsigned index_begining)
+void Activity::finding_label_out(unsigned index_begining, vector<Sha*>& SHA)
 {
 	int alarm_index = -1;
 	int SHA_index_sure = -1;
@@ -893,7 +865,7 @@ void Activity::finding_label_out(unsigned index_begining)
 	int SHA_during_alarm_index_possible = -1;
 	unsigned id_line_event;
 	
-	for(unsigned i=0; i < index_ending; ++i)
+	for(unsigned i=index_begining; i < events.size(); ++i)
 	{
 		id_line_event = events[i]->get_unique_id();
 		
@@ -1036,7 +1008,7 @@ void Activity::finding_label_out(unsigned index_begining)
 	
 	else if(alarm_index != -1 && SHA_index_sure == -1 && SHA_during_alarm_index_sure != -1 && SHA_index_possible != -1 && SHA_during_alarm_index_possible == -1)
 	{
-		if(SHA_during_alarm_index_sure < alarm_index && alarm_index < SHA_index_possible || alarm_index < SHA_index_possible && SHA_index_possible < SHA_during_alarm_index_sure)
+		if( (SHA_during_alarm_index_sure < alarm_index && alarm_index < SHA_index_possible) || (alarm_index < SHA_index_possible && SHA_index_possible < SHA_during_alarm_index_sure) )
 		{
 			theres_SHA_sure_out = true;
 			label_activity.push_back( OUT_DURING_ALARM );
@@ -1205,7 +1177,7 @@ void Activity::finding_label_out(unsigned index_begining)
 	}
 	else if(alarm_index != -1 && SHA_index_sure != -1 && SHA_during_alarm_index_sure != -1 && SHA_index_possible != -1 && SHA_during_alarm_index_possible != -1)
 	{
-		if(SHA_during_alarm_index_sure < SHA_index_sure &&S HA_during_alarm_index_sure < alarm_index)
+		if(SHA_during_alarm_index_sure < SHA_index_sure && SHA_during_alarm_index_sure < alarm_index)
 		{
 			theres_SHA_sure_out = true;
 			label_activity.push_back(OUT_DURING_ALARM);
@@ -1218,7 +1190,7 @@ void Activity::finding_label_out(unsigned index_begining)
 		cerr << "CAS IMPOSSIBLE NON PRIS EN COMPTE" << endl;
 	
 }
-void Activity::finding_label_inout()
+void Activity::finding_label_inout(vector<Sha*>& SHA)
 {
 	int alarm_index = -1;
 	int SHA_index_sure = -1;
@@ -1227,7 +1199,7 @@ void Activity::finding_label_inout()
 	int SHA_during_alarm_index_possible = -1;
 	unsigned id_line_event;
 	
-	for(unsigned i=0; i < index_ending; ++i)
+	for(unsigned i=0; i < events.size(); ++i)
 	{
 		id_line_event = events[i]->get_unique_id();
 		
@@ -1371,7 +1343,7 @@ void Activity::finding_label_inout()
 	
 	else if(alarm_index != -1 && SHA_index_sure == -1 && SHA_during_alarm_index_sure != -1 && SHA_index_possible != -1 && SHA_during_alarm_index_possible == -1)
 	{
-		if(SHA_during_alarm_index_sure < alarm_index && alarm_index < SHA_index_possible || alarm_index < SHA_index_possible && SHA_index_possible < SHA_during_alarm_index_sure)
+		if( (SHA_during_alarm_index_sure < alarm_index && alarm_index < SHA_index_possible) || (alarm_index < SHA_index_possible && SHA_index_possible < SHA_during_alarm_index_sure) )
 		{
 			theres_SHA_sure_inout = true;
 			label_activity.push_back( INOUT_DURING_ALARM );
@@ -1540,7 +1512,7 @@ void Activity::finding_label_inout()
 	}
 	else if(alarm_index != -1 && SHA_index_sure != -1 && SHA_during_alarm_index_sure != -1 && SHA_index_possible != -1 && SHA_during_alarm_index_possible != -1)
 	{
-		if(SHA_during_alarm_index_sure < SHA_index_sure &&S HA_during_alarm_index_sure < alarm_index)
+		if(SHA_during_alarm_index_sure < SHA_index_sure && SHA_during_alarm_index_sure < alarm_index)
 		{
 			theres_SHA_sure_inout = true;
 			label_activity.push_back(INOUT_DURING_ALARM);

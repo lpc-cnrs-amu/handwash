@@ -5,6 +5,7 @@
 #include <fstream>
 #include <vector>
 #include <map>
+#include "activity.hpp"
 
 
 /**
@@ -21,18 +22,7 @@ class Person
 	private:
 		//unsigned id_person;
 		
-		unsigned nb_SHA_sure_in = 0;
-		unsigned nb_SHA_sure_out = 0;
-		
-		unsigned nb_SHA_possible_in = 0;
-		unsigned nb_SHA_possible_out = 0;
-		
-		unsigned nb_SHA_sure_inout = 0;
-		unsigned nb_SHA_possible_inout = 0;		
-		
-		unsigned nb_not_taken_in = 0;
-		unsigned nb_not_taken_out = 0;
-		unsigned nb_not_taken_inout = 0;
+		std::map<Label, unsigned> nb_each_labels;
 		
 		unsigned nb_SHA_inout_sure_total = 0;
 		unsigned nb_SHA_inout_possible_total = 0;
@@ -42,62 +32,33 @@ class Person
 		unsigned nb_SHA_out_possible_total = 0;
 		
 	public:
-		Person(	unsigned SHA_sure_in = 0,
-				unsigned SHA_sure_out = 0,
-				
-				unsigned SHA_possible_in = 0,
-				unsigned SHA_possible_out = 0,
-				
-				unsigned SHA_sure_inout = 0,
-				unsigned SHA_possible_inout = 0,
-				
-				bool not_taken_in = false,
-				bool not_taken_out = false,
-				bool not_taken_inout = false);
+		Person();
 
-		void add_nb_SHA_sure_in			(unsigned nb);
-		void add_nb_SHA_sure_out		(unsigned nb);
-		void add_nb_SHA_sure_inout		(unsigned nb);
-		
-		void add_nb_SHA_possible_in		(unsigned nb);
-		void add_nb_SHA_possible_out	(unsigned nb);
-		void add_nb_SHA_possible_inout	(unsigned nb);
-		
-		void incr_not_taken_in();
-		void incr_not_taken_out();
-		void incr_not_taken_inout();
+		unsigned get_nb_label(Label label);
+		void incr_nb_label(Label label);
 
-
-
-		void incr_nb_SHA_in_sure_total();
-		void incr_nb_SHA_out_sure_total();		
+		// changer le nom des variables (c'est pas des SHA sur mais des activités sure)
 		void incr_nb_SHA_inout_sure_total();
-
-		void incr_nb_SHA_in_possible_total();	
-		void incr_nb_SHA_out_possible_total();		
 		void incr_nb_SHA_inout_possible_total();
-
-
-
-		unsigned get_nb_SHA_sure_in();
-		unsigned get_nb_SHA_sure_out();
-
-		unsigned get_nb_SHA_possible_in();
-		unsigned get_nb_SHA_possible_out();
-
-		unsigned get_nb_SHA_sure_inout();
-		unsigned get_nb_SHA_possible_inout();	
-
-		unsigned get_nb_not_taken_in();
-		unsigned get_nb_not_taken_out();
-		unsigned get_nb_not_taken_inout();
-
+		void incr_nb_SHA_in_sure_total();
+		void incr_nb_SHA_out_sure_total();
+		void incr_nb_SHA_in_possible_total();
+		void incr_nb_SHA_out_possible_total();
+		
 		unsigned get_nb_SHA_inout_sure_total();
 		unsigned get_nb_SHA_inout_possible_total();
 		unsigned get_nb_SHA_in_sure_total();
 		unsigned get_nb_SHA_out_sure_total();
 		unsigned get_nb_SHA_in_possible_total();
 		unsigned get_nb_SHA_out_possible_total();
+		
+		
+		unsigned get_nb_SHA_taken_sure_out() ;
+		unsigned get_nb_SHA_not_taken_sure_out() ;
+		unsigned get_nb_SHA_taken_possible_out();
+		unsigned get_nb_SHA_taken_sure_inout() ;
+		unsigned get_nb_SHA_not_taken_sure_inout() ;
+		unsigned get_nb_SHA_taken_possible_inout();
 
 		void print_person();
 		void write_file(std::ofstream& output);
@@ -105,5 +66,3 @@ class Person
 	
 
 #endif
-
-

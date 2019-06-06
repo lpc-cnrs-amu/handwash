@@ -91,8 +91,8 @@ class Activity
 		unsigned finding_in_out_inout();
 		void finding_labels(std::vector<Sha*>& SHA);
 		void finding_label_in(unsigned index_ending, std::vector<Sha*>& SHA);
-		void finding_label_out(unsigned index_begining);
-		void finding_label_inout();
+		void finding_label_out(unsigned index_begining, std::vector<Sha*>& SHA);
+		void finding_label_inout(std::vector<Sha*>& SHA);
 		
 	public:
 		Activity();
@@ -110,20 +110,11 @@ class Activity
 		void append_event_to_activity(Event* event);
 		bool check_and_append_event_to_activity(Event* event);
 		
-		/* A CHANGER */
-		unsigned get_nb_SHA_sure_in();
-		unsigned get_nb_SHA_sure_out();
-		unsigned get_nb_SHA_possible_in();
-		unsigned get_nb_SHA_possible_out();
-
-		unsigned get_nb_SHA_sure_inout();
-		unsigned get_nb_SHA_possible_inout();
-
-
-		bool get_SHA_not_taken_in();
-		bool get_SHA_not_taken_out();
-		bool get_SHA_not_taken_inout();
+		Label get_label(unsigned num);
+		unsigned get_nb_label();
+		  
 		bool get_inout();
+		
 		bool get_theres_SHA_sure_in();
 		bool get_theres_SHA_sure_out();
 		bool get_theres_SHA_sure_inout();
