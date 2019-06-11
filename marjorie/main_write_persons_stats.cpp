@@ -22,23 +22,23 @@ void update_persons_stats(Activity* activity_tmp, map<unsigned, Person*>& person
 	if( activity_tmp->get_inout() )
 	{
 		if( activity_tmp->get_theres_SHA_sure_inout() )
-			person_stats[ p ]->incr_nb_SHA_inout_sure_total();
+			person_stats[ p ]->incr_nb_activity_inout_sure();
 		if( activity_tmp->get_theres_SHA_possible_inout() )
-			person_stats[ p ]->incr_nb_SHA_inout_possible_total();
+			person_stats[ p ]->incr_nb_activity_inout_possible();
 	}
 	else
 	{
 		if( activity_tmp->get_theres_SHA_sure_in() )
-			person_stats[ p ]->incr_nb_SHA_in_sure_total();
+			person_stats[ p ]->incr_nb_activity_in_sure();
 		
 		if( activity_tmp->get_theres_SHA_sure_out() )
-			person_stats[ p ]->incr_nb_SHA_out_sure_total();
+			person_stats[ p ]->incr_nb_activity_out_sure();
 		
 		if( activity_tmp->get_theres_SHA_possible_in() )
-			person_stats[ p ]->incr_nb_SHA_in_possible_total();
+			person_stats[ p ]->incr_nb_activity_in_possible();
 			
 		if( activity_tmp->get_theres_SHA_possible_out() )
-			person_stats[ p ]->incr_nb_SHA_out_possible_total();	
+			person_stats[ p ]->incr_nb_activity_out_possible();	
 	}	
 }
 
@@ -145,14 +145,14 @@ void calcul_percent(
 	float& not_inout_alarm_percent
 )	
 {
-	unsigned total_in_sur = current_person->get_nb_SHA_in_sure_total();
-	unsigned total_in_possible = current_person->get_nb_SHA_in_possible_total();
+	unsigned total_in_sur = current_person->get_nb_activity_in_sure_total();
+	unsigned total_in_possible = current_person->get_nb_activity_in_possible_total();
 		
-	unsigned total_out_sur = current_person->get_nb_SHA_out_sure_total();
-	unsigned total_out_possible = current_person->get_nb_SHA_out_possible_total();
+	unsigned total_out_sur = current_person->get_nb_activity_out_sure_total();
+	unsigned total_out_possible = current_person->get_nb_activity_out_possible_total();
 		
-	unsigned total_inout_sur = current_person->get_nb_SHA_inout_sure_total();
-	unsigned total_inout_possible = current_person->get_nb_SHA_inout_possible_total();
+	unsigned total_inout_sur = current_person->get_nb_activity_inout_sure_total();
+	unsigned total_inout_possible = current_person->get_nb_activity_inout_possible_total();
 	
 	// IN
 		// IN SUR
@@ -171,7 +171,7 @@ void calcul_percent(
 		// nb SHA taken - sur
 		SHA_in_sure_percent = 100 * current_person->get_nb_SHA_taken_sure_in() / total_in_sur;
 			// Within those SHA taken :
-		in_no_alarm_percent = 100 * current_person->get_nb_label( IN_NO_ALARM ) / current_person->get_nb_SHA_taken_sure_in();
+		in_no_alarm_percent = 100 * current_person->get_nb_label( IN_NO_ALARM ) / current_person->get_nb_SHA_taken_sure_in(); // a changer
 		in_after_alarm_percent = 100 * current_person->get_nb_label( IN_AFTER_ALARM ) / current_person->get_nb_SHA_taken_sure_in();
 		in_during_alarm_percent = 100 * current_person->get_nb_label( IN_DURING_ALARM ) / current_person->get_nb_SHA_taken_sure_in();	
 		
