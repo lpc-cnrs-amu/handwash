@@ -8,14 +8,14 @@
 
 /** 
  * \class Sha
- * \brief Class representing an event  
+ * \brief Class representing a SHA 
  * from the hygiene csv file. 
 */
 class Sha
 {
 	private:
-		unsigned unique_id; 
-		bool sure = false;
+		unsigned unique_id; /* id unique of the event (primary key) */
+		bool sure = false; /* Is the SHA sure or not ? */
 		
 		
 	public:
