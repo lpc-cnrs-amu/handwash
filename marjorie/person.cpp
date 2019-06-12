@@ -3,7 +3,7 @@
 
 using namespace std;
 
-Person::Person():
+Person::Person()
 {
 	nb_each_labels[IN_NO_ALARM] = 0;
 	nb_each_labels[IN_AFTER_ALARM] = 0;
@@ -29,58 +29,70 @@ Person::Person():
 	nb_each_labels[NOT_OUT_ALARM] = 0;
 	nb_each_labels[NOT_INOUT_NO_ALARM] = 0;
 	nb_each_labels[NOT_INOUT_ALARM] = 0;
+	
+	nb_each_labels[IN_WEIRD_SUR] = 0;
+	nb_each_labels[OUT_WEIRD_SUR] = 0;
+	nb_each_labels[INOUT_WEIRD_SUR] = 0;
+	nb_each_labels[IN_IMPOSSIBLE_SUR] = 0;
+	nb_each_labels[OUT_IMPOSSIBLE_SUR] = 0;
+	nb_each_labels[INOUT_IMPOSSIBLE_SUR] = 0;
+	nb_each_labels[IN_WEIRD_POSSIBLE] = 0;
+	nb_each_labels[OUT_WEIRD_POSSIBLE] = 0;
+	nb_each_labels[INOUT_WEIRD_POSSIBLE] = 0;
 }
 
 
 unsigned Person::get_nb_label(Label label) { return nb_each_labels[label]; }
-unsigned Person::get_nb_activity_taken_sure_in() 
+
+
+unsigned Person::get_nb_SHA_taken_sure_in() 
 { 
 	return nb_each_labels[IN_NO_ALARM] + 
 		   nb_each_labels[IN_AFTER_ALARM] + 
 		   nb_each_labels[IN_DURING_ALARM]; 
 }
-unsigned Person::get_nb_activity_not_taken_sure_in() 
+unsigned Person::get_nb_SHA_not_taken_sure_in() 
 { 
 	return nb_each_labels[NOT_IN_NO_ALARM] + 
 		   nb_each_labels[NOT_IN_ALARM];
 }
-unsigned Person::get_nb_activity_taken_possible_in()
+unsigned Person::get_nb_SHA_taken_possible_in()
 {
 	return nb_each_labels[IN_POSSIBLE_NO_ALARM] + 
 		   nb_each_labels[IN_POSSIBLE_AFTER_ALARM] + 
 		   nb_each_labels[IN_POSSIBLE_DURING_ALARM];	
 }
 
-unsigned Person::get_nb_activity_taken_sure_out() 
+unsigned Person::get_nb_SHA_taken_sure_out() 
 { 
 	return nb_each_labels[OUT_NO_ALARM] + 
 		   nb_each_labels[OUT_AFTER_ALARM] + 
 		   nb_each_labels[OUT_DURING_ALARM]; 
 }
-unsigned Person::get_nb_activity_not_taken_sure_out() 
+unsigned Person::get_nb_SHA_not_taken_sure_out() 
 { 
 	return nb_each_labels[NOT_OUT_NO_ALARM] + 
 		   nb_each_labels[NOT_OUT_ALARM];
 }
-unsigned Person::get_nb_activity_taken_possible_out()
+unsigned Person::get_nb_SHA_taken_possible_out()
 {
 	return nb_each_labels[OUT_POSSIBLE_NO_ALARM] + 
 		   nb_each_labels[OUT_POSSIBLE_AFTER_ALARM] + 
 		   nb_each_labels[OUT_POSSIBLE_DURING_ALARM];	
 }
 
-unsigned Person::get_nb_activity_taken_sure_inout() 
+unsigned Person::get_nb_SHA_taken_sure_inout() 
 { 
 	return nb_each_labels[INOUT_NO_ALARM] + 
 		   nb_each_labels[INOUT_AFTER_ALARM] + 
 		   nb_each_labels[INOUT_DURING_ALARM]; 
 }
-unsigned Person::get_nb_activity_not_taken_sure_inout() 
+unsigned Person::get_nb_SHA_not_taken_sure_inout() 
 { 
 	return nb_each_labels[NOT_INOUT_NO_ALARM] + 
 		   nb_each_labels[NOT_INOUT_ALARM];
 }
-unsigned Person::get_nb_activity_taken_possible_inout()
+unsigned Person::get_nb_SHA_taken_possible_inout()
 {
 	return nb_each_labels[INOUT_POSSIBLE_NO_ALARM] + 
 		   nb_each_labels[INOUT_POSSIBLE_AFTER_ALARM] + 

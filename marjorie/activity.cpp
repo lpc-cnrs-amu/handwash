@@ -324,11 +324,11 @@ unsigned Activity::identify_different_puces(vector<unsigned>& different_puces,
 			else
 			{
 				//gives the SHA to different_puces[0] if there is no one else
-				if(different_puces.size() == 1)
+				if(different_puces.size() == 2 && (different_puces[0] == 0 || different_puces[1]==0) )
 					puces_to_SHA[different_puces[0]].push_back( new Sha(events[i]->get_unique_id(), SHA_SURE) );
 
 				//gives the SHA to all persons who are in the room
-				else if(different_puces.size() > 1)
+				else if(different_puces.size() > 2)
 					for(unsigned k=0; k<different_puces.size(); ++k)
 						puces_to_SHA[different_puces[k]].push_back( new Sha(events[i]->get_unique_id(), SHA_POSSIBLE) );
 
@@ -336,8 +336,8 @@ unsigned Activity::identify_different_puces(vector<unsigned>& different_puces,
 		}		
 		
 		// we don't add the "0"
-		if(puce==0)
-			continue;
+		/*if(puce==0)
+			continue;*/
 		
 		// if we didn't add the person yet (first time entering the room) we add them to different_puces
 		if(std::find(different_puces.begin(), different_puces.end(), puce) == different_puces.end())
@@ -352,9 +352,21 @@ unsigned Activity::identify_different_puces(vector<unsigned>& different_puces,
 	
 	// Identify who is the first person who has entered the room
 	if(different_puces.size() > 0)
-		first_person_id = different_puces[0];
+	{
+		if(different_puces.size() == 1 && different_puces[0] == 0)
+			first_person_id = 0;
+		else
+		{
+			for(unsigned i=0; i<different_puces.size(); ++i)
+				if(different_puces[i] != 0)
+				{
+					first_person_id = different_puces[i];
+					break;
+				}
+		}
+	}
 	else
-		first_person_id = 0;
+		first_person_id = -1;
 	
 	return different_puces.size();
 }
@@ -382,7 +394,7 @@ void Activity::activity_per_person(vector<Activity*>& split_activity)
 	
 	
 	// if there is more than 1 person in the current activity
-	if(nb_different_puces > 1)
+	if(nb_different_puces > 2) // voir ici
 	{
 		map<unsigned, vector<Event*> > different_activities; // key = person, value = vector of events
 
@@ -393,9 +405,11 @@ void Activity::activity_per_person(vector<Activity*>& split_activity)
 			
 			// this event is related to everyone
 			if( person==0 )
+			{
 				for(unsigned k=0; k < different_puces.size(); ++k)
-					different_activities[different_puces[k]].push_back( new Event(events[i]) );
-			
+					if(different_puces[k] != 0)
+						different_activities[different_puces[k]].push_back( new Event(events[i]) );
+			}
 			// this event is related to a specific person
 			else
 				different_activities[person].push_back( new Event(events[i]) );
@@ -403,15 +417,16 @@ void Activity::activity_per_person(vector<Activity*>& split_activity)
 		
 		// Create activities for each persons with the events we accorded to each persons
 		for(auto it = different_activities.begin(); it != different_activities.end(); ++it) 
-		{			
-			split_activity.push_back( new Activity(it->second, it->first, different_puces) );
-			if( it->first == first_person_id )
-				split_activity[split_activity.size()-1]->first_person = true;
+		{		
 			
-			// Count the SHAs for the Activity we just created
-			for(auto it2 = puces_to_SHA.begin(); it2 != puces_to_SHA.end(); ++it2) 
-				if( it->first == it2->first )
-					split_activity[split_activity.size()-1]->finding_labels(it2->second);
+				split_activity.push_back( new Activity(it->second, it->first, different_puces) );
+				if( it->first == first_person_id )
+					split_activity[split_activity.size()-1]->first_person = true;
+				
+				// Count the SHAs for the Activity we just created
+				for(auto it2 = puces_to_SHA.begin(); it2 != puces_to_SHA.end(); ++it2) 
+					if( it->first == it2->first )
+						split_activity[split_activity.size()-1]->finding_labels(it2->second);
 		}
 		
 		// Release the allocated memory for the different_activities map
@@ -422,18 +437,26 @@ void Activity::activity_per_person(vector<Activity*>& split_activity)
 	else
 	{
 		// If there is just 1 person in the current activity
-		if(nb_different_puces == 1)
-			main_person = different_puces[0];
-		// If there is no one in the current activity (all id = 0)
-		else
-			main_person = 0;
+		
 			
 		// Add the person to the vector
 		persons.push_back(main_person);
 		// Finding labels
 		map<unsigned, vector<Sha*> >::iterator it_sha;
-		it_sha = puces_to_SHA.begin();
-		finding_labels(it_sha->second);
+		for(auto it2 = puces_to_SHA.begin(); it2 != puces_to_SHA.end(); ++it2) 
+			if( it2->first != 0)
+			{
+				main_person = it2->first;
+				finding_labels(it2->second);
+				if(it2->first == 5 )
+				{
+					cout << main_person << endl;
+					cout << " 5 existe ! " << endl;
+					for(unsigned p=0; p<it2->second.size(); ++p)
+						cout << it2->second[p]->get_unique_id() << " ";
+					cout << endl;
+				}
+			}
 	}
 	destroy_map_puces_to_SHA(puces_to_SHA); 
 		
@@ -514,11 +537,15 @@ void Activity::finding_labels(vector<Sha*>& SHA)
 		
 	// label sure : inout
 	if(inout)
+	{
+		//cout << " je suis dans inout "<< endl;
 		finding_label_inout(SHA);
+	}
 	
 	// label sure : in and out
 	else
 	{
+		//cout << "je suis dans in et out " << endl;
 		finding_label_in(index_out, SHA);
 		finding_label_out(index_out, SHA);
 	}
@@ -536,6 +563,7 @@ void Activity::finding_label_in(unsigned index_ending, vector<Sha*>& SHA)
 	for(unsigned i=0; i < index_ending; ++i)
 	{
 		id_line_event = events[i]->get_unique_id();
+		//cout << id_line_event << endl;
 		
 		if( events[i]->get_event() == CODE_ALARM  )
 			alarm_index = i;
@@ -549,6 +577,7 @@ void Activity::finding_label_in(unsigned index_ending, vector<Sha*>& SHA)
 						SHA_index_sure = i;
 					else
 						SHA_index_possible = i;
+					break;
 				}
 			}
 		}
@@ -562,6 +591,7 @@ void Activity::finding_label_in(unsigned index_ending, vector<Sha*>& SHA)
 						SHA_during_alarm_index_sure = i;
 					else
 						SHA_during_alarm_index_possible = i;
+					break;
 				}
 			}
 		}
@@ -587,11 +617,13 @@ void Activity::finding_label_in(unsigned index_ending, vector<Sha*>& SHA)
 		
 	else if(alarm_index != -1 && SHA_index_sure != -1 && SHA_during_alarm_index_sure == -1 && SHA_index_possible == -1 && SHA_during_alarm_index_possible == -1)
 	{
+		theres_SHA_sure_in = true;
 		if(SHA_index_sure < alarm_index)
-			cerr << "weird ! sha pris AVANT l'alarme" << endl;
+			//cerr << "weird ! sha pris AVANT l'alarme" << endl;
+			label_activity.push_back( IN_WEIRD_SUR );
 		else
 		{
-			theres_SHA_sure_in = true;
+			
 			label_activity.push_back( IN_AFTER_ALARM );
 		}
 	}
@@ -604,24 +636,30 @@ void Activity::finding_label_in(unsigned index_ending, vector<Sha*>& SHA)
 		
 	else if(alarm_index != -1 && SHA_index_sure == -1 && SHA_during_alarm_index_sure != -1 && SHA_index_possible == -1 && SHA_during_alarm_index_possible == -1)
 	{
-		cerr << "weird ! alarme + sha pendant alarme" << endl; 
+		theres_SHA_sure_in = true;
+		//cerr << "weird ! alarme + sha pendant alarme" << endl; 
+		label_activity.push_back( IN_WEIRD_SUR );
 		
 	}
 	
 	else if(alarm_index == -1 && SHA_index_sure != -1 && SHA_during_alarm_index_sure != -1 && SHA_index_possible == -1 && SHA_during_alarm_index_possible == -1)
 	{
+		theres_SHA_sure_in = true;
 		if(SHA_during_alarm_index_sure < SHA_index_sure)
 		{
-			theres_SHA_sure_in = true;
+			//theres_SHA_sure_in = true;
 			label_activity.push_back( IN_DURING_ALARM );
 		}
 		else
-			cerr << "weird ! alarme retenti alors qu'on a pris le SHA" << endl; 
+			//cerr << "weird ! alarme retenti alors qu'on a pris le SHA" << endl; 
+			label_activity.push_back( IN_WEIRD_SUR );
 	}
 	
 	else if(alarm_index != -1 && SHA_index_sure != -1 && SHA_during_alarm_index_sure != -1 && SHA_index_possible == -1 && SHA_during_alarm_index_possible == -1)
 	{
-		cerr << "weird ! alarme + sha + sha pendant l'alarme" << endl;
+		//cerr << "weird ! alarme + sha + sha pendant l'alarme" << endl;
+		theres_SHA_sure_in = true;
+		label_activity.push_back( IN_WEIRD_SUR );
 	}
 	
 	else if(alarm_index == -1 && SHA_index_sure == -1 && SHA_during_alarm_index_sure == -1 && SHA_index_possible != -1 && SHA_during_alarm_index_possible == -1)
@@ -632,11 +670,13 @@ void Activity::finding_label_in(unsigned index_ending, vector<Sha*>& SHA)
 	
 	else if(alarm_index != -1 && SHA_index_sure == -1 && SHA_during_alarm_index_sure == -1 && SHA_index_possible != -1 && SHA_during_alarm_index_possible == -1)
 	{
+		theres_SHA_possible_in = true;
 		if(SHA_index_possible < alarm_index)
-			cerr << "weird ! sha possible pris AVANT l'alarme" << endl;
+			//cerr << "weird ! sha possible pris AVANT l'alarme" << endl;
+			label_activity.push_back( IN_WEIRD_POSSIBLE );
 		else
 		{
-			theres_SHA_possible_in = true;
+			
 			label_activity.push_back( IN_POSSIBLE_AFTER_ALARM );
 		}
 	}
@@ -651,18 +691,20 @@ void Activity::finding_label_in(unsigned index_ending, vector<Sha*>& SHA)
 	
 	else if(alarm_index != -1 && SHA_index_sure != -1 && SHA_during_alarm_index_sure == -1 && SHA_index_possible != -1 && SHA_during_alarm_index_possible == -1)
 	{
+		theres_SHA_sure_in = true;
 		if(alarm_index < SHA_index_sure && alarm_index < SHA_index_possible)
 		{
-			theres_SHA_sure_in = true;
+			
 			label_activity.push_back( IN_AFTER_ALARM );
 		}
 		else if(SHA_index_sure < alarm_index)
 		{
-			theres_SHA_sure_in = true;
+			
 			label_activity.push_back( IN_NO_ALARM );
 		}
 		else
-			cerr << "impossible de savoir ! sha possible + sha sur + alarme" << endl;
+			//cerr << "impossible de savoir ! sha possible + sha sur + alarme" << endl;
+			label_activity.push_back( IN_WEIRD_SUR );
 	}	
 	
 	else if(alarm_index == -1 && SHA_index_sure == -1 && SHA_during_alarm_index_sure != -1 && SHA_index_possible != -1 && SHA_during_alarm_index_possible == -1)
@@ -674,36 +716,40 @@ void Activity::finding_label_in(unsigned index_ending, vector<Sha*>& SHA)
 	
 	else if(alarm_index != -1 && SHA_index_sure == -1 && SHA_during_alarm_index_sure != -1 && SHA_index_possible != -1 && SHA_during_alarm_index_possible == -1)
 	{
+		theres_SHA_sure_in = true;
 		if( (SHA_during_alarm_index_sure < alarm_index && alarm_index < SHA_index_possible) || (alarm_index < SHA_index_possible && SHA_index_possible < SHA_during_alarm_index_sure) )
 		{
-			theres_SHA_sure_in = true;
+			
 			label_activity.push_back( IN_DURING_ALARM );
 		}
 		else
-			cerr << "weird ! sha possible + sha pendant l'alarme sur + alarme" << endl;
+			//cerr << "weird ! sha possible + sha pendant l'alarme sur + alarme" << endl;
+			label_activity.push_back( IN_WEIRD_SUR );
 	}	
 
 
 	else if(alarm_index == -1 && SHA_index_sure != -1 && SHA_during_alarm_index_sure != -1 && SHA_index_possible != -1 && SHA_during_alarm_index_possible == -1)
 	{
+		theres_SHA_sure_in = true;
 		if(SHA_during_alarm_index_sure < SHA_index_sure)
 		{
-			theres_SHA_sure_in = true;
 			label_activity.push_back( IN_DURING_ALARM );
 		}
 		else
-			cerr << "weird ! sha possible + sha pendant l'alarme sur + sha sur" << endl;
+			//cerr << "weird ! sha possible + sha pendant l'alarme sur + sha sur" << endl;
+			label_activity.push_back( IN_WEIRD_SUR );
 	}	
 
 	else if(alarm_index != -1 && SHA_index_sure != -1 && SHA_during_alarm_index_sure != -1 && SHA_index_possible != -1 && SHA_during_alarm_index_possible == -1)
 	{
+		theres_SHA_sure_in = true;
 		if(SHA_during_alarm_index_sure < alarm_index && SHA_during_alarm_index_sure < SHA_index_sure && SHA_during_alarm_index_sure < SHA_index_possible)
 		{
-			theres_SHA_sure_in = true;
 			label_activity.push_back( IN_DURING_ALARM );
 		}
 		else
-			cerr << "weird ! sha possible + sha pendant l'alarme sur + sha sur + alarme" << endl;
+			//cerr << "weird ! sha possible + sha pendant l'alarme sur + sha sur + alarme" << endl;
+			label_activity.push_back( IN_WEIRD_SUR );
 		
 	}	
 	
@@ -716,13 +762,14 @@ void Activity::finding_label_in(unsigned index_ending, vector<Sha*>& SHA)
 
 	else if(alarm_index != -1 && SHA_index_sure == -1 && SHA_during_alarm_index_sure == -1 && SHA_index_possible == -1 && SHA_during_alarm_index_possible != -1)
 	{
+		theres_SHA_sure_in = true;
 		if(SHA_during_alarm_index_possible < alarm_index)
 		{
-			theres_SHA_possible_in = true;
 			label_activity.push_back( IN_POSSIBLE_DURING_ALARM );
 		}
 		else
-			cerr << "weird ! alarme + sha pendant l'alarme possible" << endl;
+			//cerr << "weird ! alarme + sha pendant l'alarme possible" << endl;
+			label_activity.push_back( IN_WEIRD_SUR );
 	}
 	
 	else if(alarm_index == -1 && SHA_index_sure != -1 && SHA_during_alarm_index_sure == -1 && SHA_index_possible == -1 && SHA_during_alarm_index_possible != -1)
@@ -734,18 +781,18 @@ void Activity::finding_label_in(unsigned index_ending, vector<Sha*>& SHA)
 
 	else if(alarm_index != -1 && SHA_index_sure != -1 && SHA_during_alarm_index_sure == -1 && SHA_index_possible == -1 && SHA_during_alarm_index_possible != -1)
 	{
+		theres_SHA_sure_in = true;
 		if(SHA_index_sure < alarm_index)
 		{
-			theres_SHA_sure_in = true;
 			label_activity.push_back( IN_NO_ALARM );
 		}
 		else if(alarm_index < SHA_index_sure && SHA_index_sure < SHA_during_alarm_index_possible)
 		{
-			theres_SHA_sure_in = true;
 			label_activity.push_back( IN_AFTER_ALARM );
 		}
 		else
-			cerr << "weird ! alarme + sha pendant l'alarme possible + sha sur" << endl;
+			//cerr << "weird ! alarme + sha pendant l'alarme possible + sha sur" << endl;
+			label_activity.push_back( IN_WEIRD_SUR );
 	}	
 	
 	else if(alarm_index == -1 && SHA_index_sure == -1 && SHA_during_alarm_index_sure != -1 && SHA_index_possible == -1 && SHA_during_alarm_index_possible != -1)
@@ -757,39 +804,47 @@ void Activity::finding_label_in(unsigned index_ending, vector<Sha*>& SHA)
 	
 	else if(alarm_index != -1 && SHA_index_sure == -1 && SHA_during_alarm_index_sure != -1 && SHA_index_possible == -1 && SHA_during_alarm_index_possible != -1)
 	{
+		theres_SHA_sure_in = true;
 		if(SHA_during_alarm_index_sure < alarm_index && SHA_during_alarm_index_sure < SHA_during_alarm_index_possible)
 		{
-			theres_SHA_sure_in = true;
 			label_activity.push_back( IN_DURING_ALARM );
 		}
 		else
-			cerr << "weird ! alarme + sha pendant l'alarme possible + sha pendant l'alarme sur" << endl;
+			//cerr << "weird ! alarme + sha pendant l'alarme possible + sha pendant l'alarme sur" << endl;
+			label_activity.push_back( IN_WEIRD_SUR );
 	}		
 	
 	else if(alarm_index == -1 && SHA_index_sure != -1 && SHA_during_alarm_index_sure != -1 && SHA_index_possible == -1 && SHA_during_alarm_index_possible != -1)
 	{
+		theres_SHA_sure_in = true;
 		if(SHA_during_alarm_index_sure < alarm_index && SHA_during_alarm_index_sure < SHA_index_possible)
 		{
-			theres_SHA_sure_in = true;
 			label_activity.push_back( IN_DURING_ALARM );
 		}
 		else
-			cerr << "weird ! alarme + sha pendant l'alarme possible + sha pendant l'alarme sur" << endl;		
+			//cerr << "weird ! alarme + sha pendant l'alarme possible + sha pendant l'alarme sur" << endl;		
+			label_activity.push_back( IN_WEIRD_SUR );
 	}
 	
 	else if(alarm_index != -1 && SHA_index_sure != -1 && SHA_during_alarm_index_sure != -1 && SHA_index_possible == -1 && SHA_during_alarm_index_possible != -1)
 	{
-		cerr << "weird ! alarme + sha pendant l'alarme possible + sha pendant l'alarme sur" << endl;		
+		//cerr << "weird ! alarme + sha pendant l'alarme possible + sha pendant l'alarme sur" << endl;	
+		label_activity.push_back( IN_WEIRD_SUR );	
+		theres_SHA_sure_in = true;
 	}	
 	
 	else if(alarm_index == -1 && SHA_index_sure == -1 && SHA_during_alarm_index_sure == -1 && SHA_index_possible != -1 && SHA_during_alarm_index_possible != -1)
 	{
-		cerr << "weird ! alarme + sha pendant l'alarme possible + sha pendant l'alarme sur" << endl;
+		//cerr << "weird ! alarme + sha pendant l'alarme possible + sha pendant l'alarme sur" << endl;
+		label_activity.push_back( IN_WEIRD_POSSIBLE );
+		theres_SHA_possible_in = true;
 	}
 	
 	else if(alarm_index != -1 && SHA_index_sure == -1 && SHA_during_alarm_index_sure == -1 && SHA_index_possible != -1 && SHA_during_alarm_index_possible != -1)
 	{
-		cerr << "weird ! alarme + sha pendant l'alarme possible + sha pendant l'alarme sur" << endl;
+		//cerr << "weird ! alarme + sha pendant l'alarme possible + sha pendant l'alarme sur" << endl;
+		label_activity.push_back( IN_WEIRD_POSSIBLE );
+		theres_SHA_possible_in = true;
 	}
 	
 	else if(alarm_index == -1 && SHA_index_sure != -1 && SHA_during_alarm_index_sure == -1 && SHA_index_possible != -1 && SHA_during_alarm_index_possible != -1)
@@ -800,18 +855,18 @@ void Activity::finding_label_in(unsigned index_ending, vector<Sha*>& SHA)
 		
 	else if(alarm_index != -1 && SHA_index_sure != -1 && SHA_during_alarm_index_sure == -1 && SHA_index_possible != -1 && SHA_during_alarm_index_possible != -1)
 	{
+		theres_SHA_sure_in = true;
 		if(alarm_index < SHA_index_sure && SHA_index_sure < SHA_index_possible && SHA_index_sure < SHA_during_alarm_index_possible)
 		{
-			theres_SHA_sure_in = true;
 			label_activity.push_back( IN_AFTER_ALARM );
 		}
 		else if(SHA_index_sure < alarm_index)
 		{
-			theres_SHA_sure_in = true;
 			label_activity.push_back( IN_NO_ALARM );
 		}
 		else
-			cerr << "weird ! alarme + sha pendant l'alarme possible + sha pendant l'alarme sur" << endl;
+			//cerr << "weird ! alarme + sha pendant l'alarme possible + sha pendant l'alarme sur" << endl;
+			label_activity.push_back( IN_WEIRD_SUR );
 	}
 	
 	else if(alarm_index == -1 && SHA_index_sure == -1 && SHA_during_alarm_index_sure != -1 && SHA_index_possible != -1 && SHA_during_alarm_index_possible != -1)
@@ -822,38 +877,42 @@ void Activity::finding_label_in(unsigned index_ending, vector<Sha*>& SHA)
 		
 	else if(alarm_index != -1 && SHA_index_sure == -1 && SHA_during_alarm_index_sure != -1 && SHA_index_possible != -1 && SHA_during_alarm_index_possible != -1)
 	{
+		theres_SHA_sure_in = true;
 		if(SHA_during_alarm_index_sure < alarm_index)
 		{
-			theres_SHA_sure_in = true;
 			label_activity.push_back( IN_DURING_ALARM );
 		}
 		else
-			cerr << "weird ! alarme + sha pendant l'alarme possible + sha pendant l'alarme sur" << endl;
+			//cerr << "weird ! alarme + sha pendant l'alarme possible + sha pendant l'alarme sur" << endl;
+			label_activity.push_back( IN_WEIRD_SUR );
 	}
 	
 	else if(alarm_index == -1 && SHA_index_sure != -1 && SHA_during_alarm_index_sure != -1 && SHA_index_possible != -1 && SHA_during_alarm_index_possible != -1)
 	{
+		theres_SHA_sure_in = true;
 		if(SHA_during_alarm_index_sure < SHA_index_sure)
 		{
-			theres_SHA_sure_in = true;
 			label_activity.push_back(IN_DURING_ALARM);
 		}
 		else
-			cerr << "weird ! alarme + sha pendant l'alarme possible + sha pendant l'alarme sur" << endl;			
+			//cerr << "weird ! alarme + sha pendant l'alarme possible + sha pendant l'alarme sur" << endl;		
+			label_activity.push_back( IN_WEIRD_SUR );	
 	}
 	else if(alarm_index != -1 && SHA_index_sure != -1 && SHA_during_alarm_index_sure != -1 && SHA_index_possible != -1 && SHA_during_alarm_index_possible != -1)
 	{
+		theres_SHA_sure_in = true;
 		if(SHA_during_alarm_index_sure < SHA_index_sure && SHA_during_alarm_index_sure < alarm_index)
 		{
-			theres_SHA_sure_in = true;
 			label_activity.push_back(IN_DURING_ALARM);
 		}
 		else
-			cerr << "weird ! alarme + sha pendant l'alarme possible + sha pendant l'alarme sur" << endl;		
+			//cerr << "weird ! alarme + sha pendant l'alarme possible + sha pendant l'alarme sur" << endl;		
+			label_activity.push_back( IN_WEIRD_SUR );
 	}
 	
 	else
-		cerr << "CAS IMPOSSIBLE NON PRIS EN COMPTE" << endl;
+		//cerr << "CAS IMPOSSIBLE NON PRIS EN COMPTE" << endl;
+		label_activity.push_back( IN_IMPOSSIBLE_SUR );
 	
 }
 void Activity::finding_label_out(unsigned index_begining, vector<Sha*>& SHA)
@@ -868,6 +927,7 @@ void Activity::finding_label_out(unsigned index_begining, vector<Sha*>& SHA)
 	for(unsigned i=index_begining; i < events.size(); ++i)
 	{
 		id_line_event = events[i]->get_unique_id();
+		//cout << id_line_event << endl;
 		
 		if( events[i]->get_event() == CODE_ALARM  )
 			alarm_index = i;
@@ -921,11 +981,13 @@ void Activity::finding_label_out(unsigned index_begining, vector<Sha*>& SHA)
 		
 	else if(alarm_index != -1 && SHA_index_sure != -1 && SHA_during_alarm_index_sure == -1 && SHA_index_possible == -1 && SHA_during_alarm_index_possible == -1)
 	{
+		theres_SHA_sure_out = true;
 		if(SHA_index_sure < alarm_index)
-			cerr << "weird ! sha pris AVANT l'alarme" << endl;
+			//cerr << "weird ! sha pris AVANT l'alarme" << endl;
+			label_activity.push_back( OUT_WEIRD_SUR );
 		else
 		{
-			theres_SHA_sure_out = true;
+			
 			label_activity.push_back( OUT_AFTER_ALARM );
 		}
 	}
@@ -938,24 +1000,29 @@ void Activity::finding_label_out(unsigned index_begining, vector<Sha*>& SHA)
 		
 	else if(alarm_index != -1 && SHA_index_sure == -1 && SHA_during_alarm_index_sure != -1 && SHA_index_possible == -1 && SHA_during_alarm_index_possible == -1)
 	{
-		cerr << "weird ! alarme + sha pendant alarme" << endl; 
-		
+		//cerr << "weird ! alarme + sha pendant alarme" << endl; 
+		theres_SHA_sure_out = true;
+		label_activity.push_back( OUT_WEIRD_SUR );
 	}
 	
 	else if(alarm_index == -1 && SHA_index_sure != -1 && SHA_during_alarm_index_sure != -1 && SHA_index_possible == -1 && SHA_during_alarm_index_possible == -1)
 	{
+		theres_SHA_sure_out = true;
 		if(SHA_during_alarm_index_sure < SHA_index_sure)
 		{
-			theres_SHA_sure_out = true;
+			
 			label_activity.push_back( OUT_DURING_ALARM );
 		}
 		else
-			cerr << "weird ! alarme retenti alors qu'on a pris le SHA" << endl; 
+			//cerr << "weird ! alarme retenti alors qu'on a pris le SHA" << endl; 
+			label_activity.push_back( OUT_WEIRD_SUR );
 	}
 	
 	else if(alarm_index != -1 && SHA_index_sure != -1 && SHA_during_alarm_index_sure != -1 && SHA_index_possible == -1 && SHA_during_alarm_index_possible == -1)
 	{
-		cerr << "weird ! alarme + sha + sha pendant l'alarme" << endl;
+		//cerr << "weird ! alarme + sha + sha pendant l'alarme" << endl;
+		theres_SHA_sure_out = true;
+		label_activity.push_back( OUT_WEIRD_SUR );
 	}
 	
 	else if(alarm_index == -1 && SHA_index_sure == -1 && SHA_during_alarm_index_sure == -1 && SHA_index_possible != -1 && SHA_during_alarm_index_possible == -1)
@@ -966,11 +1033,13 @@ void Activity::finding_label_out(unsigned index_begining, vector<Sha*>& SHA)
 	
 	else if(alarm_index != -1 && SHA_index_sure == -1 && SHA_during_alarm_index_sure == -1 && SHA_index_possible != -1 && SHA_during_alarm_index_possible == -1)
 	{
+		theres_SHA_possible_out = true;
 		if(SHA_index_possible < alarm_index)
-			cerr << "weird ! sha possible pris AVANT l'alarme" << endl;
+			//cerr << "weird ! sha possible pris AVANT l'alarme" << endl;
+			label_activity.push_back( OUT_WEIRD_POSSIBLE );
 		else
 		{
-			theres_SHA_possible_out = true;
+			
 			label_activity.push_back( OUT_POSSIBLE_AFTER_ALARM );
 		}
 	}
@@ -985,18 +1054,19 @@ void Activity::finding_label_out(unsigned index_begining, vector<Sha*>& SHA)
 	
 	else if(alarm_index != -1 && SHA_index_sure != -1 && SHA_during_alarm_index_sure == -1 && SHA_index_possible != -1 && SHA_during_alarm_index_possible == -1)
 	{
+		theres_SHA_sure_out = true;
 		if(alarm_index < SHA_index_sure && alarm_index < SHA_index_possible)
 		{
-			theres_SHA_sure_out = true;
+			
 			label_activity.push_back( OUT_AFTER_ALARM );
 		}
 		else if(SHA_index_sure < alarm_index)
 		{
-			theres_SHA_sure_out = true;
 			label_activity.push_back( OUT_NO_ALARM );
 		}
 		else
-			cerr << "impossible de savoir ! sha possible + sha sur + alarme" << endl;
+			//cerr << "impossible de savoir ! sha possible + sha sur + alarme" << endl;
+			label_activity.push_back( OUT_WEIRD_SUR );
 	}	
 	
 	else if(alarm_index == -1 && SHA_index_sure == -1 && SHA_during_alarm_index_sure != -1 && SHA_index_possible != -1 && SHA_during_alarm_index_possible == -1)
@@ -1008,37 +1078,40 @@ void Activity::finding_label_out(unsigned index_begining, vector<Sha*>& SHA)
 	
 	else if(alarm_index != -1 && SHA_index_sure == -1 && SHA_during_alarm_index_sure != -1 && SHA_index_possible != -1 && SHA_during_alarm_index_possible == -1)
 	{
+		theres_SHA_sure_out = true;
 		if( (SHA_during_alarm_index_sure < alarm_index && alarm_index < SHA_index_possible) || (alarm_index < SHA_index_possible && SHA_index_possible < SHA_during_alarm_index_sure) )
 		{
-			theres_SHA_sure_out = true;
+			
 			label_activity.push_back( OUT_DURING_ALARM );
 		}
 		else
-			cerr << "weird ! sha possible + sha pendant l'alarme sur + alarme" << endl;
+			//cerr << "weird ! sha possible + sha pendant l'alarme sur + alarme" << endl;
+			label_activity.push_back( OUT_WEIRD_SUR );
 	}	
 
 
 	else if(alarm_index == -1 && SHA_index_sure != -1 && SHA_during_alarm_index_sure != -1 && SHA_index_possible != -1 && SHA_during_alarm_index_possible == -1)
 	{
+		theres_SHA_sure_out = true;
 		if(SHA_during_alarm_index_sure < SHA_index_sure)
 		{
-			theres_SHA_sure_out = true;
 			label_activity.push_back( OUT_DURING_ALARM );
 		}
 		else
-			cerr << "weird ! sha possible + sha pendant l'alarme sur + sha sur" << endl;
+			//cerr << "weird ! sha possible + sha pendant l'alarme sur + sha sur" << endl;
+			label_activity.push_back( OUT_WEIRD_SUR );
 	}	
 
 	else if(alarm_index != -1 && SHA_index_sure != -1 && SHA_during_alarm_index_sure != -1 && SHA_index_possible != -1 && SHA_during_alarm_index_possible == -1)
 	{
+		theres_SHA_sure_out = true;
 		if(SHA_during_alarm_index_sure < alarm_index && SHA_during_alarm_index_sure < SHA_index_sure && SHA_during_alarm_index_sure < SHA_index_possible)
 		{
-			theres_SHA_sure_out = true;
 			label_activity.push_back( OUT_DURING_ALARM );
 		}
 		else
-			cerr << "weird ! sha possible + sha pendant l'alarme sur + sha sur + alarme" << endl;
-		
+			//cerr << "weird ! sha possible + sha pendant l'alarme sur + sha sur + alarme" << endl;
+			label_activity.push_back( OUT_WEIRD_SUR );
 	}	
 	
 	else if(alarm_index == -1 && SHA_index_sure == -1 && SHA_during_alarm_index_sure == -1 && SHA_index_possible == -1 && SHA_during_alarm_index_possible != -1)
@@ -1050,13 +1123,14 @@ void Activity::finding_label_out(unsigned index_begining, vector<Sha*>& SHA)
 
 	else if(alarm_index != -1 && SHA_index_sure == -1 && SHA_during_alarm_index_sure == -1 && SHA_index_possible == -1 && SHA_during_alarm_index_possible != -1)
 	{
+		theres_SHA_possible_out = true;
 		if(SHA_during_alarm_index_possible < alarm_index)
 		{
-			theres_SHA_possible_out = true;
 			label_activity.push_back( OUT_POSSIBLE_DURING_ALARM );
 		}
 		else
-			cerr << "weird ! alarme + sha pendant l'alarme possible" << endl;
+			//cerr << "weird ! alarme + sha pendant l'alarme possible" << endl;
+			label_activity.push_back( OUT_WEIRD_POSSIBLE );
 	}
 	
 	else if(alarm_index == -1 && SHA_index_sure != -1 && SHA_during_alarm_index_sure == -1 && SHA_index_possible == -1 && SHA_during_alarm_index_possible != -1)
@@ -1068,18 +1142,19 @@ void Activity::finding_label_out(unsigned index_begining, vector<Sha*>& SHA)
 
 	else if(alarm_index != -1 && SHA_index_sure != -1 && SHA_during_alarm_index_sure == -1 && SHA_index_possible == -1 && SHA_during_alarm_index_possible != -1)
 	{
+		theres_SHA_sure_out = true;
 		if(SHA_index_sure < alarm_index)
 		{
-			theres_SHA_sure_out = true;
 			label_activity.push_back( OUT_NO_ALARM );
 		}
 		else if(alarm_index < SHA_index_sure && SHA_index_sure < SHA_during_alarm_index_possible)
 		{
-			theres_SHA_sure_out = true;
+			
 			label_activity.push_back( OUT_AFTER_ALARM );
 		}
 		else
-			cerr << "weird ! alarme + sha pendant l'alarme possible + sha sur" << endl;
+			//cerr << "weird ! alarme + sha pendant l'alarme possible + sha sur" << endl;
+			label_activity.push_back( OUT_WEIRD_SUR );
 	}	
 	
 	else if(alarm_index == -1 && SHA_index_sure == -1 && SHA_during_alarm_index_sure != -1 && SHA_index_possible == -1 && SHA_during_alarm_index_possible != -1)
@@ -1091,39 +1166,49 @@ void Activity::finding_label_out(unsigned index_begining, vector<Sha*>& SHA)
 	
 	else if(alarm_index != -1 && SHA_index_sure == -1 && SHA_during_alarm_index_sure != -1 && SHA_index_possible == -1 && SHA_during_alarm_index_possible != -1)
 	{
+		theres_SHA_sure_out = true;
 		if(SHA_during_alarm_index_sure < alarm_index && SHA_during_alarm_index_sure < SHA_during_alarm_index_possible)
 		{
-			theres_SHA_sure_out = true;
+			
 			label_activity.push_back( OUT_DURING_ALARM );
 		}
 		else
-			cerr << "weird ! alarme + sha pendant l'alarme possible + sha pendant l'alarme sur" << endl;
+			label_activity.push_back( OUT_WEIRD_SUR );
+			//cerr << "weird ! alarme + sha pendant l'alarme possible + sha pendant l'alarme sur" << endl;
 	}		
 	
 	else if(alarm_index == -1 && SHA_index_sure != -1 && SHA_during_alarm_index_sure != -1 && SHA_index_possible == -1 && SHA_during_alarm_index_possible != -1)
 	{
+		theres_SHA_sure_out = true;
 		if(SHA_during_alarm_index_sure < alarm_index && SHA_during_alarm_index_sure < SHA_index_possible)
 		{
-			theres_SHA_sure_out = true;
+			
 			label_activity.push_back( OUT_DURING_ALARM );
 		}
 		else
-			cerr << "weird ! alarme + sha pendant l'alarme possible + sha pendant l'alarme sur" << endl;		
+			label_activity.push_back( OUT_WEIRD_SUR );
+			//cerr << "weird ! alarme + sha pendant l'alarme possible + sha pendant l'alarme sur" << endl;		
 	}
 	
 	else if(alarm_index != -1 && SHA_index_sure != -1 && SHA_during_alarm_index_sure != -1 && SHA_index_possible == -1 && SHA_during_alarm_index_possible != -1)
 	{
-		cerr << "weird ! alarme + sha pendant l'alarme possible + sha pendant l'alarme sur" << endl;		
+		//cerr << "weird ! alarme + sha pendant l'alarme possible + sha pendant l'alarme sur" << endl;
+		label_activity.push_back( OUT_WEIRD_SUR );
+		theres_SHA_sure_out = true;		
 	}	
 	
 	else if(alarm_index == -1 && SHA_index_sure == -1 && SHA_during_alarm_index_sure == -1 && SHA_index_possible != -1 && SHA_during_alarm_index_possible != -1)
 	{
-		cerr << "weird ! alarme + sha pendant l'alarme possible + sha pendant l'alarme sur" << endl;
+		//cerr << "weird ! alarme + sha pendant l'alarme possible + sha pendant l'alarme sur" << endl;
+		label_activity.push_back( OUT_WEIRD_POSSIBLE );
+		theres_SHA_possible_out = true;
 	}
 	
 	else if(alarm_index != -1 && SHA_index_sure == -1 && SHA_during_alarm_index_sure == -1 && SHA_index_possible != -1 && SHA_during_alarm_index_possible != -1)
 	{
-		cerr << "weird ! alarme + sha pendant l'alarme possible + sha pendant l'alarme sur" << endl;
+		//cerr << "weird ! alarme + sha pendant l'alarme possible + sha pendant l'alarme sur" << endl;
+		label_activity.push_back( OUT_WEIRD_POSSIBLE );
+		theres_SHA_possible_out = true;
 	}
 	
 	else if(alarm_index == -1 && SHA_index_sure != -1 && SHA_during_alarm_index_sure == -1 && SHA_index_possible != -1 && SHA_during_alarm_index_possible != -1)
@@ -1134,18 +1219,19 @@ void Activity::finding_label_out(unsigned index_begining, vector<Sha*>& SHA)
 		
 	else if(alarm_index != -1 && SHA_index_sure != -1 && SHA_during_alarm_index_sure == -1 && SHA_index_possible != -1 && SHA_during_alarm_index_possible != -1)
 	{
+		theres_SHA_sure_out = true;
 		if(alarm_index < SHA_index_sure && SHA_index_sure < SHA_index_possible && SHA_index_sure < SHA_during_alarm_index_possible)
 		{
-			theres_SHA_sure_out = true;
+			
 			label_activity.push_back( OUT_AFTER_ALARM );
 		}
 		else if(SHA_index_sure < alarm_index)
 		{
-			theres_SHA_sure_out = true;
 			label_activity.push_back( OUT_NO_ALARM );
 		}
 		else
-			cerr << "weird ! alarme + sha pendant l'alarme possible + sha pendant l'alarme sur" << endl;
+			//cerr << "weird ! alarme + sha pendant l'alarme possible + sha pendant l'alarme sur" << endl;
+			label_activity.push_back( OUT_WEIRD_SUR );
 	}
 	
 	else if(alarm_index == -1 && SHA_index_sure == -1 && SHA_during_alarm_index_sure != -1 && SHA_index_possible != -1 && SHA_during_alarm_index_possible != -1)
@@ -1156,38 +1242,42 @@ void Activity::finding_label_out(unsigned index_begining, vector<Sha*>& SHA)
 		
 	else if(alarm_index != -1 && SHA_index_sure == -1 && SHA_during_alarm_index_sure != -1 && SHA_index_possible != -1 && SHA_during_alarm_index_possible != -1)
 	{
+		theres_SHA_sure_out = true;
 		if(SHA_during_alarm_index_sure < alarm_index)
 		{
-			theres_SHA_sure_out = true;
 			label_activity.push_back( OUT_DURING_ALARM );
 		}
 		else
-			cerr << "weird ! alarme + sha pendant l'alarme possible + sha pendant l'alarme sur" << endl;
+			//cerr << "weird ! alarme + sha pendant l'alarme possible + sha pendant l'alarme sur" << endl;
+			label_activity.push_back( OUT_WEIRD_SUR );
 	}
 	
 	else if(alarm_index == -1 && SHA_index_sure != -1 && SHA_during_alarm_index_sure != -1 && SHA_index_possible != -1 && SHA_during_alarm_index_possible != -1)
 	{
+		theres_SHA_sure_out = true;
 		if(SHA_during_alarm_index_sure < SHA_index_sure)
 		{
-			theres_SHA_sure_out = true;
 			label_activity.push_back(OUT_DURING_ALARM);
 		}
 		else
-			cerr << "weird ! alarme + sha pendant l'alarme possible + sha pendant l'alarme sur" << endl;			
+			//cerr << "weird ! alarme + sha pendant l'alarme possible + sha pendant l'alarme sur" << endl;	
+			label_activity.push_back( OUT_WEIRD_SUR );		
 	}
 	else if(alarm_index != -1 && SHA_index_sure != -1 && SHA_during_alarm_index_sure != -1 && SHA_index_possible != -1 && SHA_during_alarm_index_possible != -1)
 	{
+		theres_SHA_sure_out = true;
 		if(SHA_during_alarm_index_sure < SHA_index_sure && SHA_during_alarm_index_sure < alarm_index)
 		{
-			theres_SHA_sure_out = true;
 			label_activity.push_back(OUT_DURING_ALARM);
 		}
 		else
-			cerr << "weird ! alarme + sha pendant l'alarme possible + sha pendant l'alarme sur" << endl;		
+			//cerr << "weird ! alarme + sha pendant l'alarme possible + sha pendant l'alarme sur" << endl;		
+			label_activity.push_back( OUT_WEIRD_SUR );
 	}
 	
 	else
-		cerr << "CAS IMPOSSIBLE NON PRIS EN COMPTE" << endl;
+		//cerr << "CAS IMPOSSIBLE NON PRIS EN COMPTE" << endl;
+		label_activity.push_back( OUT_IMPOSSIBLE_SUR );
 	
 }
 void Activity::finding_label_inout(vector<Sha*>& SHA)
@@ -1202,11 +1292,13 @@ void Activity::finding_label_inout(vector<Sha*>& SHA)
 	for(unsigned i=0; i < events.size(); ++i)
 	{
 		id_line_event = events[i]->get_unique_id();
+		//cout << id_line_event << endl;
 		
 		if( events[i]->get_event() == CODE_ALARM  )
 			alarm_index = i;
 		else if( events[i]->get_event() == CODE_SHA  )
 		{
+			
 			for(unsigned k=0; k < SHA.size(); ++k)
 			{
 				if( id_line_event == SHA[k]->get_unique_id() )
@@ -1233,8 +1325,6 @@ void Activity::finding_label_inout(vector<Sha*>& SHA)
 		}
 	}		
 	
-			theres_SHA_sure_inout = true;
-			theres_SHA_possible_inout = true;	
 	
 	if(alarm_index == -1 && SHA_index_sure == -1 && SHA_during_alarm_index_sure == -1 && SHA_index_possible == -1 && SHA_during_alarm_index_possible == -1)
 	{
@@ -1256,11 +1346,13 @@ void Activity::finding_label_inout(vector<Sha*>& SHA)
 		
 	else if(alarm_index != -1 && SHA_index_sure != -1 && SHA_during_alarm_index_sure == -1 && SHA_index_possible == -1 && SHA_during_alarm_index_possible == -1)
 	{
+		theres_SHA_sure_inout = true;
 		if(SHA_index_sure < alarm_index)
-			cerr << "weird ! sha pris AVANT l'alarme" << endl;
+			//cerr << "weird ! sha pris AVANT l'alarme" << endl;
+			label_activity.push_back( INOUT_WEIRD_SUR );
 		else
 		{
-			theres_SHA_sure_inout = true;
+			
 			label_activity.push_back( INOUT_AFTER_ALARM );
 		}
 	}
@@ -1273,24 +1365,29 @@ void Activity::finding_label_inout(vector<Sha*>& SHA)
 		
 	else if(alarm_index != -1 && SHA_index_sure == -1 && SHA_during_alarm_index_sure != -1 && SHA_index_possible == -1 && SHA_during_alarm_index_possible == -1)
 	{
-		cerr << "weird ! alarme + sha pendant alarme" << endl; 
+		//cerr << "weird ! alarme + sha pendant alarme" << endl; 
+		label_activity.push_back( INOUT_WEIRD_SUR );
+		theres_SHA_sure_inout = true;
 		
 	}
 	
 	else if(alarm_index == -1 && SHA_index_sure != -1 && SHA_during_alarm_index_sure != -1 && SHA_index_possible == -1 && SHA_during_alarm_index_possible == -1)
 	{
+		theres_SHA_sure_inout = true;
 		if(SHA_during_alarm_index_sure < SHA_index_sure)
 		{
-			theres_SHA_sure_inout = true;
 			label_activity.push_back( INOUT_DURING_ALARM );
 		}
 		else
-			cerr << "weird ! alarme retenti alors qu'on a pris le SHA" << endl; 
+			//cerr << "weird ! alarme retenti alors qu'on a pris le SHA" << endl; 
+			label_activity.push_back( INOUT_WEIRD_SUR );
 	}
 	
 	else if(alarm_index != -1 && SHA_index_sure != -1 && SHA_during_alarm_index_sure != -1 && SHA_index_possible == -1 && SHA_during_alarm_index_possible == -1)
 	{
-		cerr << "weird ! alarme + sha + sha pendant l'alarme" << endl;
+		//cerr << "weird ! alarme + sha + sha pendant l'alarme" << endl;
+		label_activity.push_back( INOUT_WEIRD_SUR );
+		theres_SHA_sure_inout = true;
 	}
 	
 	else if(alarm_index == -1 && SHA_index_sure == -1 && SHA_during_alarm_index_sure == -1 && SHA_index_possible != -1 && SHA_during_alarm_index_possible == -1)
@@ -1301,11 +1398,13 @@ void Activity::finding_label_inout(vector<Sha*>& SHA)
 	
 	else if(alarm_index != -1 && SHA_index_sure == -1 && SHA_during_alarm_index_sure == -1 && SHA_index_possible != -1 && SHA_during_alarm_index_possible == -1)
 	{
+		theres_SHA_possible_inout = true;
 		if(SHA_index_possible < alarm_index)
-			cerr << "weird ! sha possible pris AVANT l'alarme" << endl;
+			//cerr << "weird ! sha possible pris AVANT l'alarme" << endl;
+			label_activity.push_back( INOUT_WEIRD_POSSIBLE );
 		else
 		{
-			theres_SHA_possible_inout = true;
+			
 			label_activity.push_back( INOUT_POSSIBLE_AFTER_ALARM );
 		}
 	}
@@ -1320,18 +1419,19 @@ void Activity::finding_label_inout(vector<Sha*>& SHA)
 	
 	else if(alarm_index != -1 && SHA_index_sure != -1 && SHA_during_alarm_index_sure == -1 && SHA_index_possible != -1 && SHA_during_alarm_index_possible == -1)
 	{
+		theres_SHA_sure_inout = true;
 		if(alarm_index < SHA_index_sure && alarm_index < SHA_index_possible)
 		{
-			theres_SHA_sure_inout = true;
+			
 			label_activity.push_back( INOUT_AFTER_ALARM );
 		}
 		else if(SHA_index_sure < alarm_index)
 		{
-			theres_SHA_sure_inout = true;
 			label_activity.push_back( INOUT_NO_ALARM );
 		}
 		else
-			cerr << "impossible de savoir ! sha possible + sha sur + alarme" << endl;
+			//cerr << "impossible de savoir ! sha possible + sha sur + alarme" << endl;
+			label_activity.push_back( INOUT_WEIRD_SUR );
 	}	
 	
 	else if(alarm_index == -1 && SHA_index_sure == -1 && SHA_during_alarm_index_sure != -1 && SHA_index_possible != -1 && SHA_during_alarm_index_possible == -1)
@@ -1343,36 +1443,39 @@ void Activity::finding_label_inout(vector<Sha*>& SHA)
 	
 	else if(alarm_index != -1 && SHA_index_sure == -1 && SHA_during_alarm_index_sure != -1 && SHA_index_possible != -1 && SHA_during_alarm_index_possible == -1)
 	{
+		theres_SHA_sure_inout = true;
 		if( (SHA_during_alarm_index_sure < alarm_index && alarm_index < SHA_index_possible) || (alarm_index < SHA_index_possible && SHA_index_possible < SHA_during_alarm_index_sure) )
 		{
-			theres_SHA_sure_inout = true;
 			label_activity.push_back( INOUT_DURING_ALARM );
 		}
 		else
-			cerr << "weird ! sha possible + sha pendant l'alarme sur + alarme" << endl;
+			label_activity.push_back( INOUT_WEIRD_SUR );
+			//cerr << "weird ! sha possible + sha pendant l'alarme sur + alarme" << endl;
 	}	
 
 
 	else if(alarm_index == -1 && SHA_index_sure != -1 && SHA_during_alarm_index_sure != -1 && SHA_index_possible != -1 && SHA_during_alarm_index_possible == -1)
 	{
+		theres_SHA_sure_inout = true;
 		if(SHA_during_alarm_index_sure < SHA_index_sure)
 		{
-			theres_SHA_sure_inout = true;
 			label_activity.push_back( INOUT_DURING_ALARM );
 		}
 		else
-			cerr << "weird ! sha possible + sha pendant l'alarme sur + sha sur" << endl;
+			//cerr << "weird ! sha possible + sha pendant l'alarme sur + sha sur" << endl;
+			label_activity.push_back( INOUT_WEIRD_SUR );
 	}	
 
 	else if(alarm_index != -1 && SHA_index_sure != -1 && SHA_during_alarm_index_sure != -1 && SHA_index_possible != -1 && SHA_during_alarm_index_possible == -1)
 	{
+		theres_SHA_sure_inout = true;
 		if(SHA_during_alarm_index_sure < alarm_index && SHA_during_alarm_index_sure < SHA_index_sure && SHA_during_alarm_index_sure < SHA_index_possible)
 		{
-			theres_SHA_sure_inout = true;
 			label_activity.push_back( INOUT_DURING_ALARM );
 		}
 		else
-			cerr << "weird ! sha possible + sha pendant l'alarme sur + sha sur + alarme" << endl;
+			//cerr << "weird ! sha possible + sha pendant l'alarme sur + sha sur + alarme" << endl;
+			label_activity.push_back( INOUT_WEIRD_SUR );
 		
 	}	
 	
@@ -1385,13 +1488,15 @@ void Activity::finding_label_inout(vector<Sha*>& SHA)
 
 	else if(alarm_index != -1 && SHA_index_sure == -1 && SHA_during_alarm_index_sure == -1 && SHA_index_possible == -1 && SHA_during_alarm_index_possible != -1)
 	{
+		theres_SHA_possible_inout = true;
 		if(SHA_during_alarm_index_possible < alarm_index)
 		{
-			theres_SHA_possible_inout = true;	
+				
 			label_activity.push_back( INOUT_POSSIBLE_DURING_ALARM );
 		}
 		else
-			cerr << "weird ! alarme + sha pendant l'alarme possible" << endl;
+			//cerr << "weird ! alarme + sha pendant l'alarme possible" << endl;
+			label_activity.push_back( INOUT_WEIRD_POSSIBLE );
 	}
 	
 	else if(alarm_index == -1 && SHA_index_sure != -1 && SHA_during_alarm_index_sure == -1 && SHA_index_possible == -1 && SHA_during_alarm_index_possible != -1)
@@ -1403,18 +1508,19 @@ void Activity::finding_label_inout(vector<Sha*>& SHA)
 
 	else if(alarm_index != -1 && SHA_index_sure != -1 && SHA_during_alarm_index_sure == -1 && SHA_index_possible == -1 && SHA_during_alarm_index_possible != -1)
 	{
+		theres_SHA_sure_inout = true;
 		if(SHA_index_sure < alarm_index)
 		{
-			theres_SHA_sure_inout = true;
+			
 			label_activity.push_back( INOUT_NO_ALARM );
 		}
 		else if(alarm_index < SHA_index_sure && SHA_index_sure < SHA_during_alarm_index_possible)
 		{
-			theres_SHA_sure_inout = true;
 			label_activity.push_back( INOUT_AFTER_ALARM );
 		}
 		else
-			cerr << "weird ! alarme + sha pendant l'alarme possible + sha sur" << endl;
+			//cerr << "weird ! alarme + sha pendant l'alarme possible + sha sur" << endl;
+			label_activity.push_back( INOUT_WEIRD_SUR );
 	}	
 	
 	else if(alarm_index == -1 && SHA_index_sure == -1 && SHA_during_alarm_index_sure != -1 && SHA_index_possible == -1 && SHA_during_alarm_index_possible != -1)
@@ -1426,39 +1532,48 @@ void Activity::finding_label_inout(vector<Sha*>& SHA)
 	
 	else if(alarm_index != -1 && SHA_index_sure == -1 && SHA_during_alarm_index_sure != -1 && SHA_index_possible == -1 && SHA_during_alarm_index_possible != -1)
 	{
+		theres_SHA_sure_inout = true;
 		if(SHA_during_alarm_index_sure < alarm_index && SHA_during_alarm_index_sure < SHA_during_alarm_index_possible)
 		{
-			theres_SHA_sure_inout = true;
+			
 			label_activity.push_back( INOUT_DURING_ALARM );
 		}
 		else
-			cerr << "weird ! alarme + sha pendant l'alarme possible + sha pendant l'alarme sur" << endl;
+			//cerr << "weird ! alarme + sha pendant l'alarme possible + sha pendant l'alarme sur" << endl;
+			label_activity.push_back( INOUT_WEIRD_SUR );
 	}		
 	
 	else if(alarm_index == -1 && SHA_index_sure != -1 && SHA_during_alarm_index_sure != -1 && SHA_index_possible == -1 && SHA_during_alarm_index_possible != -1)
 	{
+		theres_SHA_sure_inout = true;
 		if(SHA_during_alarm_index_sure < alarm_index && SHA_during_alarm_index_sure < SHA_index_possible)
 		{
-			theres_SHA_sure_inout = true;
 			label_activity.push_back( INOUT_DURING_ALARM );
 		}
 		else
-			cerr << "weird ! alarme + sha pendant l'alarme possible + sha pendant l'alarme sur" << endl;		
+			//cerr << "weird ! alarme + sha pendant l'alarme possible + sha pendant l'alarme sur" << endl;	
+			label_activity.push_back( INOUT_WEIRD_SUR );	
 	}
 	
 	else if(alarm_index != -1 && SHA_index_sure != -1 && SHA_during_alarm_index_sure != -1 && SHA_index_possible == -1 && SHA_during_alarm_index_possible != -1)
 	{
-		cerr << "weird ! alarme + sha pendant l'alarme possible + sha pendant l'alarme sur" << endl;		
+		//cerr << "weird ! alarme + sha pendant l'alarme possible + sha pendant l'alarme sur" << endl;		
+		label_activity.push_back( INOUT_WEIRD_SUR );
+		theres_SHA_sure_inout = true;
 	}	
 	
 	else if(alarm_index == -1 && SHA_index_sure == -1 && SHA_during_alarm_index_sure == -1 && SHA_index_possible != -1 && SHA_during_alarm_index_possible != -1)
 	{
-		cerr << "weird ! alarme + sha pendant l'alarme possible + sha pendant l'alarme sur" << endl;
+		//cerr << "weird ! alarme + sha pendant l'alarme possible + sha pendant l'alarme sur" << endl;
+		label_activity.push_back( INOUT_WEIRD_POSSIBLE );
+		theres_SHA_possible_inout = true;
 	}
 	
 	else if(alarm_index != -1 && SHA_index_sure == -1 && SHA_during_alarm_index_sure == -1 && SHA_index_possible != -1 && SHA_during_alarm_index_possible != -1)
 	{
-		cerr << "weird ! alarme + sha pendant l'alarme possible + sha pendant l'alarme sur" << endl;
+		//cerr << "weird ! alarme + sha pendant l'alarme possible + sha pendant l'alarme sur" << endl;
+		label_activity.push_back( INOUT_WEIRD_POSSIBLE );
+		theres_SHA_possible_inout = true;
 	}
 	
 	else if(alarm_index == -1 && SHA_index_sure != -1 && SHA_during_alarm_index_sure == -1 && SHA_index_possible != -1 && SHA_during_alarm_index_possible != -1)
@@ -1469,18 +1584,18 @@ void Activity::finding_label_inout(vector<Sha*>& SHA)
 		
 	else if(alarm_index != -1 && SHA_index_sure != -1 && SHA_during_alarm_index_sure == -1 && SHA_index_possible != -1 && SHA_during_alarm_index_possible != -1)
 	{
+		theres_SHA_sure_inout = true;
 		if(alarm_index < SHA_index_sure && SHA_index_sure < SHA_index_possible && SHA_index_sure < SHA_during_alarm_index_possible)
 		{
-			theres_SHA_sure_inout = true;
 			label_activity.push_back( INOUT_AFTER_ALARM );
 		}
 		else if(SHA_index_sure < alarm_index)
 		{
-			theres_SHA_sure_inout = true;
 			label_activity.push_back( INOUT_NO_ALARM );
 		}
 		else
-			cerr << "weird ! alarme + sha pendant l'alarme possible + sha pendant l'alarme sur" << endl;
+			//cerr << "weird ! alarme + sha pendant l'alarme possible + sha pendant l'alarme sur" << endl;
+			label_activity.push_back( INOUT_WEIRD_SUR );
 	}
 	
 	else if(alarm_index == -1 && SHA_index_sure == -1 && SHA_during_alarm_index_sure != -1 && SHA_index_possible != -1 && SHA_during_alarm_index_possible != -1)
@@ -1491,37 +1606,41 @@ void Activity::finding_label_inout(vector<Sha*>& SHA)
 		
 	else if(alarm_index != -1 && SHA_index_sure == -1 && SHA_during_alarm_index_sure != -1 && SHA_index_possible != -1 && SHA_during_alarm_index_possible != -1)
 	{
+		theres_SHA_sure_inout = true;
 		if(SHA_during_alarm_index_sure < alarm_index)
 		{
-			theres_SHA_sure_inout = true;
 			label_activity.push_back( INOUT_DURING_ALARM );
 		}
 		else
-			cerr << "weird ! alarme + sha pendant l'alarme possible + sha pendant l'alarme sur" << endl;
+			//cerr << "weird ! alarme + sha pendant l'alarme possible + sha pendant l'alarme sur" << endl;
+			label_activity.push_back( INOUT_WEIRD_SUR );
 	}
 	
 	else if(alarm_index == -1 && SHA_index_sure != -1 && SHA_during_alarm_index_sure != -1 && SHA_index_possible != -1 && SHA_during_alarm_index_possible != -1)
 	{
+		theres_SHA_sure_inout = true;
 		if(SHA_during_alarm_index_sure < SHA_index_sure)
 		{
-			theres_SHA_sure_inout = true;
 			label_activity.push_back(INOUT_DURING_ALARM);
 		}
 		else
-			cerr << "weird ! alarme + sha pendant l'alarme possible + sha pendant l'alarme sur" << endl;			
+			//cerr << "weird ! alarme + sha pendant l'alarme possible + sha pendant l'alarme sur" << endl;	
+			label_activity.push_back( INOUT_WEIRD_SUR );		
 	}
 	else if(alarm_index != -1 && SHA_index_sure != -1 && SHA_during_alarm_index_sure != -1 && SHA_index_possible != -1 && SHA_during_alarm_index_possible != -1)
 	{
+		theres_SHA_sure_inout = true;
 		if(SHA_during_alarm_index_sure < SHA_index_sure && SHA_during_alarm_index_sure < alarm_index)
 		{
-			theres_SHA_sure_inout = true;
 			label_activity.push_back(INOUT_DURING_ALARM);
 		}
 		else
-			cerr << "weird ! alarme + sha pendant l'alarme possible + sha pendant l'alarme sur" << endl;		
+			//cerr << "weird ! alarme + sha pendant l'alarme possible + sha pendant l'alarme sur" << endl;		
+			label_activity.push_back( INOUT_WEIRD_SUR );
 	}
 	
 	else
-		cerr << "CAS IMPOSSIBLE NON PRIS EN COMPTE" << endl;
+		//cerr << "CAS IMPOSSIBLE NON PRIS EN COMPTE" << endl;
+		label_activity.push_back( INOUT_IMPOSSIBLE_SUR );
 }
 

@@ -37,7 +37,6 @@ class Person
 		unsigned get_nb_label(Label label);
 		void incr_nb_label(Label label);
 
-		// changer le nom des variables (c'est pas des sha sur mais des activités sure)
 		void incr_nb_activity_inout_sure();
 		void incr_nb_activity_inout_possible();
 		void incr_nb_activity_in_sure();
@@ -52,14 +51,19 @@ class Person
 		unsigned get_nb_activity_in_possible_total();
 		unsigned get_nb_activity_out_possible_total();
 		
-		/*
+	
+		unsigned get_nb_SHA_taken_sure_in() ;
+		unsigned get_nb_SHA_not_taken_sure_in() ;
+		unsigned get_nb_SHA_taken_possible_in();
+			
 		unsigned get_nb_SHA_taken_sure_out() ;
 		unsigned get_nb_SHA_not_taken_sure_out() ;
 		unsigned get_nb_SHA_taken_possible_out();
+		
 		unsigned get_nb_SHA_taken_sure_inout() ;
 		unsigned get_nb_SHA_not_taken_sure_inout() ;
 		unsigned get_nb_SHA_taken_possible_inout();
-		*/
+		
 
 		void print_person();
 		void write_file(std::ofstream& output);
