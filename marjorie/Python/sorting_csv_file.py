@@ -12,7 +12,13 @@ if len(sys.argv) != 2 :
     print("Usage : {} {}".format( sys.argv[0], "data_csv_file" ))
     sys.exit()
 
-output_filename = 'sort_'+sys.argv[1]
+if '/' in sys.argv[1]:
+    filename = sys.argv[1].split('/')
+    name = filename[-1]
+else:
+    name = sys.argv[1]
+
+output_filename = 'sort_'+name
 df = pd.read_csv(sys.argv[1], sep=';')
-df = df.sort_values(by=['AppareilId', 'temps'])
-df.to_csv(output_filename, index=False, header=False)
+df = df.sort_values(by=['NumAppareil', 'temps'])
+df.to_csv(output_filename, index=False, header=True)

@@ -75,29 +75,23 @@ class Activity
 {
 	private:
 		std::vector<Event*> events;
-		std::vector<unsigned> persons;
-		
-		unsigned main_person;	
+		std::vector<unsigned> persons; // contains all the numTags present in the activity
+		unsigned main_person; // the activity belongs to the main person
 		bool inout = false; // true => the activity is a very short one, false => there is an in and an out
-		
-		bool theres_SHA_sure_in = false;
-		bool theres_SHA_sure_out = false;
-		bool theres_SHA_sure_inout = false;
-		bool theres_SHA_possible_in = false;
-		bool theres_SHA_possible_out = false;
-		bool theres_SHA_possible_inout = false;
-				
-		bool first_person = false;
-				
+		bool activity_sure_in = false;
+		bool activity_sure_out = false;
+		bool activity_sure_inout = false;
+		bool activity_possible_in = false;
+		bool activity_possible_out = false;
+		bool activity_possible_inout = false;
+		bool first_person = false; // is the main person also the first person who have entered the room
 		std::vector<Label> label_activity;
 
 		
 		bool same_activity(Event* event);
 		unsigned identify_different_puces(std::vector<unsigned>& different_puces, std::map<unsigned, std::vector<Sha*> >& puces_to_SHA, unsigned& first_person_id);
-		
 		void destroy_map_different_activities(std::map<unsigned, std::vector<Event*> >& different_activities);
 		void destroy_map_puces_to_SHA(std::map<unsigned, std::vector<Sha*> >& puces_to_SHA);
-		
 		unsigned finding_in_out_inout();
 		void finding_labels(std::vector<Sha*>& SHA);
 		void finding_label_in(unsigned index_ending, std::vector<Sha*>& SHA);
@@ -125,12 +119,12 @@ class Activity
 		  
 		bool get_inout();
 		
-		bool get_theres_SHA_sure_in();
-		bool get_theres_SHA_sure_out();
-		bool get_theres_SHA_sure_inout();
-		bool get_theres_SHA_possible_in ();
-		bool get_theres_SHA_possible_out ();
-		bool get_theres_SHA_possible_inout ();
+		bool get_activity_sure_in();
+		bool get_activity_sure_out();
+		bool get_activity_sure_inout();
+		bool get_activity_possible_in ();
+		bool get_activity_possible_out ();
+		bool get_activity_possible_inout ();
 };
 	
 

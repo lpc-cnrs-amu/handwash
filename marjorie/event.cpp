@@ -1,4 +1,4 @@
-#include <iostream>
+
 #include "event.hpp"
 #define SECOND_MAX 10
 
@@ -105,7 +105,7 @@ Event::Event(string line, bool excel_csv)
 	size_t pos_date = 0;
 	unsigned cpt=0;
 	
-	while (cpt < 5 && (pos = line.find(delimiter)) != std::string::npos) 
+	while (cpt < 7 && (pos = line.find(delimiter)) != std::string::npos) 
 	{
 		token = line.substr(0, pos);
 		
@@ -119,10 +119,10 @@ Event::Event(string line, bool excel_csv)
 		else if(cpt==1)
 			id_puce = stoi( token );
 		
-		else if(cpt==4)
+		else if(cpt==5)
 			id_chamber = stoi( token );
 		
-		else if(cpt==2)
+		else if(cpt==6)
 			id_event = stoi( token );
 		
 		else if(cpt==3)
@@ -135,6 +135,7 @@ Event::Event(string line, bool excel_csv)
 			split_time();
 		}
 		
+		
 		line.erase(0, pos + delimiter.length());
 		++cpt;
 	}
@@ -144,7 +145,25 @@ Event::Event(string line, bool excel_csv)
 
 void Event::print_event()
 {
-	cout << "event: [" << id_event << "] in: ["
+	cout << "event id: [" << unique_id << "]"
+		 << " code event: [" << id_event << "] in: ["
+		 << in << "] id_puce: ["
+		 << id_puce << "] id_chamber: ["
+		 << id_chamber << "] year: ["
+		 << year << "] month: ["
+		 << month << "] day: ["
+		 << day << "] hour: ["
+		 << hour << "] minutes: ["
+		 << minutes << "] seconds: ["
+		 << seconds << "] date: ["
+		 << date << "] time: ["
+		 << time << "]\n";
+}
+
+void Event::print_event(ofstream& output)
+{
+	output << "\tevent id: [" << unique_id << "]"
+		 << " code event: [" << id_event << "] in: ["
 		 << in << "] id_puce: ["
 		 << id_puce << "] id_chamber: ["
 		 << id_chamber << "] year: ["

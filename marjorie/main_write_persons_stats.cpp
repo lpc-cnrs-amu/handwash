@@ -12,10 +12,7 @@ using namespace std::chrono;
 /* GATHER DATA (ACTIVITY, LABEL...) FOR EACH PERSON */
 
 void update_persons_stats(Activity* activity_tmp, map<unsigned, Person*>& person_stats, unsigned p)
-{
-	if(p == 5)
-		cout << "puce 5 existe" << endl;
-		
+{		
 	if (person_stats.find(p) == person_stats.end())
 		person_stats[ p ] = new Person();	
 		
@@ -27,23 +24,23 @@ void update_persons_stats(Activity* activity_tmp, map<unsigned, Person*>& person
 	// increase nb of corresponding activity
 	if( activity_tmp->get_inout() )
 	{
-		if( activity_tmp->get_theres_SHA_sure_inout() )
+		if( activity_tmp->get_activity_sure_inout() )
 			person_stats[ p ]->incr_nb_activity_inout_sure();
-		if( activity_tmp->get_theres_SHA_possible_inout() )
+		if( activity_tmp->get_activity_possible_inout() )
 			person_stats[ p ]->incr_nb_activity_inout_possible();
 	}
 	else
 	{
-		if( activity_tmp->get_theres_SHA_sure_in() )
+		if( activity_tmp->get_activity_sure_in() )
 			person_stats[ p ]->incr_nb_activity_in_sure();
 		
-		if( activity_tmp->get_theres_SHA_sure_out() )
+		if( activity_tmp->get_activity_sure_out() )
 			person_stats[ p ]->incr_nb_activity_out_sure();
 		
-		if( activity_tmp->get_theres_SHA_possible_in() )
+		if( activity_tmp->get_activity_possible_in() )
 			person_stats[ p ]->incr_nb_activity_in_possible();
 			
-		if( activity_tmp->get_theres_SHA_possible_out() )
+		if( activity_tmp->get_activity_possible_out() )
 			person_stats[ p ]->incr_nb_activity_out_possible();	
 	}	
 }
@@ -65,9 +62,13 @@ void get_persons_stats(char* filename, bool excel_csv, map<unsigned, Person*>& p
 	bool append_activity = true;
 	vector<Activity*> split_activity; 
 	Activity* activity_tmp = new Activity();
+	unsigned cpt_line = 0;
 	
 	while(std::getline(database, line))
 	{
+		++cpt_line;
+		if(cpt_line==1)
+			continue;
 		
 		// add to the current activity
 		append_activity = activity_tmp->check_and_append_event_to_activity( new Event(line, excel_csv) );

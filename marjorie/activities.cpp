@@ -36,9 +36,14 @@ Activities::Activities(char* filename, bool excel_csv)
 	bool append_activity = true;
 	
 	Activity* activity_tmp = new Activity();
+	unsigned cpt_line = 0;
 	
 	while(std::getline(database, line))
 	{
+		++cpt_line;
+		if(cpt_line==1)
+			continue;
+			
 		//activity_tmp->print_activity();
 		append_activity = activity_tmp->check_and_append_event_to_activity( new Event(line, excel_csv) );
 		
@@ -101,11 +106,15 @@ void Activities::write_file(char* filename)
 		cerr << "Impossible to open the file " << filename << endl;
 		exit(EXIT_FAILURE);		
 	}
-	
+	unsigned nb_act=0;
 	for(unsigned i=0; i<activities.size(); ++i)
 	{
-		if(activities[i]->get_person() == 4341 /*&& activities[i]->get_nb_persons() != 1*/)
+		if(activities[i]->get_person() == 425 /*&& activities[i]->get_nb_persons() != 1*/)
+		{
 			activities[i]->write_file(output);
+			++nb_act;
+		}
 	}
+	output << "NUMBER ACT :" << nb_act;
 	output.close();
 }

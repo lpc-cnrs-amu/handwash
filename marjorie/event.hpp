@@ -1,6 +1,8 @@
 #ifndef EVENT_HPP
 #define EVENT_HPP
 #include <string>
+#include <fstream>
+#include <iostream>
 #define IN true
 #define OUT false
 
@@ -41,6 +43,7 @@ class Event
 		Event(std::string line, bool excel_csv);
 		
 		void print_event();
+		void print_event(std::ofstream& output);
 		unsigned last_day_month();
 		int ecart_time(Event* prec);
 		
