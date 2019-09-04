@@ -69,17 +69,17 @@ Activity::Activity(Activity* copy)
 	*
 	* \param filename : file containing every instances in csv format.
 */
-Activity::Activity(vector<Event*>& vector_event, unsigned p, vector<unsigned>& different_persons)
+Activity::Activity(vector<Event*>& vector_event, unsigned p, map<unsigned, unsigned>& puces_with_time_copy)
 {
 	unsigned i;
 	
 	main_person = p;
 	
+	for(auto it = puces_with_time_copy.begin(); it != puces_with_time_copy.end(); ++it)
+		puces_with_time.insert(std::pair<it->first,it->second>);
+	
 	for(i=0; i < vector_event.size(); ++i)
 		events.push_back( new Event(vector_event[i]) );
-		
-	for(i=0; i < different_persons.size(); ++i)
-		persons.push_back( different_persons[i] );
 }
 
 Activity::Activity(Event* event)
@@ -382,7 +382,7 @@ unsigned Activity::attributes_SHA(//map<unsigned, unsigned>& puces_with_time,
 }
 
 
-void Activity::split_activities()
+void Activity::split_activities(unsigned first_person_id)
 {
 	map<unsigned, vector<Event*> > different_activities; // key = person, value = vector of events
 
@@ -406,15 +406,18 @@ void Activity::split_activities()
 	// Create activities for each persons with the events we accorded to each persons
 	for(auto it = different_activities.begin(); it != different_activities.end(); ++it) 
 	{		
-		split_activity.push_back( new Activity(it->second, it->first, different_puces) ); /** CHANGE THAT*/
+		split_activity.push_back( new Activity(it->second, it->first, puces_with_time) ); 
 		if( it->first == first_person_id )
 			split_activity[split_activity.size()-1]->first_person = true;
 		
 		// find labels for the Activity we just created
+		/** a refaire */
 		for(auto it2 = puces_to_SHA.begin(); it2 != puces_to_SHA.end(); ++it2) 
 			if( it->first == it2->first )
 				split_activity[split_activity.size()-1]->finding_labels(it2->second);
 	}
+	/** + faire les abandons d'activités */
+	
 	
 	// Release the allocated memory for the different_activities map
 	destroy_map_different_activities(different_activities);
