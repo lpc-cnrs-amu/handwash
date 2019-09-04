@@ -38,6 +38,11 @@ Activity::~Activity()
 
 Activity::Activity(){ }
 
+/**
+	* \brief Activity Copy Constructor.
+	*
+	* \param copy : the activity to copy.
+*/
 Activity::Activity(Activity* copy)
 {
 	unsigned i;
@@ -45,13 +50,9 @@ Activity::Activity(Activity* copy)
 	this->main_person = copy->main_person;
 	this->inout = copy->inout;
 	this->first_person = copy->first_person;
-	this->activity_sure_in = copy->activity_sure_in;
-	this->activity_sure_out = copy->activity_sure_out;
-	this->activity_sure_inout = copy->activity_sure_inout;
-	this->activity_possible_in = copy->activity_possible_in;
-	this->activity_possible_out = copy->activity_possible_out;
-	this->activity_possible_inout = copy->activity_possible_inout;
-
+	this->is_in = copy->is_in;
+	this->is_out = copy->is_out;
+	this->is_inout = copy->is_inout;
 			
 	for(i=0; i < copy->events.size(); ++i)
 		this->events.push_back( new Event(copy->events[i]) );
@@ -98,12 +99,9 @@ bool Activity::get_inout() { return inout; }
 unsigned Activity::get_person() { return main_person; }
 unsigned Activity::get_nb_persons() { return persons.size(); }
 
-bool Activity::get_activity_sure_in() { return activity_sure_in; }
-bool Activity::get_activity_sure_out() { return activity_sure_out; }
-bool Activity::get_activity_sure_inout() { return activity_sure_inout; }
-bool Activity::get_activity_possible_in () { return activity_possible_in; }
-bool Activity::get_activity_possible_out () { return activity_possible_out; }
-bool Activity::get_activity_possible_inout () { return activity_possible_inout; }
+bool Activity::get_is_in() { return is_in; }
+bool Activity::get_is_out() { return is_out; }
+bool Activity::get_is_inout() { return is_inout; }
 
 
 	/* Print functions */
@@ -285,85 +283,94 @@ bool Activity::same_activity(Event* event)
 	/* Split activities if there is several persons in one activity */
 
 /**
-	* \name identify_different_puces
-	* \brief Identifies all the persons in the current activity.
+	* \name attributes_SHA
+	* \brief Attributes the SHAs to their owners.
 	* 
 	* Fills the "different_puces" vector with all the persons in the current activity.
 	* 
 	* Knows who are the first person who has entered the room.
 	* 
-	* Gives the SHAs to the persons. 
-	* 
 	* \param different_puces : vector to be filled with all the persons (not the "0"). 
-	* \param puces_to_SHA : map to be filled with key=id of a person, value=vector of SHA (true = SHA sure, false = SHA possible).
+	* \param SHA_informations : vector of SHA to be filled.
 	* \param first_person_id : first person who has entered the room.
 	* 
 	* \return The number of persons on the current activity.
 */
-unsigned Activity::identify_different_puces(vector<unsigned>& different_puces, 
-	map<unsigned, vector<Sha*> >& puces_to_SHA, unsigned& first_person_id)
+unsigned Activity::attributes_SHA(//map<unsigned, unsigned>& puces_with_time, 
+	vector<Sha*>& SHA_informations, unsigned& first_person_id)
 {
 	unsigned puce;
 	for(unsigned i=0; i<events.size(); ++i)
 	{
 		puce = events[i]->get_id_puce();
 		
-		// if we didn't add the person yet (first time entering the room) we add them to different_puces
-		if(std::find(different_puces.begin(), different_puces.end(), puce) == different_puces.end()){
-			different_puces.push_back(puce);
-			if(puce==425)
-				cerr << "id=" << id_debug << endl;
-		}
+		// if we didn't add the person yet (first time entering the room) we add them to puces_with_time
+		if( puces_with_time.find(puce) == puces_with_time.end() )
+			puces_with_time[puce] = i;
 		
 		if(events[i]->get_event() == CODE_SHA || events[i]->get_event() == CODE_SHA_DURING_ALARM)
 		{
-			if( puce != 0 || different_puces.size() == 1)
-				puces_to_SHA[puce].push_back( new Sha(events[i]->get_unique_id(), SHA_SURE) );
+			bool unknown_sha = true; 
+			
+			// si la puce appartient à quelqu'un ou s'il n'y a qu'une seule personne dans l'activité pour l'instant (probablement le 0)
+			if( puce != 0 || puces_with_time.size() == 1)
+				SHA_informations.push_back( new Sha(events[i]->get_unique_id(), puce, SHA_SURE) );
 				
 			else
 			{
 				//gives the SHA to the only person if there is no one else
-				if(different_puces.size() == 2)
+				if(puces_with_time.size() == 2)
 				{
-					if(different_puces[0] != 0 && different_puces[1] == 0)
-						puces_to_SHA[different_puces[0]].push_back( new Sha(events[i]->get_unique_id(), SHA_SURE) );
-					else if(different_puces[0] == 0 && different_puces[1] != 0)
-						puces_to_SHA[different_puces[1]].push_back( new Sha(events[i]->get_unique_id(), SHA_SURE) );
-					else
+					
+					for( auto it = puces_with_time.begin(); it != puces_with_time.end(); ++it )
 					{
-						for(unsigned k=0; k<different_puces.size(); ++k)
-							puces_to_SHA[different_puces[k]].push_back( new Sha(events[i]->get_unique_id(), SHA_POSSIBLE) );
-					}
+						if( it->first != 0 )
+						{
+							SHA_informations.push_back( new Sha(events[i]->get_unique_id(), it->first, SHA_SURE) );
+							unknown_sha = false;
+						}
+					} 
+						
+					//gives the SHA to no one (ambiguité = -1)
+					if ( unknown_sha )
+						SHA_informations.push_back( new Sha(events[i]->get_unique_id(), -1, SHA_POSSIBLE) );
 				}
 
-				//gives the SHA to all persons who are in the room (except puce 0)
-				else if(different_puces.size() > 2)
-				{
-					for(unsigned k=0; k<different_puces.size(); ++k)
-						if(different_puces[k] != 0)
-							puces_to_SHA[different_puces[k]].push_back( new Sha(events[i]->get_unique_id(), SHA_POSSIBLE) );
-				}
+				//gives the SHA to no one (ambiguité = -1)
+				else if(puces_with_time.size() > 2)
+					SHA_informations.push_back( new Sha(events[i]->get_unique_id(), -1, SHA_POSSIBLE) );
 			}
 		}			
 	}
 	
-	// Gives empty vector on the puces_to_SHA map for people who don't have a SHA
-	for(unsigned i=0; i<different_puces.size(); ++i)
-		if(puces_to_SHA.find(different_puces[i]) == puces_to_SHA.end())
-			puces_to_SHA[different_puces[i]] = {};
+	// attribue les SHA inconnues s'il n'y a eu qu'une personne dans l'activité
+	if(puces_with_time.size() == 2)
+	{
+		for( auto it = puces_with_time.begin(); it != puces_with_time.end(); ++it )
+		{
+			if( it->first != 0 )
+			{
+				for(unsigned i=0; i < SHA_informations.size(); ++i)
+				{
+					if( SHA_informations[i]->get_person_id() == 0 )
+						SHA_informations[i]->set_person_id( it->first )
+				}
+			}
+		}
+	}
 	
 	
 	// Identify who is the first person who has entered the room
-	if(different_puces.size() > 0)
+	if(puces_with_time.size() > 0)
 	{
-		if(different_puces.size() == 1 && different_puces[0] == 0)
-			first_person_id = 0;
+		if(puces_with_time.size() == 1)
+			first_person_id = puces_with_time.begin()->first;
 		else
 		{
-			for(unsigned i=0; i<different_puces.size(); ++i)
-				if(different_puces[i] != 0)
+			for( auto it = puces_with_time.begin(); it != puces_with_time.end(); ++it )
+				if( it->first != 0 )
 				{
-					first_person_id = different_puces[i];
+					first_person_id = it->first;
 					break;
 				}
 		}
@@ -371,9 +378,47 @@ unsigned Activity::identify_different_puces(vector<unsigned>& different_puces,
 	else
 		first_person_id = -1;
 	
-	return different_puces.size();
+	return puces_with_time.size();
 }
 
+
+void Activity::split_activities()
+{
+	map<unsigned, vector<Event*> > different_activities; // key = person, value = vector of events
+
+	// Accords events to each persons
+	for(unsigned i=0; i<events.size(); ++i)
+	{
+		person = events[i]->get_id_puce();
+		
+		// this event is related to everyone
+		if( person==0 )
+		{
+			for( auto it = puces_with_time.begin(); it != puces_with_time.end(); ++it )
+				if( it->first != 0 )
+					different_activities[it->first].push_back( new Event(events[i]) );
+		}
+		// this event is related to a specific person
+		else
+			different_activities[person].push_back( new Event(events[i]) );
+	}	
+	
+	// Create activities for each persons with the events we accorded to each persons
+	for(auto it = different_activities.begin(); it != different_activities.end(); ++it) 
+	{		
+		split_activity.push_back( new Activity(it->second, it->first, different_puces) ); /** CHANGE THAT*/
+		if( it->first == first_person_id )
+			split_activity[split_activity.size()-1]->first_person = true;
+		
+		// find labels for the Activity we just created
+		for(auto it2 = puces_to_SHA.begin(); it2 != puces_to_SHA.end(); ++it2) 
+			if( it->first == it2->first )
+				split_activity[split_activity.size()-1]->finding_labels(it2->second);
+	}
+	
+	// Release the allocated memory for the different_activities map
+	destroy_map_different_activities(different_activities);
+}
 
 /**
 	* \name activity_per_person
@@ -391,52 +436,20 @@ void Activity::activity_per_person(vector<Activity*>& split_activity)
 
 	++id_debug;
 
-	// Who are the person(s) in the current activity ?
+	// Who are the person(s) in the current activity ? + SHAs attribution
 	unsigned person;
-	vector<unsigned> different_puces;
-	map<unsigned, vector<Sha*> > puces_to_SHA;
+	//map<unsigned, unsigned> puces_with_time;
+	vector<Sha*> SHA_informations;
 	unsigned first_person_id = 0;
-	unsigned nb_different_puces = identify_different_puces(different_puces, puces_to_SHA, first_person_id);
+	unsigned nb_different_puces = attributes_SHA(/*puces_with_time,*/ SHA_informations, first_person_id);
 	
 	
-	// if there is more than 1 person in the current activity
+	/** REFAIRE CES IF **/
+	
+	// if there is more than 1 person in the current activity => Split activities
 	if(nb_different_puces > 2) 
 	{
-		map<unsigned, vector<Event*> > different_activities; // key = person, value = vector of events
-
-		// Accords events to each persons
-		for(unsigned i=0; i<events.size(); ++i)
-		{
-			person = events[i]->get_id_puce();
-			
-			// this event is related to everyone
-			if( person==0 )
-			{
-				for(unsigned k=0; k < different_puces.size(); ++k)
-					if(different_puces[k] != 0)
-						different_activities[different_puces[k]].push_back( new Event(events[i]) );
-			}
-			// this event is related to a specific person
-			else
-				different_activities[person].push_back( new Event(events[i]) );
-		}	
-		
-		// Create activities for each persons with the events we accorded to each persons
-		for(auto it = different_activities.begin(); it != different_activities.end(); ++it) 
-		{		
-			
-				split_activity.push_back( new Activity(it->second, it->first, different_puces) );
-				if( it->first == first_person_id )
-					split_activity[split_activity.size()-1]->first_person = true;
-				
-				// find labels for the Activity we just created
-				for(auto it2 = puces_to_SHA.begin(); it2 != puces_to_SHA.end(); ++it2) 
-					if( it->first == it2->first )
-						split_activity[split_activity.size()-1]->finding_labels(it2->second);
-		}
-		
-		// Release the allocated memory for the different_activities map
-		destroy_map_different_activities(different_activities);
+		split_activities();
 	}
 	
 	// If there is not several person in the current activity
@@ -444,27 +457,25 @@ void Activity::activity_per_person(vector<Activity*>& split_activity)
 	{
 		// If there is just 1 person in the current activity
 		// Finding labels
-		map<unsigned, vector<Sha*> >::iterator it_sha;
 		first_person = true;
-
-		for(auto it2 = puces_to_SHA.begin(); it2 != puces_to_SHA.end(); ++it2) 
+		if(puces_with_time.size()==1)
 		{
-			persons.push_back(it2->first);
-			
-			if(puces_to_SHA.size()>1 && it2->first != 0)
+			main_person = puces_with_time.begin()->first;
+			finding_labels(SHA_informations);				
+		}
+		else
+		{
+			for(auto it2 = puces_with_time.begin(); it2 != puces_with_time.end(); ++it2) 
 			{
-				main_person = it2->first;
-				finding_labels(it2->second);
-			}
-			else if(puces_to_SHA.size()==1)
-			{
-				main_person = it2->first;
-				finding_labels(it2->second);					
+				if(it2->first != 0)
+				{
+					main_person = it2->first;
+					finding_labels(SHA_informations);
+				}
 			}
 		}
-		
 	}
-	destroy_map_puces_to_SHA(puces_to_SHA); 
+	//destroy_map_puces_to_SHA(puces_to_SHA); 
 		
 }
 
@@ -556,70 +567,54 @@ void Activity::finding_labels(vector<Sha*>& SHA)
 void Activity::finding_label_in(unsigned index_ending, vector<Sha*>& SHA)
 {
 	int alarm_index = -1;
-	int SHA_index_sure = -1;
-	int SHA_index_possible = -1;
-	int SHA_during_alarm_index_sure = -1;
-	int SHA_during_alarm_index_possible = -1;
+	int SHA_index = -1;
+	int SHA_during_alarm_index = -1;
 	unsigned id_line_event;
+	unsigned code_event;
 	
-	for(unsigned i=0; i < index_ending; ++i)
+	for(unsigned num_event=0; num_event < index_ending; ++num_event)
 	{
-		id_line_event = events[i]->get_unique_id();
-		//cout << id_line_event << endl;
+		id_line_event = events[num_event]->get_unique_id();
+		code_event = events[num_event]->get_event();
 		
-		if( events[i]->get_event() == CODE_ALARM  )
-			alarm_index = i;
-		else if( events[i]->get_event() == CODE_SHA  )
+		if( code_event == CODE_ALARM )
+			alarm_index = num_event;
+			
+		else if( code_event == CODE_SHA || code_event == CODE_SHA_DURING_ALARM )
 		{
 			for(unsigned k=0; k < SHA.size(); ++k)
 			{
-				if( id_line_event == SHA[k]->get_unique_id() )
+				if( id_line_event == SHA[k]->get_unique_id() && SHA[k]->get_person_id() > 0 )
 				{
-					if( SHA[k]->get_sure() )
-						SHA_index_sure = i;
+					if( code_event == CODE_SHA )
+						SHA_index = num_event;
 					else
-						SHA_index_possible = i;
-					break;
-				}
-			}
-		}
-		else if( events[i]->get_event() == CODE_SHA_DURING_ALARM  )
-		{
-			for(unsigned k=0; k < SHA.size(); ++k)
-			{
-				if( id_line_event == SHA[k]->get_unique_id() )
-				{
-					if( SHA[k]->get_sure() )
-						SHA_during_alarm_index_sure = i;
-					else
-						SHA_during_alarm_index_possible = i;
+						SHA_during_alarm_index = num_event;
 					break;
 				}
 			}
 		}
 	}
 	
-	if(alarm_index == -1 && SHA_index_sure == -1 && SHA_during_alarm_index_sure == -1 && SHA_index_possible == -1 && SHA_during_alarm_index_possible == -1)
-	{
+	
+	is_in = true;
+	
+	// Alarm 0, SHA taken 0, SHA taken during alarm 0
+	if( alarm_index == -1 && SHA_index == -1 && SHA_during_alarm_index == -1 )
 		label_activity.push_back( NOT_IN_NO_ALARM );
-		activity_sure_in = true;
-	}
 		
-	else if(alarm_index != -1 && SHA_index_sure == -1 && SHA_during_alarm_index_sure == -1 && SHA_index_possible == -1 && SHA_during_alarm_index_possible == -1)
-	{
-		label_activity.push_back( NOT_IN_ALARM );
-		activity_sure_in = true;
-	}
+	// Alarm 0, SHA taken 0, SHA taken during alarm 1
+	else if( alarm_index == -1 && SHA_index == -1 && SHA_during_alarm_index != -1 )
+		label_activity.push_back( IN_DURING_ALARM );
 		
-	else if(alarm_index == -1 && SHA_index_sure != -1 && SHA_during_alarm_index_sure == -1 && SHA_index_possible == -1 && SHA_during_alarm_index_possible == -1)
-	{
+	// Alarm 0, SHA taken 1, SHA taken during alarm 0
+	else if( alarm_index == -1 && SHA_index != -1 && SHA_during_alarm_index == -1 )
 		label_activity.push_back( IN_NO_ALARM );
-		activity_sure_in = true;
-	}
 		
-	else if(alarm_index != -1 && SHA_index_sure != -1 && SHA_during_alarm_index_sure == -1 && SHA_index_possible == -1 && SHA_during_alarm_index_possible == -1)
+	// Alarm 0, SHA taken 1, SHA taken during alarm 1
+	else if( alarm_index == -1 && SHA_index != -1 && SHA_during_alarm_index != -1 )
 	{
-		activity_sure_in = true;
+		/*
 		if(SHA_index_sure < alarm_index)
 			//cerr << "weird ! sha pris AVANT l'alarme" << endl;
 			label_activity.push_back( IN_WEIRD_SUR );
@@ -628,292 +623,42 @@ void Activity::finding_label_in(unsigned index_ending, vector<Sha*>& SHA)
 			
 			label_activity.push_back( IN_AFTER_ALARM );
 		}
+		*/
 	}
 	
-	else if(alarm_index == -1 && SHA_index_sure == -1 && SHA_during_alarm_index_sure != -1 && SHA_index_possible == -1 && SHA_during_alarm_index_possible == -1)
-	{
-		activity_sure_in = true;
-		label_activity.push_back( IN_DURING_ALARM );
-	}
+	// Alarm 1, SHA taken 0, SHA taken during alarm 0
+	else if( alarm_index != -1 && SHA_index == -1 && SHA_during_alarm_index == -1 )
+		label_activity.push_back( NOT_IN_ALARM );
 		
-	else if(alarm_index != -1 && SHA_index_sure == -1 && SHA_during_alarm_index_sure != -1 && SHA_index_possible == -1 && SHA_during_alarm_index_possible == -1)
+	// Alarm 1, SHA taken 0, SHA taken during alarm 1
+	else if( alarm_index != -1 && SHA_index == -1 && SHA_during_alarm_index_sure != -1 )
 	{
-		activity_sure_in = true;
+		/*
 		if(alarm_index < SHA_during_alarm_index_sure)
 			label_activity.push_back( IN_DURING_ALARM );
 		else
 			label_activity.push_back( IN_WEIRD_SUR );
-		
+		*/
 	}
 	
-	else if(alarm_index == -1 && SHA_index_sure != -1 && SHA_during_alarm_index_sure != -1 && SHA_index_possible == -1 && SHA_during_alarm_index_possible == -1)
+	// Alarm 1, SHA taken 1, SHA taken during alarm 0
+	else if(alarm_index != -1 && SHA_index != -1 && SHA_during_alarm_index == -1  )
 	{
-		activity_sure_in = true;
-		if(SHA_during_alarm_index_sure < SHA_index_sure)
-		{
-			//activity_sure_in = true;
-			label_activity.push_back( IN_DURING_ALARM );
-		}
+		if(alarm_index < SHA_index)
+			label_activity.push_back( IN_AFTER_ALARM );
 		else
-			//cerr << "weird ! alarme retenti alors qu'on a pris le SHA" << endl; 
-			label_activity.push_back( IN_WEIRD_SUR );
+			label_activity.push_back( IN_NO_ALARM );
 	}
 	
-	else if(alarm_index != -1 && SHA_index_sure != -1 && SHA_during_alarm_index_sure != -1 && SHA_index_possible == -1 && SHA_during_alarm_index_possible == -1)
+	// Alarm 1, SHA taken 1, SHA taken during alarm 1
+	else if( alarm_index != -1 && SHA_index != -1 && SHA_during_alarm_index != -1 )
 	{
-		activity_sure_in = true;
+		/*
 		if(alarm_index < SHA_during_alarm_index_sure < SHA_index_sure)
 			label_activity.push_back( IN_DURING_ALARM );
 		else
 			label_activity.push_back( IN_WEIRD_SUR );
-	}
-	
-	else if(alarm_index == -1 && SHA_index_sure == -1 && SHA_during_alarm_index_sure == -1 && SHA_index_possible != -1 && SHA_during_alarm_index_possible == -1)
-	{
-		label_activity.push_back( IN_POSSIBLE_NO_ALARM );
-		activity_possible_in = true;
-	}
-	
-	else if(alarm_index != -1 && SHA_index_sure == -1 && SHA_during_alarm_index_sure == -1 && SHA_index_possible != -1 && SHA_during_alarm_index_possible == -1)
-	{
-		activity_possible_in = true;
-		if(SHA_index_possible < alarm_index)
-			//cerr << "weird ! sha possible pris AVANT l'alarme" << endl;
-			label_activity.push_back( IN_WEIRD_POSSIBLE );
-		else
-		{
-			
-			label_activity.push_back( IN_POSSIBLE_AFTER_ALARM );
-		}
-	}
-
-
-	else if(alarm_index == -1 && SHA_index_sure != -1 && SHA_during_alarm_index_sure == -1 && SHA_index_possible != -1 && SHA_during_alarm_index_possible == -1)
-	{
-		label_activity.push_back( IN_NO_ALARM );
-		activity_sure_in = true;
-	}	
-	
-	
-	else if(alarm_index != -1 && SHA_index_sure != -1 && SHA_during_alarm_index_sure == -1 && SHA_index_possible != -1 && SHA_during_alarm_index_possible == -1)
-	{
-		activity_sure_in = true;
-		if(alarm_index < SHA_index_sure && alarm_index < SHA_index_possible)
-		{
-			
-			label_activity.push_back( IN_AFTER_ALARM );
-		}
-		else if(SHA_index_sure < alarm_index)
-		{
-			
-			label_activity.push_back( IN_NO_ALARM );
-		}
-		else
-			//cerr << "impossible de savoir ! sha possible + sha sur + alarme" << endl;
-			label_activity.push_back( IN_WEIRD_SUR );
-	}	
-	
-	else if(alarm_index == -1 && SHA_index_sure == -1 && SHA_during_alarm_index_sure != -1 && SHA_index_possible != -1 && SHA_during_alarm_index_possible == -1)
-	{
-		label_activity.push_back( IN_DURING_ALARM );
-		activity_sure_in = true;
-	}	
-	
-	
-	else if(alarm_index != -1 && SHA_index_sure == -1 && SHA_during_alarm_index_sure != -1 && SHA_index_possible != -1 && SHA_during_alarm_index_possible == -1)
-	{
-		activity_sure_in = true;
-		if( (SHA_during_alarm_index_sure < alarm_index && alarm_index < SHA_index_possible) || (alarm_index < SHA_index_possible && SHA_index_possible < SHA_during_alarm_index_sure) )
-		{
-			
-			label_activity.push_back( IN_DURING_ALARM );
-		}
-		else
-			//cerr << "weird ! sha possible + sha pendant l'alarme sur + alarme" << endl;
-			label_activity.push_back( IN_WEIRD_SUR );
-	}	
-
-
-	else if(alarm_index == -1 && SHA_index_sure != -1 && SHA_during_alarm_index_sure != -1 && SHA_index_possible != -1 && SHA_during_alarm_index_possible == -1)
-	{
-		activity_sure_in = true;
-		if(SHA_during_alarm_index_sure < SHA_index_sure)
-		{
-			label_activity.push_back( IN_DURING_ALARM );
-		}
-		else
-			//cerr << "weird ! sha possible + sha pendant l'alarme sur + sha sur" << endl;
-			label_activity.push_back( IN_WEIRD_SUR );
-	}	
-
-	else if(alarm_index != -1 && SHA_index_sure != -1 && SHA_during_alarm_index_sure != -1 && SHA_index_possible != -1 && SHA_during_alarm_index_possible == -1)
-	{
-		activity_sure_in = true;
-		if(SHA_during_alarm_index_sure < alarm_index && SHA_during_alarm_index_sure < SHA_index_sure && SHA_during_alarm_index_sure < SHA_index_possible)
-		{
-			label_activity.push_back( IN_DURING_ALARM );
-		}
-		else
-			//cerr << "weird ! sha possible + sha pendant l'alarme sur + sha sur + alarme" << endl;
-			label_activity.push_back( IN_WEIRD_SUR );
-		
-	}	
-	
-	else if(alarm_index == -1 && SHA_index_sure == -1 && SHA_during_alarm_index_sure == -1 && SHA_index_possible == -1 && SHA_during_alarm_index_possible != -1)
-	{
-		activity_possible_in = true;
-		label_activity.push_back( IN_POSSIBLE_DURING_ALARM );
-	}
-
-
-	else if(alarm_index != -1 && SHA_index_sure == -1 && SHA_during_alarm_index_sure == -1 && SHA_index_possible == -1 && SHA_during_alarm_index_possible != -1)
-	{
-		activity_sure_in = true;
-		if(SHA_during_alarm_index_possible < alarm_index)
-		{
-			label_activity.push_back( IN_POSSIBLE_DURING_ALARM );
-		}
-		else
-			//cerr << "weird ! alarme + sha pendant l'alarme possible" << endl;
-			label_activity.push_back( IN_WEIRD_SUR );
-	}
-	
-	else if(alarm_index == -1 && SHA_index_sure != -1 && SHA_during_alarm_index_sure == -1 && SHA_index_possible == -1 && SHA_during_alarm_index_possible != -1)
-	{
-		label_activity.push_back( IN_NO_ALARM );
-		activity_sure_in = true;
-	}
-
-
-	else if(alarm_index != -1 && SHA_index_sure != -1 && SHA_during_alarm_index_sure == -1 && SHA_index_possible == -1 && SHA_during_alarm_index_possible != -1)
-	{
-		activity_sure_in = true;
-		if(SHA_index_sure < alarm_index)
-		{
-			label_activity.push_back( IN_NO_ALARM );
-		}
-		else if(alarm_index < SHA_index_sure && SHA_index_sure < SHA_during_alarm_index_possible)
-		{
-			label_activity.push_back( IN_AFTER_ALARM );
-		}
-		else
-			//cerr << "weird ! alarme + sha pendant l'alarme possible + sha sur" << endl;
-			label_activity.push_back( IN_WEIRD_SUR );
-	}	
-	
-	else if(alarm_index == -1 && SHA_index_sure == -1 && SHA_during_alarm_index_sure != -1 && SHA_index_possible == -1 && SHA_during_alarm_index_possible != -1)
-	{
-		label_activity.push_back( IN_DURING_ALARM );
-		activity_sure_in = true;
-	}	
-	
-	
-	else if(alarm_index != -1 && SHA_index_sure == -1 && SHA_during_alarm_index_sure != -1 && SHA_index_possible == -1 && SHA_during_alarm_index_possible != -1)
-	{
-		activity_sure_in = true;
-		if(SHA_during_alarm_index_sure < alarm_index && SHA_during_alarm_index_sure < SHA_during_alarm_index_possible)
-		{
-			label_activity.push_back( IN_DURING_ALARM );
-		}
-		else
-			//cerr << "weird ! alarme + sha pendant l'alarme possible + sha pendant l'alarme sur" << endl;
-			label_activity.push_back( IN_WEIRD_SUR );
-	}		
-	
-	else if(alarm_index == -1 && SHA_index_sure != -1 && SHA_during_alarm_index_sure != -1 && SHA_index_possible == -1 && SHA_during_alarm_index_possible != -1)
-	{
-		activity_sure_in = true;
-		if(SHA_during_alarm_index_sure < alarm_index && SHA_during_alarm_index_sure < SHA_index_possible)
-		{
-			label_activity.push_back( IN_DURING_ALARM );
-		}
-		else
-			//cerr << "weird ! alarme + sha pendant l'alarme possible + sha pendant l'alarme sur" << endl;		
-			label_activity.push_back( IN_WEIRD_SUR );
-	}
-	
-	else if(alarm_index != -1 && SHA_index_sure != -1 && SHA_during_alarm_index_sure != -1 && SHA_index_possible == -1 && SHA_during_alarm_index_possible != -1)
-	{
-		//cerr << "weird ! alarme + sha pendant l'alarme possible + sha pendant l'alarme sur" << endl;	
-		label_activity.push_back( IN_WEIRD_SUR );	
-		activity_sure_in = true;
-	}	
-	
-	else if(alarm_index == -1 && SHA_index_sure == -1 && SHA_during_alarm_index_sure == -1 && SHA_index_possible != -1 && SHA_during_alarm_index_possible != -1)
-	{
-		//cerr << "weird ! alarme + sha pendant l'alarme possible + sha pendant l'alarme sur" << endl;
-		label_activity.push_back( IN_WEIRD_POSSIBLE );
-		activity_possible_in = true;
-	}
-	
-	else if(alarm_index != -1 && SHA_index_sure == -1 && SHA_during_alarm_index_sure == -1 && SHA_index_possible != -1 && SHA_during_alarm_index_possible != -1)
-	{
-		//cerr << "weird ! alarme + sha pendant l'alarme possible + sha pendant l'alarme sur" << endl;
-		label_activity.push_back( IN_WEIRD_POSSIBLE );
-		activity_possible_in = true;
-	}
-	
-	else if(alarm_index == -1 && SHA_index_sure != -1 && SHA_during_alarm_index_sure == -1 && SHA_index_possible != -1 && SHA_during_alarm_index_possible != -1)
-	{
-		activity_sure_in = true;
-		label_activity.push_back( IN_NO_ALARM );
-	}
-		
-	else if(alarm_index != -1 && SHA_index_sure != -1 && SHA_during_alarm_index_sure == -1 && SHA_index_possible != -1 && SHA_during_alarm_index_possible != -1)
-	{
-		activity_sure_in = true;
-		if(alarm_index < SHA_index_sure && SHA_index_sure < SHA_index_possible && SHA_index_sure < SHA_during_alarm_index_possible)
-		{
-			label_activity.push_back( IN_AFTER_ALARM );
-		}
-		else if(SHA_index_sure < alarm_index)
-		{
-			label_activity.push_back( IN_NO_ALARM );
-		}
-		else
-			//cerr << "weird ! alarme + sha pendant l'alarme possible + sha pendant l'alarme sur" << endl;
-			label_activity.push_back( IN_WEIRD_SUR );
-	}
-	
-	else if(alarm_index == -1 && SHA_index_sure == -1 && SHA_during_alarm_index_sure != -1 && SHA_index_possible != -1 && SHA_during_alarm_index_possible != -1)
-	{
-		activity_sure_in = true;
-		label_activity.push_back( IN_DURING_ALARM );
-	}
-		
-	else if(alarm_index != -1 && SHA_index_sure == -1 && SHA_during_alarm_index_sure != -1 && SHA_index_possible != -1 && SHA_during_alarm_index_possible != -1)
-	{
-		activity_sure_in = true;
-		if(SHA_during_alarm_index_sure < alarm_index)
-		{
-			label_activity.push_back( IN_DURING_ALARM );
-		}
-		else
-			//cerr << "weird ! alarme + sha pendant l'alarme possible + sha pendant l'alarme sur" << endl;
-			label_activity.push_back( IN_WEIRD_SUR );
-	}
-	
-	else if(alarm_index == -1 && SHA_index_sure != -1 && SHA_during_alarm_index_sure != -1 && SHA_index_possible != -1 && SHA_during_alarm_index_possible != -1)
-	{
-		activity_sure_in = true;
-		if(SHA_during_alarm_index_sure < SHA_index_sure)
-		{
-			label_activity.push_back(IN_DURING_ALARM);
-		}
-		else
-			//cerr << "weird ! alarme + sha pendant l'alarme possible + sha pendant l'alarme sur" << endl;		
-			label_activity.push_back( IN_WEIRD_SUR );	
-	}
-	else if(alarm_index != -1 && SHA_index_sure != -1 && SHA_during_alarm_index_sure != -1 && SHA_index_possible != -1 && SHA_during_alarm_index_possible != -1)
-	{
-		activity_sure_in = true;
-		if(SHA_during_alarm_index_sure < SHA_index_sure && SHA_during_alarm_index_sure < alarm_index)
-		{
-			label_activity.push_back(IN_DURING_ALARM);
-		}
-		else
-			//cerr << "weird ! alarme + sha pendant l'alarme possible + sha pendant l'alarme sur" << endl;		
-			label_activity.push_back( IN_WEIRD_SUR );
+		*/
 	}
 	
 	else
@@ -924,10 +669,8 @@ void Activity::finding_label_in(unsigned index_ending, vector<Sha*>& SHA)
 void Activity::finding_label_out(unsigned index_begining, vector<Sha*>& SHA)
 {
 	int alarm_index = -1;
-	int SHA_index_sure = -1;
-	int SHA_index_possible = -1;
-	int SHA_during_alarm_index_sure = -1;
-	int SHA_during_alarm_index_possible = -1;
+	int SHA_index = -1;
+	int SHA_during_alarm_index = -1;
 	unsigned id_line_event;
 	
 	for(unsigned i=index_begining; i < events.size(); ++i)
@@ -965,339 +708,86 @@ void Activity::finding_label_out(unsigned index_begining, vector<Sha*>& SHA)
 		}
 	}	
 	
-
-		
-	if(alarm_index == -1 && SHA_index_sure == -1 && SHA_during_alarm_index_sure == -1 && SHA_index_possible == -1 && SHA_during_alarm_index_possible == -1)
-	{
-		activity_sure_out = true;
+	is_out = true;
+	
+	// Alarm 0, SHA taken 0, SHA taken during alarm 0
+	if( alarm_index == -1 && SHA_index == -1 && SHA_during_alarm_index == -1 )
 		label_activity.push_back( NOT_OUT_NO_ALARM );
-	}
 		
-	else if(alarm_index != -1 && SHA_index_sure == -1 && SHA_during_alarm_index_sure == -1 && SHA_index_possible == -1 && SHA_during_alarm_index_possible == -1)
-	{
-		activity_sure_out = true;
-		label_activity.push_back( NOT_OUT_ALARM );
-	}
+	// Alarm 0, SHA taken 0, SHA taken during alarm 1
+	else if( alarm_index == -1 && SHA_index == -1 && SHA_during_alarm_index != -1 )
+		label_activity.push_back( OUT_DURING_ALARM );
 		
-	else if(alarm_index == -1 && SHA_index_sure != -1 && SHA_during_alarm_index_sure == -1 && SHA_index_possible == -1 && SHA_during_alarm_index_possible == -1)
-	{
-		activity_sure_out = true;
+	// Alarm 0, SHA taken 1, SHA taken during alarm 0
+	else if( alarm_index == -1 && SHA_index != -1 && SHA_during_alarm_index == -1 )
 		label_activity.push_back( OUT_NO_ALARM );
-	}
 		
-	else if(alarm_index != -1 && SHA_index_sure != -1 && SHA_during_alarm_index_sure == -1 && SHA_index_possible == -1 && SHA_during_alarm_index_possible == -1)
+	// Alarm 0, SHA taken 1, SHA taken during alarm 1
+	else if( alarm_index == -1 && SHA_index != -1 && SHA_during_alarm_index != -1 )
 	{
-		activity_sure_out = true;
+		/*
 		if(SHA_index_sure < alarm_index)
 			//cerr << "weird ! sha pris AVANT l'alarme" << endl;
-			label_activity.push_back( OUT_WEIRD_SUR );
+			label_activity.push_back( IN_WEIRD_SUR );
 		else
 		{
 			
-			label_activity.push_back( OUT_AFTER_ALARM );
+			label_activity.push_back( IN_AFTER_ALARM );
 		}
+		*/
 	}
 	
-	else if(alarm_index == -1 && SHA_index_sure == -1 && SHA_during_alarm_index_sure != -1 && SHA_index_possible == -1 && SHA_during_alarm_index_possible == -1)
-	{
-		activity_sure_out = true;
-		label_activity.push_back( OUT_DURING_ALARM );
-	}
+	// Alarm 1, SHA taken 0, SHA taken during alarm 0
+	else if( alarm_index != -1 && SHA_index == -1 && SHA_during_alarm_index == -1 )
+		label_activity.push_back( NOT_OUT_ALARM );
 		
-	else if(alarm_index != -1 && SHA_index_sure == -1 && SHA_during_alarm_index_sure != -1 && SHA_index_possible == -1 && SHA_during_alarm_index_possible == -1)
+	// Alarm 1, SHA taken 0, SHA taken during alarm 1
+	else if( alarm_index != -1 && SHA_index == -1 && SHA_during_alarm_index_sure != -1 )
 	{
-		//cerr << "weird ! alarme + sha pendant alarme" << endl; 
-		activity_sure_out = true;
+		/*
 		if(alarm_index < SHA_during_alarm_index_sure)
-			label_activity.push_back( OUT_DURING_ALARM );
+			label_activity.push_back( IN_DURING_ALARM );
 		else
-			label_activity.push_back( OUT_WEIRD_SUR );
+			label_activity.push_back( IN_WEIRD_SUR );
+		*/
 	}
 	
-	else if(alarm_index == -1 && SHA_index_sure != -1 && SHA_during_alarm_index_sure != -1 && SHA_index_possible == -1 && SHA_during_alarm_index_possible == -1)
+	// Alarm 1, SHA taken 1, SHA taken during alarm 0
+	else if(alarm_index != -1 && SHA_index != -1 && SHA_during_alarm_index == -1  )
 	{
-		activity_sure_out = true;
+		/*
 		if(SHA_during_alarm_index_sure < SHA_index_sure)
 		{
-			
-			label_activity.push_back( OUT_DURING_ALARM );
+			//is_in = true;
+			label_activity.push_back( IN_DURING_ALARM );
 		}
 		else
 			//cerr << "weird ! alarme retenti alors qu'on a pris le SHA" << endl; 
-			label_activity.push_back( OUT_WEIRD_SUR );
+			label_activity.push_back( IN_WEIRD_SUR );
+		*/
 	}
 	
-	else if(alarm_index != -1 && SHA_index_sure != -1 && SHA_during_alarm_index_sure != -1 && SHA_index_possible == -1 && SHA_during_alarm_index_possible == -1)
+	// Alarm 1, SHA taken 1, SHA taken during alarm 1
+	else if( alarm_index != -1 && SHA_index != -1 && SHA_during_alarm_index != -1 )
 	{
-		activity_sure_out = true;
+		/*
 		if(alarm_index < SHA_during_alarm_index_sure < SHA_index_sure)
-			label_activity.push_back( OUT_DURING_ALARM );
+			label_activity.push_back( IN_DURING_ALARM );
 		else
-			label_activity.push_back( OUT_WEIRD_SUR );
-	}
-	
-	else if(alarm_index == -1 && SHA_index_sure == -1 && SHA_during_alarm_index_sure == -1 && SHA_index_possible != -1 && SHA_during_alarm_index_possible == -1)
-	{
-		activity_possible_out = true;
-		label_activity.push_back( OUT_POSSIBLE_NO_ALARM );
-	}
-	
-	else if(alarm_index != -1 && SHA_index_sure == -1 && SHA_during_alarm_index_sure == -1 && SHA_index_possible != -1 && SHA_during_alarm_index_possible == -1)
-	{
-		activity_possible_out = true;
-		if(SHA_index_possible < alarm_index)
-			//cerr << "weird ! sha possible pris AVANT l'alarme" << endl;
-			label_activity.push_back( OUT_WEIRD_POSSIBLE );
-		else
-		{
-			
-			label_activity.push_back( OUT_POSSIBLE_AFTER_ALARM );
-		}
-	}
-
-
-	else if(alarm_index == -1 && SHA_index_sure != -1 && SHA_during_alarm_index_sure == -1 && SHA_index_possible != -1 && SHA_during_alarm_index_possible == -1)
-	{
-		label_activity.push_back( OUT_NO_ALARM );
-		activity_sure_out = true;
-	}	
-	
-	
-	else if(alarm_index != -1 && SHA_index_sure != -1 && SHA_during_alarm_index_sure == -1 && SHA_index_possible != -1 && SHA_during_alarm_index_possible == -1)
-	{
-		activity_sure_out = true;
-		if(alarm_index < SHA_index_sure && alarm_index < SHA_index_possible)
-		{
-			
-			label_activity.push_back( OUT_AFTER_ALARM );
-		}
-		else if(SHA_index_sure < alarm_index)
-		{
-			label_activity.push_back( OUT_NO_ALARM );
-		}
-		else
-			//cerr << "impossible de savoir ! sha possible + sha sur + alarme" << endl;
-			label_activity.push_back( OUT_WEIRD_SUR );
-	}	
-	
-	else if(alarm_index == -1 && SHA_index_sure == -1 && SHA_during_alarm_index_sure != -1 && SHA_index_possible != -1 && SHA_during_alarm_index_possible == -1)
-	{
-		label_activity.push_back( OUT_DURING_ALARM );
-		activity_sure_out = true;
-	}	
-	
-	
-	else if(alarm_index != -1 && SHA_index_sure == -1 && SHA_during_alarm_index_sure != -1 && SHA_index_possible != -1 && SHA_during_alarm_index_possible == -1)
-	{
-		activity_sure_out = true;
-		if( (SHA_during_alarm_index_sure < alarm_index && alarm_index < SHA_index_possible) || (alarm_index < SHA_index_possible && SHA_index_possible < SHA_during_alarm_index_sure) )
-		{
-			
-			label_activity.push_back( OUT_DURING_ALARM );
-		}
-		else
-			//cerr << "weird ! sha possible + sha pendant l'alarme sur + alarme" << endl;
-			label_activity.push_back( OUT_WEIRD_SUR );
-	}	
-
-
-	else if(alarm_index == -1 && SHA_index_sure != -1 && SHA_during_alarm_index_sure != -1 && SHA_index_possible != -1 && SHA_during_alarm_index_possible == -1)
-	{
-		activity_sure_out = true;
-		if(SHA_during_alarm_index_sure < SHA_index_sure)
-		{
-			label_activity.push_back( OUT_DURING_ALARM );
-		}
-		else
-			//cerr << "weird ! sha possible + sha pendant l'alarme sur + sha sur" << endl;
-			label_activity.push_back( OUT_WEIRD_SUR );
-	}	
-
-	else if(alarm_index != -1 && SHA_index_sure != -1 && SHA_during_alarm_index_sure != -1 && SHA_index_possible != -1 && SHA_during_alarm_index_possible == -1)
-	{
-		activity_sure_out = true;
-		if(SHA_during_alarm_index_sure < alarm_index && SHA_during_alarm_index_sure < SHA_index_sure && SHA_during_alarm_index_sure < SHA_index_possible)
-		{
-			label_activity.push_back( OUT_DURING_ALARM );
-		}
-		else
-			//cerr << "weird ! sha possible + sha pendant l'alarme sur + sha sur + alarme" << endl;
-			label_activity.push_back( OUT_WEIRD_SUR );
-	}	
-	
-	else if(alarm_index == -1 && SHA_index_sure == -1 && SHA_during_alarm_index_sure == -1 && SHA_index_possible == -1 && SHA_during_alarm_index_possible != -1)
-	{
-		activity_possible_out = true;
-		label_activity.push_back( OUT_POSSIBLE_DURING_ALARM );
-	}
-
-
-	else if(alarm_index != -1 && SHA_index_sure == -1 && SHA_during_alarm_index_sure == -1 && SHA_index_possible == -1 && SHA_during_alarm_index_possible != -1)
-	{
-		activity_possible_out = true;
-		if(SHA_during_alarm_index_possible < alarm_index)
-		{
-			label_activity.push_back( OUT_POSSIBLE_DURING_ALARM );
-		}
-		else
-			//cerr << "weird ! alarme + sha pendant l'alarme possible" << endl;
-			label_activity.push_back( OUT_WEIRD_POSSIBLE );
-	}
-	
-	else if(alarm_index == -1 && SHA_index_sure != -1 && SHA_during_alarm_index_sure == -1 && SHA_index_possible == -1 && SHA_during_alarm_index_possible != -1)
-	{
-		label_activity.push_back( OUT_NO_ALARM );
-		activity_sure_out = true;
-	}
-
-
-	else if(alarm_index != -1 && SHA_index_sure != -1 && SHA_during_alarm_index_sure == -1 && SHA_index_possible == -1 && SHA_during_alarm_index_possible != -1)
-	{
-		activity_sure_out = true;
-		if(SHA_index_sure < alarm_index)
-		{
-			label_activity.push_back( OUT_NO_ALARM );
-		}
-		else if(alarm_index < SHA_index_sure && SHA_index_sure < SHA_during_alarm_index_possible)
-		{
-			
-			label_activity.push_back( OUT_AFTER_ALARM );
-		}
-		else
-			//cerr << "weird ! alarme + sha pendant l'alarme possible + sha sur" << endl;
-			label_activity.push_back( OUT_WEIRD_SUR );
-	}	
-	
-	else if(alarm_index == -1 && SHA_index_sure == -1 && SHA_during_alarm_index_sure != -1 && SHA_index_possible == -1 && SHA_during_alarm_index_possible != -1)
-	{
-		label_activity.push_back( OUT_DURING_ALARM );
-		activity_sure_out = true;
-	}	
-	
-	
-	else if(alarm_index != -1 && SHA_index_sure == -1 && SHA_during_alarm_index_sure != -1 && SHA_index_possible == -1 && SHA_during_alarm_index_possible != -1)
-	{
-		activity_sure_out = true;
-		if(SHA_during_alarm_index_sure < alarm_index && SHA_during_alarm_index_sure < SHA_during_alarm_index_possible)
-		{
-			
-			label_activity.push_back( OUT_DURING_ALARM );
-		}
-		else
-			label_activity.push_back( OUT_WEIRD_SUR );
-			//cerr << "weird ! alarme + sha pendant l'alarme possible + sha pendant l'alarme sur" << endl;
-	}		
-	
-	else if(alarm_index == -1 && SHA_index_sure != -1 && SHA_during_alarm_index_sure != -1 && SHA_index_possible == -1 && SHA_during_alarm_index_possible != -1)
-	{
-		activity_sure_out = true;
-		if(SHA_during_alarm_index_sure < alarm_index && SHA_during_alarm_index_sure < SHA_index_possible)
-		{
-			
-			label_activity.push_back( OUT_DURING_ALARM );
-		}
-		else
-			label_activity.push_back( OUT_WEIRD_SUR );
-			//cerr << "weird ! alarme + sha pendant l'alarme possible + sha pendant l'alarme sur" << endl;		
-	}
-	
-	else if(alarm_index != -1 && SHA_index_sure != -1 && SHA_during_alarm_index_sure != -1 && SHA_index_possible == -1 && SHA_during_alarm_index_possible != -1)
-	{
-		//cerr << "weird ! alarme + sha pendant l'alarme possible + sha pendant l'alarme sur" << endl;
-		label_activity.push_back( OUT_WEIRD_SUR );
-		activity_sure_out = true;		
-	}	
-	
-	else if(alarm_index == -1 && SHA_index_sure == -1 && SHA_during_alarm_index_sure == -1 && SHA_index_possible != -1 && SHA_during_alarm_index_possible != -1)
-	{
-		//cerr << "weird ! alarme + sha pendant l'alarme possible + sha pendant l'alarme sur" << endl;
-		label_activity.push_back( OUT_WEIRD_POSSIBLE );
-		activity_possible_out = true;
-	}
-	
-	else if(alarm_index != -1 && SHA_index_sure == -1 && SHA_during_alarm_index_sure == -1 && SHA_index_possible != -1 && SHA_during_alarm_index_possible != -1)
-	{
-		//cerr << "weird ! alarme + sha pendant l'alarme possible + sha pendant l'alarme sur" << endl;
-		label_activity.push_back( OUT_WEIRD_POSSIBLE );
-		activity_possible_out = true;
-	}
-	
-	else if(alarm_index == -1 && SHA_index_sure != -1 && SHA_during_alarm_index_sure == -1 && SHA_index_possible != -1 && SHA_during_alarm_index_possible != -1)
-	{
-		activity_sure_out = true;
-		label_activity.push_back( OUT_NO_ALARM );
-	}
-		
-	else if(alarm_index != -1 && SHA_index_sure != -1 && SHA_during_alarm_index_sure == -1 && SHA_index_possible != -1 && SHA_during_alarm_index_possible != -1)
-	{
-		activity_sure_out = true;
-		if(alarm_index < SHA_index_sure && SHA_index_sure < SHA_index_possible && SHA_index_sure < SHA_during_alarm_index_possible)
-		{
-			
-			label_activity.push_back( OUT_AFTER_ALARM );
-		}
-		else if(SHA_index_sure < alarm_index)
-		{
-			label_activity.push_back( OUT_NO_ALARM );
-		}
-		else
-			//cerr << "weird ! alarme + sha pendant l'alarme possible + sha pendant l'alarme sur" << endl;
-			label_activity.push_back( OUT_WEIRD_SUR );
-	}
-	
-	else if(alarm_index == -1 && SHA_index_sure == -1 && SHA_during_alarm_index_sure != -1 && SHA_index_possible != -1 && SHA_during_alarm_index_possible != -1)
-	{
-		activity_sure_out = true;
-		label_activity.push_back( OUT_DURING_ALARM );
-	}
-		
-	else if(alarm_index != -1 && SHA_index_sure == -1 && SHA_during_alarm_index_sure != -1 && SHA_index_possible != -1 && SHA_during_alarm_index_possible != -1)
-	{
-		activity_sure_out = true;
-		if(SHA_during_alarm_index_sure < alarm_index)
-		{
-			label_activity.push_back( OUT_DURING_ALARM );
-		}
-		else
-			//cerr << "weird ! alarme + sha pendant l'alarme possible + sha pendant l'alarme sur" << endl;
-			label_activity.push_back( OUT_WEIRD_SUR );
-	}
-	
-	else if(alarm_index == -1 && SHA_index_sure != -1 && SHA_during_alarm_index_sure != -1 && SHA_index_possible != -1 && SHA_during_alarm_index_possible != -1)
-	{
-		activity_sure_out = true;
-		if(SHA_during_alarm_index_sure < SHA_index_sure)
-		{
-			label_activity.push_back(OUT_DURING_ALARM);
-		}
-		else
-			//cerr << "weird ! alarme + sha pendant l'alarme possible + sha pendant l'alarme sur" << endl;	
-			label_activity.push_back( OUT_WEIRD_SUR );		
-	}
-	else if(alarm_index != -1 && SHA_index_sure != -1 && SHA_during_alarm_index_sure != -1 && SHA_index_possible != -1 && SHA_during_alarm_index_possible != -1)
-	{
-		activity_sure_out = true;
-		if(SHA_during_alarm_index_sure < SHA_index_sure && SHA_during_alarm_index_sure < alarm_index)
-		{
-			label_activity.push_back(OUT_DURING_ALARM);
-		}
-		else
-			//cerr << "weird ! alarme + sha pendant l'alarme possible + sha pendant l'alarme sur" << endl;		
-			label_activity.push_back( OUT_WEIRD_SUR );
+			label_activity.push_back( IN_WEIRD_SUR );
+		*/
 	}
 	
 	else
 		//cerr << "CAS IMPOSSIBLE NON PRIS EN COMPTE" << endl;
-		label_activity.push_back( OUT_IMPOSSIBLE_SUR );
+		label_activity.push_back( IN_IMPOSSIBLE_SUR );
 	
 }
 void Activity::finding_label_inout(vector<Sha*>& SHA)
 {
 	int alarm_index = -1;
-	int SHA_index_sure = -1;
-	int SHA_index_possible = -1;
-	int SHA_during_alarm_index_sure = -1;
-	int SHA_during_alarm_index_possible = -1;
+	int SHA_index = -1;
+	int SHA_during_alarm_index = -1;
 	unsigned id_line_event;
 	
 	for(unsigned i=0; i < events.size(); ++i)
@@ -1336,326 +826,78 @@ void Activity::finding_label_inout(vector<Sha*>& SHA)
 		}
 	}		
 	
+	is_inout = true;
 	
-	if(alarm_index == -1 && SHA_index_sure == -1 && SHA_during_alarm_index_sure == -1 && SHA_index_possible == -1 && SHA_during_alarm_index_possible == -1)
-	{
-		activity_sure_inout = true;
+	// Alarm 0, SHA taken 0, SHA taken during alarm 0
+	if( alarm_index == -1 && SHA_index == -1 && SHA_during_alarm_index == -1 )
 		label_activity.push_back( NOT_INOUT_NO_ALARM );
-	}
 		
-	else if(alarm_index != -1 && SHA_index_sure == -1 && SHA_during_alarm_index_sure == -1 && SHA_index_possible == -1 && SHA_during_alarm_index_possible == -1)
-	{
-		activity_sure_inout = true;
-		label_activity.push_back( NOT_INOUT_ALARM );
-	}
+	// Alarm 0, SHA taken 0, SHA taken during alarm 1
+	else if( alarm_index == -1 && SHA_index == -1 && SHA_during_alarm_index != -1 )
+		label_activity.push_back( INOUT_DURING_ALARM );
 		
-	else if(alarm_index == -1 && SHA_index_sure != -1 && SHA_during_alarm_index_sure == -1 && SHA_index_possible == -1 && SHA_during_alarm_index_possible == -1)
-	{
-		activity_sure_inout = true;
+	// Alarm 0, SHA taken 1, SHA taken during alarm 0
+	else if( alarm_index == -1 && SHA_index != -1 && SHA_during_alarm_index == -1 )
 		label_activity.push_back( INOUT_NO_ALARM );
-	}
 		
-	else if(alarm_index != -1 && SHA_index_sure != -1 && SHA_during_alarm_index_sure == -1 && SHA_index_possible == -1 && SHA_during_alarm_index_possible == -1)
+	// Alarm 0, SHA taken 1, SHA taken during alarm 1
+	else if( alarm_index == -1 && SHA_index != -1 && SHA_during_alarm_index != -1 )
 	{
-		activity_sure_inout = true;
+		/*
 		if(SHA_index_sure < alarm_index)
 			//cerr << "weird ! sha pris AVANT l'alarme" << endl;
-			label_activity.push_back( INOUT_WEIRD_SUR );
+			label_activity.push_back( IN_WEIRD_SUR );
 		else
 		{
 			
-			label_activity.push_back( INOUT_AFTER_ALARM );
+			label_activity.push_back( IN_AFTER_ALARM );
 		}
+		*/
 	}
 	
-	else if(alarm_index == -1 && SHA_index_sure == -1 && SHA_during_alarm_index_sure != -1 && SHA_index_possible == -1 && SHA_during_alarm_index_possible == -1)
-	{
-		activity_sure_inout = true;
-		label_activity.push_back( INOUT_DURING_ALARM );
-	}
+	// Alarm 1, SHA taken 0, SHA taken during alarm 0
+	else if( alarm_index != -1 && SHA_index == -1 && SHA_during_alarm_index == -1 )
+		label_activity.push_back( NOT_INOUT_ALARM );
 		
-	else if(alarm_index != -1 && SHA_index_sure == -1 && SHA_during_alarm_index_sure != -1 && SHA_index_possible == -1 && SHA_during_alarm_index_possible == -1)
+	// Alarm 1, SHA taken 0, SHA taken during alarm 1
+	else if( alarm_index != -1 && SHA_index == -1 && SHA_during_alarm_index_sure != -1 )
 	{
-		activity_sure_inout = true;
+		/*
 		if(alarm_index < SHA_during_alarm_index_sure)
-			label_activity.push_back( INOUT_DURING_ALARM );
+			label_activity.push_back( IN_DURING_ALARM );
 		else
-			label_activity.push_back( INOUT_WEIRD_SUR );
-		
+			label_activity.push_back( IN_WEIRD_SUR );
+		*/
 	}
 	
-	else if(alarm_index == -1 && SHA_index_sure != -1 && SHA_during_alarm_index_sure != -1 && SHA_index_possible == -1 && SHA_during_alarm_index_possible == -1)
+	// Alarm 1, SHA taken 1, SHA taken during alarm 0
+	else if(alarm_index != -1 && SHA_index != -1 && SHA_during_alarm_index == -1  )
 	{
-		activity_sure_inout = true;
+		/*
 		if(SHA_during_alarm_index_sure < SHA_index_sure)
 		{
-			label_activity.push_back( INOUT_DURING_ALARM );
+			//activity_sure_in = true;
+			label_activity.push_back( IN_DURING_ALARM );
 		}
 		else
 			//cerr << "weird ! alarme retenti alors qu'on a pris le SHA" << endl; 
-			label_activity.push_back( INOUT_WEIRD_SUR );
+			label_activity.push_back( IN_WEIRD_SUR );
+		*/
 	}
 	
-	else if(alarm_index != -1 && SHA_index_sure != -1 && SHA_during_alarm_index_sure != -1 && SHA_index_possible == -1 && SHA_during_alarm_index_possible == -1)
+	// Alarm 1, SHA taken 1, SHA taken during alarm 1
+	else if( alarm_index != -1 && SHA_index != -1 && SHA_during_alarm_index != -1 )
 	{
-		activity_sure_inout = true;
+		/*
 		if(alarm_index < SHA_during_alarm_index_sure < SHA_index_sure)
-			label_activity.push_back( INOUT_DURING_ALARM );
+			label_activity.push_back( IN_DURING_ALARM );
 		else
-			label_activity.push_back( INOUT_WEIRD_SUR );
-	}
-	
-	else if(alarm_index == -1 && SHA_index_sure == -1 && SHA_during_alarm_index_sure == -1 && SHA_index_possible != -1 && SHA_during_alarm_index_possible == -1)
-	{
-		activity_possible_inout = true;	
-		label_activity.push_back( INOUT_POSSIBLE_NO_ALARM );
-	}
-	
-	else if(alarm_index != -1 && SHA_index_sure == -1 && SHA_during_alarm_index_sure == -1 && SHA_index_possible != -1 && SHA_during_alarm_index_possible == -1)
-	{
-		activity_possible_inout = true;
-		if(SHA_index_possible < alarm_index)
-			//cerr << "weird ! sha possible pris AVANT l'alarme" << endl;
-			label_activity.push_back( INOUT_WEIRD_POSSIBLE );
-		else
-		{
-			
-			label_activity.push_back( INOUT_POSSIBLE_AFTER_ALARM );
-		}
-	}
-
-
-	else if(alarm_index == -1 && SHA_index_sure != -1 && SHA_during_alarm_index_sure == -1 && SHA_index_possible != -1 && SHA_during_alarm_index_possible == -1)
-	{
-		label_activity.push_back( INOUT_NO_ALARM );
-		activity_sure_inout = true;
-	}	
-	
-	
-	else if(alarm_index != -1 && SHA_index_sure != -1 && SHA_during_alarm_index_sure == -1 && SHA_index_possible != -1 && SHA_during_alarm_index_possible == -1)
-	{
-		activity_sure_inout = true;
-		if(alarm_index < SHA_index_sure && alarm_index < SHA_index_possible)
-		{
-			
-			label_activity.push_back( INOUT_AFTER_ALARM );
-		}
-		else if(SHA_index_sure < alarm_index)
-		{
-			label_activity.push_back( INOUT_NO_ALARM );
-		}
-		else
-			//cerr << "impossible de savoir ! sha possible + sha sur + alarme" << endl;
-			label_activity.push_back( INOUT_WEIRD_SUR );
-	}	
-	
-	else if(alarm_index == -1 && SHA_index_sure == -1 && SHA_during_alarm_index_sure != -1 && SHA_index_possible != -1 && SHA_during_alarm_index_possible == -1)
-	{
-		label_activity.push_back( INOUT_DURING_ALARM );
-		activity_sure_inout = true;
-	}	
-	
-	
-	else if(alarm_index != -1 && SHA_index_sure == -1 && SHA_during_alarm_index_sure != -1 && SHA_index_possible != -1 && SHA_during_alarm_index_possible == -1)
-	{
-		activity_sure_inout = true;
-		if( (SHA_during_alarm_index_sure < alarm_index && alarm_index < SHA_index_possible) || (alarm_index < SHA_index_possible && SHA_index_possible < SHA_during_alarm_index_sure) )
-		{
-			label_activity.push_back( INOUT_DURING_ALARM );
-		}
-		else
-			label_activity.push_back( INOUT_WEIRD_SUR );
-			//cerr << "weird ! sha possible + sha pendant l'alarme sur + alarme" << endl;
-	}	
-
-
-	else if(alarm_index == -1 && SHA_index_sure != -1 && SHA_during_alarm_index_sure != -1 && SHA_index_possible != -1 && SHA_during_alarm_index_possible == -1)
-	{
-		activity_sure_inout = true;
-		if(SHA_during_alarm_index_sure < SHA_index_sure)
-		{
-			label_activity.push_back( INOUT_DURING_ALARM );
-		}
-		else
-			//cerr << "weird ! sha possible + sha pendant l'alarme sur + sha sur" << endl;
-			label_activity.push_back( INOUT_WEIRD_SUR );
-	}	
-
-	else if(alarm_index != -1 && SHA_index_sure != -1 && SHA_during_alarm_index_sure != -1 && SHA_index_possible != -1 && SHA_during_alarm_index_possible == -1)
-	{
-		activity_sure_inout = true;
-		if(SHA_during_alarm_index_sure < alarm_index && SHA_during_alarm_index_sure < SHA_index_sure && SHA_during_alarm_index_sure < SHA_index_possible)
-		{
-			label_activity.push_back( INOUT_DURING_ALARM );
-		}
-		else
-			//cerr << "weird ! sha possible + sha pendant l'alarme sur + sha sur + alarme" << endl;
-			label_activity.push_back( INOUT_WEIRD_SUR );
-		
-	}	
-	
-	else if(alarm_index == -1 && SHA_index_sure == -1 && SHA_during_alarm_index_sure == -1 && SHA_index_possible == -1 && SHA_during_alarm_index_possible != -1)
-	{
-		activity_possible_inout = true;	
-		label_activity.push_back( INOUT_POSSIBLE_DURING_ALARM );
-	}
-
-
-	else if(alarm_index != -1 && SHA_index_sure == -1 && SHA_during_alarm_index_sure == -1 && SHA_index_possible == -1 && SHA_during_alarm_index_possible != -1)
-	{
-		activity_possible_inout = true;
-		if(SHA_during_alarm_index_possible < alarm_index)
-		{
-				
-			label_activity.push_back( INOUT_POSSIBLE_DURING_ALARM );
-		}
-		else
-			//cerr << "weird ! alarme + sha pendant l'alarme possible" << endl;
-			label_activity.push_back( INOUT_WEIRD_POSSIBLE );
-	}
-	
-	else if(alarm_index == -1 && SHA_index_sure != -1 && SHA_during_alarm_index_sure == -1 && SHA_index_possible == -1 && SHA_during_alarm_index_possible != -1)
-	{
-		label_activity.push_back( INOUT_NO_ALARM );
-		activity_sure_inout = true;
-	}
-
-
-	else if(alarm_index != -1 && SHA_index_sure != -1 && SHA_during_alarm_index_sure == -1 && SHA_index_possible == -1 && SHA_during_alarm_index_possible != -1)
-	{
-		activity_sure_inout = true;
-		if(SHA_index_sure < alarm_index)
-		{
-			
-			label_activity.push_back( INOUT_NO_ALARM );
-		}
-		else if(alarm_index < SHA_index_sure && SHA_index_sure < SHA_during_alarm_index_possible)
-		{
-			label_activity.push_back( INOUT_AFTER_ALARM );
-		}
-		else
-			//cerr << "weird ! alarme + sha pendant l'alarme possible + sha sur" << endl;
-			label_activity.push_back( INOUT_WEIRD_SUR );
-	}	
-	
-	else if(alarm_index == -1 && SHA_index_sure == -1 && SHA_during_alarm_index_sure != -1 && SHA_index_possible == -1 && SHA_during_alarm_index_possible != -1)
-	{
-		label_activity.push_back( INOUT_DURING_ALARM );
-		activity_sure_inout = true;
-	}	
-	
-	
-	else if(alarm_index != -1 && SHA_index_sure == -1 && SHA_during_alarm_index_sure != -1 && SHA_index_possible == -1 && SHA_during_alarm_index_possible != -1)
-	{
-		activity_sure_inout = true;
-		if(SHA_during_alarm_index_sure < alarm_index && SHA_during_alarm_index_sure < SHA_during_alarm_index_possible)
-		{
-			
-			label_activity.push_back( INOUT_DURING_ALARM );
-		}
-		else
-			//cerr << "weird ! alarme + sha pendant l'alarme possible + sha pendant l'alarme sur" << endl;
-			label_activity.push_back( INOUT_WEIRD_SUR );
-	}		
-	
-	else if(alarm_index == -1 && SHA_index_sure != -1 && SHA_during_alarm_index_sure != -1 && SHA_index_possible == -1 && SHA_during_alarm_index_possible != -1)
-	{
-		activity_sure_inout = true;
-		if(SHA_during_alarm_index_sure < alarm_index && SHA_during_alarm_index_sure < SHA_index_possible)
-		{
-			label_activity.push_back( INOUT_DURING_ALARM );
-		}
-		else
-			//cerr << "weird ! alarme + sha pendant l'alarme possible + sha pendant l'alarme sur" << endl;	
-			label_activity.push_back( INOUT_WEIRD_SUR );	
-	}
-	
-	else if(alarm_index != -1 && SHA_index_sure != -1 && SHA_during_alarm_index_sure != -1 && SHA_index_possible == -1 && SHA_during_alarm_index_possible != -1)
-	{
-		//cerr << "weird ! alarme + sha pendant l'alarme possible + sha pendant l'alarme sur" << endl;		
-		label_activity.push_back( INOUT_WEIRD_SUR );
-		activity_sure_inout = true;
-	}	
-	
-	else if(alarm_index == -1 && SHA_index_sure == -1 && SHA_during_alarm_index_sure == -1 && SHA_index_possible != -1 && SHA_during_alarm_index_possible != -1)
-	{
-		//cerr << "weird ! alarme + sha pendant l'alarme possible + sha pendant l'alarme sur" << endl;
-		label_activity.push_back( INOUT_WEIRD_POSSIBLE );
-		activity_possible_inout = true;
-	}
-	
-	else if(alarm_index != -1 && SHA_index_sure == -1 && SHA_during_alarm_index_sure == -1 && SHA_index_possible != -1 && SHA_during_alarm_index_possible != -1)
-	{
-		//cerr << "weird ! alarme + sha pendant l'alarme possible + sha pendant l'alarme sur" << endl;
-		label_activity.push_back( INOUT_WEIRD_POSSIBLE );
-		activity_possible_inout = true;
-	}
-	
-	else if(alarm_index == -1 && SHA_index_sure != -1 && SHA_during_alarm_index_sure == -1 && SHA_index_possible != -1 && SHA_during_alarm_index_possible != -1)
-	{
-		activity_sure_inout = true;
-		label_activity.push_back( INOUT_NO_ALARM );
-	}
-		
-	else if(alarm_index != -1 && SHA_index_sure != -1 && SHA_during_alarm_index_sure == -1 && SHA_index_possible != -1 && SHA_during_alarm_index_possible != -1)
-	{
-		activity_sure_inout = true;
-		if(alarm_index < SHA_index_sure && SHA_index_sure < SHA_index_possible && SHA_index_sure < SHA_during_alarm_index_possible)
-		{
-			label_activity.push_back( INOUT_AFTER_ALARM );
-		}
-		else if(SHA_index_sure < alarm_index)
-		{
-			label_activity.push_back( INOUT_NO_ALARM );
-		}
-		else
-			//cerr << "weird ! alarme + sha pendant l'alarme possible + sha pendant l'alarme sur" << endl;
-			label_activity.push_back( INOUT_WEIRD_SUR );
-	}
-	
-	else if(alarm_index == -1 && SHA_index_sure == -1 && SHA_during_alarm_index_sure != -1 && SHA_index_possible != -1 && SHA_during_alarm_index_possible != -1)
-	{
-		activity_sure_inout = true;
-		label_activity.push_back( INOUT_DURING_ALARM );
-	}
-		
-	else if(alarm_index != -1 && SHA_index_sure == -1 && SHA_during_alarm_index_sure != -1 && SHA_index_possible != -1 && SHA_during_alarm_index_possible != -1)
-	{
-		activity_sure_inout = true;
-		if(SHA_during_alarm_index_sure < alarm_index)
-		{
-			label_activity.push_back( INOUT_DURING_ALARM );
-		}
-		else
-			//cerr << "weird ! alarme + sha pendant l'alarme possible + sha pendant l'alarme sur" << endl;
-			label_activity.push_back( INOUT_WEIRD_SUR );
-	}
-	
-	else if(alarm_index == -1 && SHA_index_sure != -1 && SHA_during_alarm_index_sure != -1 && SHA_index_possible != -1 && SHA_during_alarm_index_possible != -1)
-	{
-		activity_sure_inout = true;
-		if(SHA_during_alarm_index_sure < SHA_index_sure)
-		{
-			label_activity.push_back(INOUT_DURING_ALARM);
-		}
-		else
-			//cerr << "weird ! alarme + sha pendant l'alarme possible + sha pendant l'alarme sur" << endl;	
-			label_activity.push_back( INOUT_WEIRD_SUR );		
-	}
-	else if(alarm_index != -1 && SHA_index_sure != -1 && SHA_during_alarm_index_sure != -1 && SHA_index_possible != -1 && SHA_during_alarm_index_possible != -1)
-	{
-		activity_sure_inout = true;
-		if(SHA_during_alarm_index_sure < SHA_index_sure && SHA_during_alarm_index_sure < alarm_index)
-		{
-			label_activity.push_back(INOUT_DURING_ALARM);
-		}
-		else
-			//cerr << "weird ! alarme + sha pendant l'alarme possible + sha pendant l'alarme sur" << endl;		
-			label_activity.push_back( INOUT_WEIRD_SUR );
+			label_activity.push_back( IN_WEIRD_SUR );
+		*/
 	}
 	
 	else
 		//cerr << "CAS IMPOSSIBLE NON PRIS EN COMPTE" << endl;
-		label_activity.push_back( INOUT_IMPOSSIBLE_SUR );
+		label_activity.push_back( IN_IMPOSSIBLE_SUR );
 }
 

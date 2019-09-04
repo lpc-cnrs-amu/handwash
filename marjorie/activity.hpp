@@ -24,19 +24,6 @@ enum Label
 	INOUT_AFTER_ALARM,
 	INOUT_DURING_ALARM,	
 	
-	// SHA possiblement pris dans le in
-	IN_POSSIBLE_NO_ALARM,
-	IN_POSSIBLE_AFTER_ALARM,
-	IN_POSSIBLE_DURING_ALARM,
-	// SHA possiblement pris dans le out
-	OUT_POSSIBLE_NO_ALARM,
-	OUT_POSSIBLE_AFTER_ALARM,
-	OUT_POSSIBLE_DURING_ALARM,
-	// SHA possiblement pris dans le inout
-	INOUT_POSSIBLE_NO_ALARM,
-	INOUT_POSSIBLE_AFTER_ALARM,
-	INOUT_POSSIBLE_DURING_ALARM,
-	
 	// SHA pas pris dans le in
 	NOT_IN_NO_ALARM,
 	NOT_IN_ALARM,
@@ -47,15 +34,10 @@ enum Label
 	NOT_INOUT_NO_ALARM,
 	NOT_INOUT_ALARM,
 	
-	IN_WEIRD_SUR,
-	OUT_WEIRD_SUR,
-	INOUT_WEIRD_SUR,
-	IN_IMPOSSIBLE_SUR,
-	OUT_IMPOSSIBLE_SUR,
-	INOUT_IMPOSSIBLE_SUR,
-	IN_WEIRD_POSSIBLE,
-	OUT_WEIRD_POSSIBLE,
-	INOUT_WEIRD_POSSIBLE
+	// abandon de l'activité
+	ABANDON_IN,
+	ABANDON_OUT,
+	ABANDON_INOUT
 };
 
 
@@ -75,15 +57,14 @@ class Activity
 {
 	private:
 		std::vector<Event*> events;
-		std::vector<unsigned> persons; // contains all the numTags present in the activity
+		//std::vector<unsigned> persons; // contains all the numTags present in the activity
+		std::map<unsigned, unsigned> puces_with_time;
+		
 		unsigned main_person; // the activity belongs to the main person
 		bool inout = false; // true => the activity is a very short one, false => there is an in and an out
-		bool activity_sure_in = false;
-		bool activity_sure_out = false;
-		bool activity_sure_inout = false;
-		bool activity_possible_in = false;
-		bool activity_possible_out = false;
-		bool activity_possible_inout = false;
+		bool is_in = false;
+		bool is_out = false;
+		bool is_inout = false;
 		bool first_person = false; // is the main person also the first person who have entered the room
 		std::vector<Label> label_activity;
 
@@ -119,12 +100,9 @@ class Activity
 		  
 		bool get_inout();
 		
-		bool get_activity_sure_in();
-		bool get_activity_sure_out();
-		bool get_activity_sure_inout();
-		bool get_activity_possible_in ();
-		bool get_activity_possible_out ();
-		bool get_activity_possible_inout ();
+		bool get_is_in();
+		bool get_is_out();
+		bool get_is_inout();
 };
 	
 
