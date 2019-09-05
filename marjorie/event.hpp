@@ -33,7 +33,8 @@ class Event
 		std::string date;		// date like 2018-01-17
 		std::string time;		// time like 16:29:02.100
 		
-		bool sha_sure = false;
+		Sha* sha = NULL;
+		unsigned alarm = -1;
 		
 		void split_time();
 		void split_date();
@@ -65,6 +66,8 @@ class Event
 
 		std::string get_time();
 		std::string get_date();
+		
+		void set_alarm(unsigned puce);
 };
 	
 

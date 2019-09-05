@@ -37,7 +37,10 @@ enum Label
 	// abandon de l'activité
 	ABANDON_IN,
 	ABANDON_OUT,
-	ABANDON_INOUT
+	ABANDON_INOUT,
+	
+	// cas impossible
+	IMPOSSIBLE
 };
 
 
@@ -57,15 +60,14 @@ class Activity
 {
 	private:
 		std::vector<Event*> events;
-		//std::vector<unsigned> persons; // contains all the numTags present in the activity
 		std::map<unsigned, unsigned> puces_with_time;
 		
 		unsigned main_person; // the activity belongs to the main person
-		bool inout = false; // true => the activity is a very short one, false => there is an in and an out
 		bool is_in = false;
 		bool is_out = false;
 		bool is_inout = false;
-		bool first_person = false; // is the main person also the first person who have entered the room
+		bool first_person = false; // is the main person also the first person who have entered the room ?
+		bool only_one_person = true; // true => there is one person in the activity, else false
 		std::vector<Label> label_activity;
 
 		

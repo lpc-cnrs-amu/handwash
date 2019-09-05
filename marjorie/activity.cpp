@@ -281,6 +281,90 @@ bool Activity::same_activity(Event* event)
 
 
 	/* Split activities if there is several persons in one activity */
+void Activity::attributes_unknown_SHA(bool only_one_person)
+{
+	if( only_one_person )
+	{
+		for( auto it = puces_with_time.begin(); it != puces_with_time.end(); ++it )
+		{
+			if( it->first != 0 )
+			{
+				for(unsigned i=0; i < events.size(); ++i)
+				{
+					if( events[i]->sha_exist() && events[i]->get_sha_person_id() == 0 )
+						events[i]->set_SHA(it->first, SHA_SURE);
+				}
+			}
+		}
+	}
+}
+
+void Activity::attributes_SHA(unsigned puce, unsigned num_event, bool only_one_person)
+{
+	bool unknown_sha = true;
+	
+	// si la puce appartient à quelqu'un ou s'il n'y a qu'une seule personne dans l'activité pour l'instant (probablement le 0)
+	if( puce != 0 || puces_with_time.size() == 1 )
+		events[num_event]->set_SHA(puce, SHA_SURE);
+		
+	else
+	{
+		//gives the SHA to the only person if there is no one else
+		if( only_one_person )
+		{
+			for( auto it = puces_with_time.begin(); it != puces_with_time.end(); ++it )
+			{
+				if( it->first != 0 )
+				{
+					events[num_event]->set_SHA(it->first, SHA_SURE);
+					unknown_sha = false;
+				}
+			} 
+				
+			//gives the SHA to no one (ambiguité = -1)
+			if ( unknown_sha )
+				events[num_event]->set_SHA(-1, SHA_POSSIBLE);
+		}
+
+		//gives the SHA to no one (ambiguité = -1)
+		else
+			events[num_event]->set_SHA(-1, SHA_POSSIBLE);
+	}
+}
+
+
+void Activity::attributes_alarm(unsigned puce, unsigned num_event, bool only_one_person)
+{
+	bool unknown_alarm = true;
+	
+	// si la puce appartient à quelqu'un ou s'il n'y a qu'une seule personne dans l'activité pour l'instant (probablement le 0)
+	if( puce != 0 || puces_with_time.size() == 1 )
+		events[num_event]->set_alarm(puce);
+		
+	else
+	{
+		//gives the alarm to the only person if there is no one else
+		if( only_one_person )
+		{
+			for( auto it = puces_with_time.begin(); it != puces_with_time.end(); ++it )
+			{
+				if( it->first != 0 )
+				{
+					events[num_event]->set_alarm(it->first);
+					unknown_alarm = false;
+				}
+			} 
+				
+			//gives the alarm to no one (ambiguité = -1)
+			if ( unknown_alarm )
+				events[num_event]->set_alarm(-1);
+		}
+
+		//gives the alarm to no one (ambiguité = -1)
+		else
+			events[num_event]->set_alarm(-1);
+	}	
+}
 
 /**
 	* \name attributes_SHA
@@ -290,14 +374,9 @@ bool Activity::same_activity(Event* event)
 	* 
 	* Knows who are the first person who has entered the room.
 	* 
-	* \param different_puces : vector to be filled with all the persons (not the "0"). 
-	* \param SHA_informations : vector of SHA to be filled.
 	* \param first_person_id : first person who has entered the room.
-	* 
-	* \return The number of persons on the current activity.
 */
-unsigned Activity::attributes_SHA(//map<unsigned, unsigned>& puces_with_time, 
-	vector<Sha*>& SHA_informations, unsigned& first_person_id)
+void Activity::attributes_events()
 {
 	unsigned puce;
 	for(unsigned i=0; i<events.size(); ++i)
@@ -306,83 +385,49 @@ unsigned Activity::attributes_SHA(//map<unsigned, unsigned>& puces_with_time,
 		
 		// if we didn't add the person yet (first time entering the room) we add them to puces_with_time
 		if( puces_with_time.find(puce) == puces_with_time.end() )
-			puces_with_time[puce] = i;
-		
-		if(events[i]->get_event() == CODE_SHA || events[i]->get_event() == CODE_SHA_DURING_ALARM)
 		{
-			bool unknown_sha = true; 
+			puces_with_time[puce] = i;
+			if( puces_with_time.size() > 2 || ( puces_with_time.size() == 2 && puces_with_time.find(0) != puces_with_time.end() ) )
+				only_one_person = false;
+		}
+		
+		if( events[i]->get_event() == CODE_SHA || events[i]->get_event() == CODE_SHA_DURING_ALARM )
+			attributes_SHA(puce, i, only_one_person);
 			
-			// si la puce appartient à quelqu'un ou s'il n'y a qu'une seule personne dans l'activité pour l'instant (probablement le 0)
-			if( puce != 0 || puces_with_time.size() == 1)
-				SHA_informations.push_back( new Sha(events[i]->get_unique_id(), puce, SHA_SURE) );
-				
-			else
-			{
-				//gives the SHA to the only person if there is no one else
-				if(puces_with_time.size() == 2)
-				{
-					
-					for( auto it = puces_with_time.begin(); it != puces_with_time.end(); ++it )
-					{
-						if( it->first != 0 )
-						{
-							SHA_informations.push_back( new Sha(events[i]->get_unique_id(), it->first, SHA_SURE) );
-							unknown_sha = false;
-						}
-					} 
-						
-					//gives the SHA to no one (ambiguité = -1)
-					if ( unknown_sha )
-						SHA_informations.push_back( new Sha(events[i]->get_unique_id(), -1, SHA_POSSIBLE) );
-				}
-
-				//gives the SHA to no one (ambiguité = -1)
-				else if(puces_with_time.size() > 2)
-					SHA_informations.push_back( new Sha(events[i]->get_unique_id(), -1, SHA_POSSIBLE) );
-			}
-		}			
+		else if( events[i]->get_event() == CODE_ALARM )
+			attributes_alarm(puce, i, only_one_person);
 	}
 	
 	// attribue les SHA inconnues s'il n'y a eu qu'une personne dans l'activité
-	if(puces_with_time.size() == 2)
+	attributes_unknown_SHA(only_one_person);
+}
+
+// Identify who is the first person who has entered the room
+int Activity::first_person_entered()
+{
+	int first_puce = -1;
+	unsigned prec = 1000;
+	if( puces_with_time.size() > 0 )
 	{
-		for( auto it = puces_with_time.begin(); it != puces_with_time.end(); ++it )
+		if( puces_with_time.size() == 1 )
+			return puces_with_time.begin()->first;
+		else
 		{
-			if( it->first != 0 )
+			for( auto it = puces_with_time.begin(); it != puces_with_time.end(); ++it )
 			{
-				for(unsigned i=0; i < SHA_informations.size(); ++i)
+				if( it->first != 0 && it->second < prec)
 				{
-					if( SHA_informations[i]->get_person_id() == 0 )
-						SHA_informations[i]->set_person_id( it->first )
+					first_puce = it->first;
+					prec = it->first;
 				}
 			}
 		}
 	}
-	
-	
-	// Identify who is the first person who has entered the room
-	if(puces_with_time.size() > 0)
-	{
-		if(puces_with_time.size() == 1)
-			first_person_id = puces_with_time.begin()->first;
-		else
-		{
-			for( auto it = puces_with_time.begin(); it != puces_with_time.end(); ++it )
-				if( it->first != 0 )
-				{
-					first_person_id = it->first;
-					break;
-				}
-		}
-	}
-	else
-		first_person_id = -1;
-	
-	return puces_with_time.size();
+	return first_puce;
 }
 
 
-void Activity::split_activities(unsigned first_person_id)
+void Activity::split_activities(vector<Activity*>& split_activity, unsigned first_person_id)
 {
 	map<unsigned, vector<Event*> > different_activities; // key = person, value = vector of events
 
@@ -439,32 +484,20 @@ void Activity::activity_per_person(vector<Activity*>& split_activity)
 
 	++id_debug;
 
-	// Who are the person(s) in the current activity ? + SHAs attribution
-	unsigned person;
-	//map<unsigned, unsigned> puces_with_time;
-	vector<Sha*> SHA_informations;
-	unsigned first_person_id = 0;
-	unsigned nb_different_puces = attributes_SHA(/*puces_with_time,*/ SHA_informations, first_person_id);
+	// Who are the person(s) in the current activity ? + events attribution
+	attributes_events();
+	unsigned first_person_id = first_person_entered();
 	
 	
 	/** REFAIRE CES IF **/
 	
-	// if there is more than 1 person in the current activity => Split activities
-	if(nb_different_puces > 2) 
+	if(only_one_person)
 	{
-		split_activities();
-	}
-	
-	// If there is not several person in the current activity
-	else
-	{
-		// If there is just 1 person in the current activity
-		// Finding labels
 		first_person = true;
 		if(puces_with_time.size()==1)
 		{
 			main_person = puces_with_time.begin()->first;
-			finding_labels(SHA_informations);				
+			finding_labels();				
 		}
 		else
 		{
@@ -473,12 +506,14 @@ void Activity::activity_per_person(vector<Activity*>& split_activity)
 				if(it2->first != 0)
 				{
 					main_person = it2->first;
-					finding_labels(SHA_informations);
+					finding_labels();
 				}
 			}
 		}
 	}
-	//destroy_map_puces_to_SHA(puces_to_SHA); 
+	/** peut etre que ce n'est plus utile de scinder les activités si nb personne > 1 */
+	else
+		split_activities(split_activity, first_person_id);
 		
 }
 
@@ -498,13 +533,7 @@ void Activity::destroy_map_different_activities(map<unsigned, vector<Event*> >& 
 }
 
 
-void Activity::destroy_map_puces_to_SHA(map<unsigned, vector<Sha*> >& puces_to_SHA)
-{
-	unsigned i;
-	for(auto it = puces_to_SHA.begin(); it != puces_to_SHA.end(); ++it) 
-		for(i=0; i < it->second.size(); ++i)
-			it->second[i]->~Sha();
-}
+
 
 	/* Finding labels */
 
@@ -539,35 +568,32 @@ unsigned Activity::finding_in_out_inout()
 		events[event_out]->set_in(OUT);
 	}
 	
-	inout = false;
-	if(index_out == 0)
-		inout = true;
-	
 	return index_out;
 }
 
 
-void Activity::finding_labels(vector<Sha*>& SHA)
+void Activity::finding_labels()
 {	
 	unsigned index_out = finding_in_out_inout();
 		
-	// label sure : inout
-	if(inout)
+	// inout
+	if(index_out == 0)
 	{
 		//cout << " je suis dans inout "<< endl;
 		finding_label_inout(SHA);
 	}
 	
-	// label sure : in and out
+	// in and out
 	else
 	{
 		//cout << "je suis dans in et out " << endl;
-		finding_label_in(index_out, SHA);
-		finding_label_out(index_out, SHA);
+		finding_label_in(index_out);
+		finding_label_out(index_out);
 	}
 	
 }
-void Activity::finding_label_in(unsigned index_ending, vector<Sha*>& SHA)
+
+bool Activity::finding_label_in(unsigned index_ending)
 {
 	int alarm_index = -1;
 	int SHA_index = -1;
@@ -580,21 +606,22 @@ void Activity::finding_label_in(unsigned index_ending, vector<Sha*>& SHA)
 		id_line_event = events[num_event]->get_unique_id();
 		code_event = events[num_event]->get_event();
 		
-		if( code_event == CODE_ALARM )
+		if( alarm != -1 )
 			alarm_index = num_event;
 			
-		else if( code_event == CODE_SHA || code_event == CODE_SHA_DURING_ALARM )
+		else if( sha != NULL )
 		{
-			for(unsigned k=0; k < SHA.size(); ++k)
+			if( events[num_event]->get_sha_person_id() > 0 )
 			{
-				if( id_line_event == SHA[k]->get_unique_id() && SHA[k]->get_person_id() > 0 )
-				{
-					if( code_event == CODE_SHA )
-						SHA_index = num_event;
-					else
-						SHA_during_alarm_index = num_event;
-					break;
-				}
+				if( code_event == CODE_SHA )
+					SHA_index = num_event;
+				else
+					SHA_during_alarm_index = num_event;
+			}
+			else
+			{
+				label_activity.push_back( ABANDON_IN );
+				return false;
 			}
 		}
 	}
@@ -665,8 +692,8 @@ void Activity::finding_label_in(unsigned index_ending, vector<Sha*>& SHA)
 	}
 	
 	else
-		//cerr << "CAS IMPOSSIBLE NON PRIS EN COMPTE" << endl;
-		label_activity.push_back( IN_IMPOSSIBLE_SUR );
+		label_activity.push_back( IMPOSSIBLE );
+	return true;
 	
 }
 void Activity::finding_label_out(unsigned index_begining, vector<Sha*>& SHA)

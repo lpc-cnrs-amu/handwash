@@ -39,7 +39,22 @@ string Event::get_time() { return time; }
 string Event::get_date() { return date; }
 
 bool Event::get_in() { return in; }
+
+unsigned Event::get_sha_person_id() { return sha->get_person_id(); }
+unsigned Event::get_code_sha() { return sha->get_code_sha(); }
+
 void Event::set_in(bool in_or_out) { in = in_or_out; }
+
+void Event::set_SHA(unsigned person_id, bool sure)
+{
+	if(sha == NULL)
+		sha = new Sha(person_id, sure)
+	else
+		sha->set_SHA(person_id, sure)
+}
+void Event::set_alarm(unsigned puce) { alarm = puce; }
+
+bool Event::sha_exist() { return sha != NULL; }
 
 
 /** renvoie l'écart de temps en secondes entre l'event appelé et son precedent*/
