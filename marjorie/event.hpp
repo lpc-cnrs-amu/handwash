@@ -34,7 +34,7 @@ class Event
 		std::string time;		// time like 16:29:02.100
 		
 		Sha* sha = NULL;
-		unsigned alarm = -1;
+		int alarm = -1;
 		
 		void split_time();
 		void split_date();
@@ -67,7 +67,13 @@ class Event
 		std::string get_time();
 		std::string get_date();
 		
-		void set_alarm(unsigned puce);
+		void set_alarm(int puce);
+		void set_SHA(unsigned person_id, bool sure);
+		bool alarm_exist();
+		int get_attribution_alarm();
+
+		int get_sha_person_id();
+		bool sha_exist();
 };
 	
 

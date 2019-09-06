@@ -3,13 +3,14 @@
 
 using namespace std;
 		
-Sha::Sha(unsigned person, bool sure_or_not) :person_id(person), sure(sure_or_not)
+Sha::Sha(unsigned code, unsigned person, bool sure_or_not) : code_sha(code), person_id(person), sure(sure_or_not)
 {
 
 }
 		
 Sha::Sha(Sha* sha)
 {
+	this->code_sha = sha->code_sha;
 	this->person_id = sha->person_id;
 	this->sure = sha->sure;
 }

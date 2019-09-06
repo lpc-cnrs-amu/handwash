@@ -8,7 +8,7 @@
 #include "event.hpp"
 #include "sha.hpp"
 
-#define NB_LABELS 24
+#define NB_LABELS 19
 enum Label
 {
 	// SHA pris dans le in (sur)
@@ -59,7 +59,9 @@ enum Label
 class Activity
 {
 	private:
+		/* Attributes */
 		std::vector<Event*> events;
+		std::vector<Label> label_activity;
 		std::map<unsigned, unsigned> puces_with_time;
 		
 		unsigned main_person; // the activity belongs to the main person
@@ -68,18 +70,30 @@ class Activity
 		bool is_inout = false;
 		bool first_person = false; // is the main person also the first person who have entered the room ?
 		bool only_one_person = true; // true => there is one person in the activity, else false
-		std::vector<Label> label_activity;
-
 		
-		bool same_activity(Event* event);
-		unsigned identify_different_puces(std::vector<unsigned>& different_puces, std::map<unsigned, std::vector<Sha*> >& puces_to_SHA, unsigned& first_person_id);
-		void destroy_map_different_activities(std::map<unsigned, std::vector<Event*> >& different_activities);
-		void destroy_map_puces_to_SHA(std::map<unsigned, std::vector<Sha*> >& puces_to_SHA);
+
+		/* Methods */
+		bool same_activity		(Event* event);
+		bool finding_label_in	(unsigned index_ending);
+		bool finding_label_out	(unsigned index_begining);
+		bool finding_label_inout();
+		
+		int first_person_entered();
+		int last_person();
 		unsigned finding_in_out_inout();
-		void finding_labels(std::vector<Sha*>& SHA);
-		void finding_label_in(unsigned index_ending, std::vector<Sha*>& SHA);
-		void finding_label_out(unsigned index_begining, std::vector<Sha*>& SHA);
-		void finding_label_inout(std::vector<Sha*>& SHA);
+		unsigned identify_different_puces(std::vector<unsigned>& different_puces, 
+			std::map<unsigned, std::vector<Sha*> >& puces_to_SHA, unsigned& first_person_id);
+		
+		void attributes_unknown_alarm(bool only_one_person);
+		void attributes_unknown_SHA(bool only_one_person);
+		void attributes_SHA(unsigned puce, unsigned num_event, bool only_one_person, 
+			unsigned code_sha);
+		void attributes_alarm(unsigned puce, unsigned num_event, bool only_one_person);
+		void attributes_events();
+		void split_activities(std::vector<Activity*>& split_activity, unsigned first_person_id);
+		void destroy_map_different_activities(std::map<unsigned, std::vector<Event*> >& different_activities);
+		void finding_labels();
+
 		
 	public:
 		Activity();
@@ -99,8 +113,6 @@ class Activity
 		
 		Label get_label(unsigned num);
 		unsigned get_nb_label();
-		  
-		bool get_inout();
 		
 		bool get_is_in();
 		bool get_is_out();
@@ -109,4 +121,3 @@ class Activity
 	
 
 #endif
-

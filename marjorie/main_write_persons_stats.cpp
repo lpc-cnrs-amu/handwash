@@ -19,30 +19,24 @@ void update_persons_stats(Activity* activity_tmp, map<unsigned, Person*>& person
 	// increase number of corresponding label
 	unsigned nb_label = activity_tmp->get_nb_label();
 	for(unsigned i=0; i < nb_label; ++i)
-		person_stats[ p ]->incr_nb_label( activity_tmp->get_label(i) ); 
-		
+		person_stats[ p ]->incr_nb_label( activity_tmp->get_label(i) );
+	
+	
 	// increase nb of corresponding activity
-	if( activity_tmp->get_inout() )
+	if( activity_tmp->get_is_inout() )
 	{
-		if( activity_tmp->get_activity_sure_inout() )
-			person_stats[ p ]->incr_nb_activity_inout_sure();
-		if( activity_tmp->get_activity_possible_inout() )
-			person_stats[ p ]->incr_nb_activity_inout_possible();
+		person_stats[ p ]->incr_nb_activity_inout();
 	}
 	else
 	{
-		if( activity_tmp->get_activity_sure_in() )
-			person_stats[ p ]->incr_nb_activity_in_sure();
+		if( activity_tmp->get_is_in() )
+			person_stats[ p ]->incr_nb_activity_in();
 		
-		if( activity_tmp->get_activity_sure_out() )
-			person_stats[ p ]->incr_nb_activity_out_sure();
-		
-		if( activity_tmp->get_activity_possible_in() )
-			person_stats[ p ]->incr_nb_activity_in_possible();
-			
-		if( activity_tmp->get_activity_possible_out() )
-			person_stats[ p ]->incr_nb_activity_out_possible();	
-	}	
+		if( activity_tmp->get_is_out() )
+			person_stats[ p ]->incr_nb_activity_out();		
+	}
+	
+	
 }
 
 /** On commence par là !
@@ -117,311 +111,13 @@ void get_persons_stats(char* filename, bool excel_csv, map<unsigned, Person*>& p
 
 /* CALCUL PERCENT, STATS */
 
-void calcul_percent(
-	Person* current_person,
-	float& SHA_in_sure_percent,
-	float& SHA_not_taken_in_sure_percent,
-	float& SHA_in_possible_percent,
-	float& SHA_out_sure_percent,
-	float& SHA_not_taken_out_sure_percent,
-	float& SHA_out_possible_percent,
-	float& SHA_inout_sure_percent,
-	float& SHA_not_taken_inout_sure_percent,
-	float& SHA_inout_possible_percent,
-	float& in_no_alarm_percent,
-	float& in_after_alarm_percent,
-	float& in_during_alarm_percent, 
-	float& in_possible_no_alarm_percent,
-	float& in_possible_after_alarm_percent,
-	float& in_possible_during_alarm_percent, 	
-	float& not_in_no_alarm_percent,
-	float& not_in_alarm_percent,
-	float& out_no_alarm_percent,
-	float& out_after_alarm_percent,
-	float& out_during_alarm_percent, 
-	float& out_possible_no_alarm_percent,
-	float& out_possible_after_alarm_percent,
-	float& out_possible_during_alarm_percent, 	
-	float& not_out_no_alarm_percent,
-	float& not_out_alarm_percent,
-	float& inout_no_alarm_percent,
-	float& inout_after_alarm_percent,
-	float& inout_during_alarm_percent, 
-	float& inout_possible_no_alarm_percent,
-	float& inout_possible_after_alarm_percent,
-	float& inout_possible_during_alarm_percent, 	
-	float& not_inout_no_alarm_percent,
-	float& not_inout_alarm_percent,
-	
-	float& in_weird_sur_percent,
-	float& out_weird_sur_percent,
-	float& inout_weird_sur_percent,
-	
-	float& in_impossible_sur_percent,
-	float& out_impossible_sur_percent,
-	float& inout_impossible_sur_percent,
-	
-	float& in_weird_possible_percent,
-	float& out_weird_possible_percent,
-	float& inout_weird_possible_percent
-)	
+void calcul_percent(Person* current_person)	
 {
-	unsigned total_activity_in_sur = current_person->get_nb_activity_in_sure_total(); // nb d'activité sure en entrant
-	unsigned total_activity_in_possible = current_person->get_nb_activity_in_possible_total();
-		
-	unsigned total_activity_out_sur = current_person->get_nb_activity_out_sure_total();
-	unsigned total_activity_out_possible = current_person->get_nb_activity_out_possible_total();
-		
-	unsigned total_activity_inout_sur = current_person->get_nb_activity_inout_sure_total();
-	unsigned total_activity_inout_possible = current_person->get_nb_activity_inout_possible_total();
-	
-	// IN
-		// IN SUR
-	if(total_activity_in_sur == 0) // aucune activité sur en entrant
-	{
-		SHA_in_sure_percent = 0;
-		in_no_alarm_percent = 0;
-		in_after_alarm_percent = 0;
-		in_during_alarm_percent = 0;
-		SHA_not_taken_in_sure_percent = 0;
-		not_in_no_alarm_percent = 0;
-		not_in_alarm_percent = 0;
-		in_weird_sur_percent = 0;
-		in_impossible_sur_percent = 0;
-	}
-	else
-	{
-		// nb SHA taken - sur
-		SHA_in_sure_percent = 100 * current_person->get_nb_SHA_taken_sure_in() / (float)total_activity_in_sur; // nb SHA pris in sur / total activité in sur
-			
-			// Within those SHA taken :
-		if(current_person->get_nb_SHA_taken_sure_in() == 0)
-		{
-			in_no_alarm_percent = 0;
-			in_after_alarm_percent = 0;
-			in_during_alarm_percent = 0;
-		}
-		else
-		{
-			in_no_alarm_percent = 100 * current_person->get_nb_label( IN_NO_ALARM ) / (float)current_person->get_nb_SHA_taken_sure_in(); // nb IN_NO_ALARM / nb SHA pris in sur
-			in_after_alarm_percent = 100 * current_person->get_nb_label( IN_AFTER_ALARM ) / (float)current_person->get_nb_SHA_taken_sure_in();
-			in_during_alarm_percent = 100 * current_person->get_nb_label( IN_DURING_ALARM ) / (float)current_person->get_nb_SHA_taken_sure_in();	
-		}
-		
-		in_weird_sur_percent =  current_person->get_nb_label( IN_WEIRD_SUR ) / (float)total_activity_in_sur;
-		in_impossible_sur_percent = current_person->get_nb_label( IN_IMPOSSIBLE_SUR ) / (float)total_activity_in_sur;	
-		
-		
-		// nb SHA not taken - sur
-		SHA_not_taken_in_sure_percent = 100 * current_person->get_nb_SHA_not_taken_sure_in()  / (float)total_activity_in_sur;
-			// Within those SHA not taken
-		if(current_person->get_nb_SHA_not_taken_sure_in() == 0)
-		{
-			not_in_no_alarm_percent = 0; 
-			not_in_alarm_percent = 0;
-		}
-		else
-		{
-			not_in_no_alarm_percent = 100 * current_person->get_nb_label( NOT_IN_NO_ALARM ) / (float)current_person->get_nb_SHA_not_taken_sure_in(); 
-			not_in_alarm_percent = 100 * current_person->get_nb_label( NOT_IN_ALARM ) / (float)current_person->get_nb_SHA_not_taken_sure_in();
-		}
-	}
-	
-	
-		// IN POSSIBLE
-	if(total_activity_in_possible == 0) // aucune activité 'possible' en entrant
-	{
-		SHA_in_possible_percent = 0;
-		in_possible_no_alarm_percent = 0;
-		in_possible_after_alarm_percent = 0;
-		in_possible_during_alarm_percent = 0;
-		in_weird_possible_percent = 0;
-	}
-	else
-	{
-		// nb SHA taken - possible
-		SHA_in_possible_percent = 100 * current_person->get_nb_SHA_taken_possible_in() / (float)total_activity_in_possible;
-			// Within those SHA taken :
-		if(current_person->get_nb_SHA_taken_possible_in() == 0)
-		{
-			in_possible_no_alarm_percent = 0;
-			in_possible_after_alarm_percent = 0;
-			in_possible_during_alarm_percent = 0;		
-		}
-		else
-		{
-			in_possible_no_alarm_percent = 100 * current_person->get_nb_label( IN_POSSIBLE_NO_ALARM ) / (float)current_person->get_nb_SHA_taken_possible_in();
-			in_possible_after_alarm_percent = 100 * current_person->get_nb_label( IN_POSSIBLE_AFTER_ALARM ) / (float)current_person->get_nb_SHA_taken_possible_in();
-			in_possible_during_alarm_percent = 100 * current_person->get_nb_label( IN_POSSIBLE_DURING_ALARM ) / (float)current_person->get_nb_SHA_taken_possible_in();		
-		}
-		
-		in_weird_possible_percent =  current_person->get_nb_label( IN_WEIRD_POSSIBLE ) / (float)total_activity_in_possible;	
-	}
-	
-	
-	// OUT
-		// OUT SUR
-	if(total_activity_out_sur == 0) // aucune activité sur en sortant
-	{
-		SHA_out_sure_percent = 0;
-		out_no_alarm_percent = 0;
-		out_after_alarm_percent = 0;
-		out_during_alarm_percent = 0;
-		SHA_not_taken_out_sure_percent = 0;
-		not_out_no_alarm_percent = 0;
-		not_out_alarm_percent = 0;
-		out_weird_sur_percent = 0;
-		out_impossible_sur_percent = 0;
-	}
-	else
-	{
-		// nb SHA taken - sur
-		SHA_out_sure_percent = 100 * current_person->get_nb_SHA_taken_sure_out() / (float)total_activity_out_sur;
-			// Within those SHA taken :
-		if(current_person->get_nb_SHA_taken_sure_out() == 0)
-		{
-			out_no_alarm_percent = 0;
-			out_after_alarm_percent = 0;
-			out_during_alarm_percent = 0;	
-		}
-		else
-		{
-			out_no_alarm_percent = 100 * current_person->get_nb_label( OUT_NO_ALARM ) / (float)current_person->get_nb_SHA_taken_sure_out();
-			out_after_alarm_percent = 100 * current_person->get_nb_label( OUT_AFTER_ALARM ) / (float)current_person->get_nb_SHA_taken_sure_out();
-			out_during_alarm_percent = 100 * current_person->get_nb_label( OUT_DURING_ALARM ) / (float)current_person->get_nb_SHA_taken_sure_out();	
-		}
-		out_weird_sur_percent =  current_person->get_nb_label( OUT_WEIRD_SUR ) / (float)total_activity_out_sur;
-		out_impossible_sur_percent = current_person->get_nb_label( OUT_IMPOSSIBLE_SUR ) / (float)total_activity_out_sur;	
-		
-		// nb SHA not taken - sur
-		SHA_not_taken_out_sure_percent = 100 * current_person->get_nb_SHA_not_taken_sure_out()  / (float)total_activity_out_sur;
-			// Within those SHA not taken
-		if(current_person->get_nb_SHA_not_taken_sure_out() == 0)
-		{
-			not_out_no_alarm_percent = 0; 
-			not_out_alarm_percent = 0;
-		}
-		else
-		{
-			not_out_no_alarm_percent = 100 * current_person->get_nb_label( NOT_OUT_NO_ALARM ) / (float)current_person->get_nb_SHA_not_taken_sure_out(); 
-			not_out_alarm_percent = 100 * current_person->get_nb_label( NOT_OUT_ALARM ) / (float)current_person->get_nb_SHA_not_taken_sure_out();
-		}
-	}
-	
-	
-		// OUT POSSIBLE
-	if(total_activity_out_possible == 0) // aucune activité 'possible' en sortant
-	{
-		SHA_out_possible_percent = 0;
-		out_possible_no_alarm_percent = 0;
-		out_possible_after_alarm_percent = 0;
-		out_possible_during_alarm_percent = 0;
-		out_weird_possible_percent = 0;
-	}
-	else
-	{
-		// nb SHA taken - possible
-		SHA_out_possible_percent = 100 * current_person->get_nb_SHA_taken_possible_out() / (float)total_activity_out_possible;
-			// Within those SHA taken :
-		if(current_person->get_nb_SHA_taken_possible_out() == 0)
-		{
-			out_possible_no_alarm_percent = 0;
-			out_possible_after_alarm_percent = 0;
-			out_possible_during_alarm_percent = 0;	
-		}
-		else
-		{
-			out_possible_no_alarm_percent = 100 * current_person->get_nb_label( OUT_POSSIBLE_NO_ALARM ) / (float)current_person->get_nb_SHA_taken_possible_out();
-			out_possible_after_alarm_percent = 100 * current_person->get_nb_label( OUT_POSSIBLE_AFTER_ALARM ) / (float)current_person->get_nb_SHA_taken_possible_out();
-			out_possible_during_alarm_percent = 100 * current_person->get_nb_label( OUT_POSSIBLE_DURING_ALARM ) / (float)current_person->get_nb_SHA_taken_possible_out();
-		}	
-		out_weird_possible_percent =  current_person->get_nb_label( OUT_WEIRD_POSSIBLE ) / (float)total_activity_out_possible;
-	}
-	
-	
-	// INOUT
-		// INOUT SUR
-	if(total_activity_inout_sur == 0) // aucune activité sur en entrant/sortant
-	{
-		SHA_inout_sure_percent = 0;
-		inout_no_alarm_percent = 0;
-		inout_after_alarm_percent = 0;
-		inout_during_alarm_percent = 0;
-		SHA_not_taken_inout_sure_percent = 0;
-		not_inout_no_alarm_percent = 0;
-		not_inout_alarm_percent = 0;
-		inout_weird_sur_percent = 0;
-		inout_impossible_sur_percent = 0;
-	}
-	else
-	{
-		// nb SHA taken - sur
-		SHA_inout_sure_percent = 100 * current_person->get_nb_SHA_taken_sure_inout() / (float)total_activity_inout_sur;
-			// Within those SHA taken :
-		if(current_person->get_nb_SHA_taken_sure_inout() == 0)
-		{
-			inout_no_alarm_percent = 0;
-			inout_after_alarm_percent = 0;
-			inout_during_alarm_percent = 0;	
-		}
-		else
-		{
-			inout_no_alarm_percent = 100 * current_person->get_nb_label( INOUT_NO_ALARM ) / (float)current_person->get_nb_SHA_taken_sure_inout();
-			inout_after_alarm_percent = 100 * current_person->get_nb_label( INOUT_AFTER_ALARM ) / (float)current_person->get_nb_SHA_taken_sure_inout();
-			inout_during_alarm_percent = 100 * current_person->get_nb_label( INOUT_DURING_ALARM ) / (float)current_person->get_nb_SHA_taken_sure_inout();	
-		}
-		
-		inout_weird_sur_percent =  current_person->get_nb_label( INOUT_WEIRD_SUR ) / (float)total_activity_inout_sur;
-		inout_impossible_sur_percent = current_person->get_nb_label( INOUT_IMPOSSIBLE_SUR ) / (float)total_activity_inout_sur;
-		
-		// nb SHA not taken - sur
-		SHA_not_taken_inout_sure_percent = 100 * current_person->get_nb_SHA_not_taken_sure_inout()  / (float)total_activity_inout_sur;
-			// Within those SHA not taken
-		if(current_person->get_nb_SHA_not_taken_sure_inout() == 0)
-		{
-			not_inout_no_alarm_percent = 0; 
-			not_inout_alarm_percent = 0;
-		}
-		else
-		{
-			not_inout_no_alarm_percent = 100 * current_person->get_nb_label( NOT_INOUT_NO_ALARM ) / (float)current_person->get_nb_SHA_not_taken_sure_inout(); 
-			not_inout_alarm_percent = 100 * current_person->get_nb_label( NOT_INOUT_ALARM ) / (float)current_person->get_nb_SHA_not_taken_sure_inout();
-		}
-	}
-	
-	
-		// INOUT POSSIBLE
-	if(total_activity_inout_possible == 0) // aucune activité 'possible' en entrant/sortant
-	{
-		SHA_inout_possible_percent = 0;
-		inout_possible_no_alarm_percent = 0;
-		inout_possible_after_alarm_percent = 0;
-		inout_possible_during_alarm_percent = 0;
-		inout_weird_possible_percent = 0;
-	}
-	else
-	{
-		// nb SHA taken - possible
-		SHA_inout_possible_percent = 100 * current_person->get_nb_SHA_taken_possible_inout() / (float)total_activity_inout_possible;
-			// Within those SHA taken :
-		if(current_person->get_nb_SHA_taken_possible_inout() == 0)
-		{
-			inout_possible_no_alarm_percent = 0;
-			inout_possible_after_alarm_percent = 0;
-			inout_possible_during_alarm_percent = 0;
-		}
-		else
-		{
-			inout_possible_no_alarm_percent = 100 * current_person->get_nb_label( INOUT_POSSIBLE_NO_ALARM ) / (float)current_person->get_nb_SHA_taken_possible_inout();
-			inout_possible_after_alarm_percent = 100 * current_person->get_nb_label( INOUT_POSSIBLE_AFTER_ALARM ) / (float)current_person->get_nb_SHA_taken_possible_inout();
-			inout_possible_during_alarm_percent = 100 * current_person->get_nb_label( INOUT_POSSIBLE_DURING_ALARM ) / (float)current_person->get_nb_SHA_taken_possible_inout();	
-		}	
-		inout_weird_possible_percent =  current_person->get_nb_label( INOUT_WEIRD_POSSIBLE ) / (float)total_activity_inout_possible;
-	}	
-
+	current_person->calcul_percent();
 }
 
 
+/** a refaire */
 void write_file(map<unsigned, Person*>& person_stats, char* filename)
 {
 	ofstream output(filename, ios::out | ios::trunc);

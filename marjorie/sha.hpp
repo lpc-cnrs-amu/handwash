@@ -25,11 +25,12 @@ class Sha
 		Sha();
 		~Sha();
 		
-		bool get_sure();
-		unsigned get_code_sha() ;
 		unsigned get_person_id();
+		unsigned get_code_sha() ;
+		bool get_sure();
 		
-		void set_person_id(unsigned p_id);
+		void set_person_id(unsigned person_id);
+		void set_SHA(unsigned code_sha, unsigned p_id, bool sure);
 };
 	
 

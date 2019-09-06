@@ -40,7 +40,6 @@ string Event::get_date() { return date; }
 
 bool Event::get_in() { return in; }
 
-unsigned Event::get_sha_person_id() { return sha->get_person_id(); }
 unsigned Event::get_code_sha() { return sha->get_code_sha(); }
 
 void Event::set_in(bool in_or_out) { in = in_or_out; }
@@ -53,7 +52,15 @@ void Event::set_SHA(unsigned person_id, bool sure)
 		sha->set_SHA(person_id, sure)
 }
 void Event::set_alarm(unsigned puce) { alarm = puce; }
+bool Event::alarm_exist() { return alarm != -1; }
+int Event::get_attribution_alarm() { return alarm; }
 
+int Event::get_sha_person_id() 
+{ 
+	if( sha == NULL )
+		return -2;
+	return sha->get_person_id(); 
+}
 bool Event::sha_exist() { return sha != NULL; }
 
 
