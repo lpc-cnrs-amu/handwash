@@ -127,88 +127,25 @@ void write_file(map<unsigned, Person*>& person_stats, char* filename)
 		exit(EXIT_FAILURE);		
 	}
 	
-		// Specific
-	// IN
-	float in_no_alarm_percent;
-	float in_after_alarm_percent;
-	float in_during_alarm_percent; 
-	float in_possible_no_alarm_percent;
-	float in_possible_after_alarm_percent;
-	float in_possible_during_alarm_percent; 	
-	float not_in_no_alarm_percent;
-	float not_in_alarm_percent;
-	
-	// OUT
-	float out_no_alarm_percent;
-	float out_after_alarm_percent;
-	float out_during_alarm_percent; 
-	float out_possible_no_alarm_percent;
-	float out_possible_after_alarm_percent;
-	float out_possible_during_alarm_percent; 	
-	float not_out_no_alarm_percent;
-	float not_out_alarm_percent;
-	
-	// INOUT
-	float inout_no_alarm_percent;
-	float inout_after_alarm_percent;
-	float inout_during_alarm_percent; 
-	float inout_possible_no_alarm_percent;
-	float inout_possible_after_alarm_percent;
-	float inout_possible_during_alarm_percent; 	
-	float not_inout_no_alarm_percent;
-	float not_inout_alarm_percent;
-	
-		// Total
-	float SHA_in_sure_percent;
-	float SHA_not_taken_in_sure_percent;
-	float SHA_in_possible_percent;
-	float SHA_out_sure_percent;
-	float SHA_not_taken_out_sure_percent;
-	float SHA_out_possible_percent;
-	float SHA_inout_sure_percent;
-	float SHA_not_taken_inout_sure_percent;
-	float SHA_inout_possible_percent;
-	
-		// WEIRD / IMPOSSIBLE
-	float in_weird_sur_percent;
-	float out_weird_sur_percent;
-	float inout_weird_sur_percent;
-	
-	float in_impossible_sur_percent;
-	float out_impossible_sur_percent;
-	float inout_impossible_sur_percent;
-	
-	float in_weird_possible_percent;
-	float out_weird_possible_percent;
-	float inout_weird_possible_percent;
-	
 	
 	output << "\"ID\";" 
-		<< "\"total activity in sure\";"
-		<< "\"total activity in possible\";"
-		<< "\"total activity out sure\";"
-		<< "\"total activity out possible\";" 
-		<< "\"total activity inout sure\";"
-		<< "\"total activity inout possible\";"
+		<< "\"total activity in\";"
+		<< "\"total activity out\";" 
+		<< "\"total activity inout\";"
 		
-		<< "\"SHA in sure percent\";"
-		<< "\"SHA in sure number\";"
-		<< "\"SHA out sure percent\";"
-		<< "\"SHA out sure number\";"
-		<< "\"SHA inout sure percent\";"
-		<< "\"SHA inout sure number\";"
+		<< "\"SHA in percent\";"
+		<< "\"SHA in number\";"
+		<< "\"SHA out percent\";"
+		<< "\"SHA out number\";"
+		<< "\"SHA inout percent\";"
+		<< "\"SHA inout number\";"
 		
-		<< "\"SHA not taken in sure percent\";"
-		<< "\"SHA not taken in sure number\";"
-		<< "\"SHA not taken out sure percent\";"
-		<< "\"SHA not taken out sure number\";"
-		<< "\"SHA not taken inout sure percent\";"
-		<< "\"SHA not taken inout sure number\";"
-		
-		<< "\"SHA in possible number\";"
-		<< "\"SHA out possible number\";"
-		<< "\"SHA inout possible number\";"
-		
+		<< "\"SHA not taken in percent\";"
+		<< "\"SHA not taken in number\";"
+		<< "\"SHA not taken out percent\";"
+		<< "\"SHA not taken out number\";"
+		<< "\"SHA not taken inout percent\";"
+		<< "\"SHA not taken inout number\";"
 		
 		<< "\"IN_NO_ALARM percent\";"
 		<< "\"IN_NO_ALARM number\";"
@@ -216,23 +153,13 @@ void write_file(map<unsigned, Person*>& person_stats, char* filename)
 		<< "\"IN_AFTER_ALARM number\";"
 		<< "\"IN_DURING_ALARM percent\";" 
 		<< "\"IN_DURING_ALARM number\";" 
-		<< "\"IN_POSSIBLE_NO_ALARM percent\";"
-		<< "\"IN_POSSIBLE_NO_ALARM number\";"
-		<< "\"IN_POSSIBLE_AFTER_ALARM percent\";"
-		<< "\"IN_POSSIBLE_AFTER_ALARM number\";"
-		<< "\"IN_POSSIBLE_DURING_ALARM percent\";"
-		<< "\"IN_POSSIBLE_DURING_ALARM number\";"
 		<< "\"NOT_IN_NO_ALARM percent\";"
 		<< "\"NOT_IN_NO_ALARM number\";"
 		<< "\"NOT_IN_ALARM percent\";"
 		<< "\"NOT_IN_ALARM number\";"
 		
-		<< "\"IN_WEIRD_SUR percent\";"
-		<< "\"IN_WEIRD_SUR number\";"
-		<< "\"IN_WEIRD_POSSIBLE percent\";"
-		<< "\"IN_WEIRD_POSSIBLE number\";"
-		<< "\"IN_IMPOSSIBLE_SUR percent\";"
-		<< "\"IN_IMPOSSIBLE_SUR number\";"
+		<< "\"ABANDON_IN percent\";"
+		<< "\"ABANDON_IN number\";"
 		
 		
 		<< "\"OUT_NO_ALARM percent\";"
@@ -240,24 +167,14 @@ void write_file(map<unsigned, Person*>& person_stats, char* filename)
 		<< "\"OUT_AFTER_ALARM percent\";"
 		<< "\"OUT_AFTER_ALARM number\";"
 		<< "\"OUT_DURING_ALARM percent\";" 
-		<< "\"OUT_DURING_ALARM number\";" 
-		<< "\"OUT_POSSIBLE_NO_ALARM percent\";"
-		<< "\"OUT_POSSIBLE_NO_ALARM number\";"
-		<< "\"OUT_POSSIBLE_AFTER_ALARM percent\";"
-		<< "\"OUT_POSSIBLE_AFTER_ALARM number\";"
-		<< "\"OUT_POSSIBLE_DURING_ALARM percent\";"
-		<< "\"OUT_POSSIBLE_DURING_ALARM number\";"
+		<< "\"OUT_DURING_ALARM number\";"
 		<< "\"NOT_OUT_NO_ALARM percent\";"
 		<< "\"NOT_OUT_NO_ALARM number\";"
 		<< "\"NOT_OUT_ALARM percent\";"
 		<< "\"NOT_OUT_ALARM number\";"
 		
-		<< "\"OUT_WEIRD_SUR percent\";"
-		<< "\"OUT_WEIRD_SUR number\";"
-		<< "\"OUT_WEIRD_POSSIBLE percent\";"
-		<< "\"OUT_WEIRD_POSSIBLE number\";"
-		<< "\"OUT_IMPOSSIBLE_SUR percent\";"
-		<< "\"OUT_IMPOSSIBLE_SUR number\";"
+		<< "\"ABANDON_OUT percent\";"
+		<< "\"ABANDON_OUT number\";"
 		
 		
 		<< "\"INOUT_NO_ALARM percent\";"
@@ -266,85 +183,30 @@ void write_file(map<unsigned, Person*>& person_stats, char* filename)
 		<< "\"INOUT_AFTER_ALARM number\";"
 		<< "\"INOUT_DURING_ALARM percent\";" 
 		<< "\"INOUT_DURING_ALARM number\";" 
-		<< "\"INOUT_POSSIBLE_NO_ALARM percent\";"
-		<< "\"INOUT_POSSIBLE_NO_ALARM number\";"
-		<< "\"INOUT_POSSIBLE_AFTER_ALARM percent\";"
-		<< "\"INOUT_POSSIBLE_AFTER_ALARM number\";"
-		<< "\"INOUT_POSSIBLE_DURING_ALARM percent\";"
-		<< "\"INOUT_POSSIBLE_DURING_ALARM number\";"
 		<< "\"NOT_INOUT_NO_ALARM percent\";"
 		<< "\"NOT_INOUT_NO_ALARM number\";"
 		<< "\"NOT_INOUT_ALARM percent\";"
 		<< "\"NOT_INOUT_ALARM number\";"
 		
-		<< "\"INOUT_WEIRD_SUR percent\";"
-		<< "\"INOUT_WEIRD_SUR number\";"
-		<< "\"INOUT_WEIRD_POSSIBLE percent\";"
-		<< "\"INOUT_WEIRD_POSSIBLE number\";"
-		<< "\"INOUT_IMPOSSIBLE_SUR percent\";"
-		<< "\"INOUT_IMPOSSIBLE_SUR number\";"
+		<< "\"ABANDON_INOUT percent\";"
+		<< "\"ABANDON_INOUT number\";"
+		
+		<< "\"IMPOSSIBLE percent\";"
+		<< "\"IMPOSSIBLE number\";"
+		
 		<< endl;
 		
 
 	
 	for(auto it = person_stats.begin(); it != person_stats.end(); it++ )
 	{	
-		calcul_percent(it->second, 
-			SHA_in_sure_percent,
-			SHA_not_taken_in_sure_percent,
-			SHA_in_possible_percent,
-			SHA_out_sure_percent,
-			SHA_not_taken_out_sure_percent,
-			SHA_out_possible_percent,
-			SHA_inout_sure_percent,
-			SHA_not_taken_inout_sure_percent,
-			SHA_inout_possible_percent,
-			in_no_alarm_percent,
-			in_after_alarm_percent,
-			in_during_alarm_percent, 
-			in_possible_no_alarm_percent,
-			in_possible_after_alarm_percent,
-			in_possible_during_alarm_percent, 	
-			not_in_no_alarm_percent,
-			not_in_alarm_percent,
-			out_no_alarm_percent,
-			out_after_alarm_percent,
-			out_during_alarm_percent, 
-			out_possible_no_alarm_percent,
-			out_possible_after_alarm_percent,
-			out_possible_during_alarm_percent, 	
-			not_out_no_alarm_percent,
-			not_out_alarm_percent,
-			inout_no_alarm_percent,
-			inout_after_alarm_percent,
-			inout_during_alarm_percent, 
-			inout_possible_no_alarm_percent,
-			inout_possible_after_alarm_percent,
-			inout_possible_during_alarm_percent, 	
-			not_inout_no_alarm_percent,
-			not_inout_alarm_percent,
-			
-			in_weird_sur_percent,
-			out_weird_sur_percent,
-			inout_weird_sur_percent,
-
-			in_impossible_sur_percent,
-			out_impossible_sur_percent,
-			inout_impossible_sur_percent,
-
-			in_weird_possible_percent,
-			out_weird_possible_percent,
-			inout_weird_possible_percent
-		);
+		calcul_percent(it->second);
 		
 
 		output << "\"" << it->first << "\";" 
-			<< "\"" << it->second->get_nb_activity_in_sure_total() << "\";"
-			<< "\"" << it->second->get_nb_activity_in_possible_total() << "\";"
-			<< "\"" << it->second->get_nb_activity_out_sure_total() << "\";"
-			<< "\"" << it->second->get_nb_activity_out_possible_total() << "\";"
-			<< "\"" << it->second->get_nb_activity_inout_sure_total() << "\";"
-			<< "\"" << it->second->get_nb_activity_inout_possible_total() << "\";"
+			<< "\"" << it->second->get_nb_SHA_in() << "\";"
+			<< "\"" << it->second->get_nb_SHA_out() << "\";"
+			<< "\"" << it->second->get_nb_SHA_inout() << "\";"
 			
 			<< "\"" << std::fixed << std::setprecision(2) << SHA_in_sure_percent << "\";"
 			<< "\"" << it->second->get_nb_SHA_taken_sure_in() << "\";"
