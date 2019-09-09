@@ -20,5 +20,7 @@ else:
 
 output_filename = 'sort_'+name
 df = pd.read_csv(sys.argv[1], sep=';')
+print("reading ", name, "...")
 df = df.sort_values(by=['NumAppareil', 'temps'])
-df.to_csv(output_filename, index=False, header=True)
+df.to_csv(output_filename, index=False, header=True, sep=";")
+print(output_filename, " finish")

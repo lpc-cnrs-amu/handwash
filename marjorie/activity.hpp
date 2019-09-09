@@ -12,35 +12,35 @@
 enum Label
 {
 	// SHA pris dans le in (sur)
-	IN_NO_ALARM,
-	IN_AFTER_ALARM,
-	IN_DURING_ALARM,
+	/** 0 */ IN_NO_ALARM,
+	/** 1 */ IN_AFTER_ALARM,
+	/** 2 */ IN_DURING_ALARM,
 	// SHA pris dans le out (sur)
-	OUT_NO_ALARM,
-	OUT_AFTER_ALARM,
-	OUT_DURING_ALARM,	
+	/** 3 */ OUT_NO_ALARM,
+	/** 4 */ OUT_AFTER_ALARM,
+	/** 5 */ OUT_DURING_ALARM,	
 	// SHA pris dans le inout (sur)
-	INOUT_NO_ALARM,
-	INOUT_AFTER_ALARM,
-	INOUT_DURING_ALARM,	
+	/** 6 */ INOUT_NO_ALARM,
+	/** 7 */ INOUT_AFTER_ALARM,
+	/** 8 */ INOUT_DURING_ALARM,	
 	
 	// SHA pas pris dans le in
-	NOT_IN_NO_ALARM,
-	NOT_IN_ALARM,
+	/** 9 */ NOT_IN_NO_ALARM,
+	/** 10 */ NOT_IN_ALARM,
 	// SHA pas pris dans le out
-	NOT_OUT_NO_ALARM,
-	NOT_OUT_ALARM,
+	/** 11 */ NOT_OUT_NO_ALARM,
+	/** 12 */ NOT_OUT_ALARM,
 	// SHA pas pris dans le inout
-	NOT_INOUT_NO_ALARM,
-	NOT_INOUT_ALARM,
+	/** 13 */ NOT_INOUT_NO_ALARM,
+	/** 14 */ NOT_INOUT_ALARM,
 	
 	// abandon de l'activité
-	ABANDON_IN,
-	ABANDON_OUT,
-	ABANDON_INOUT,
+	/** 15 */ ABANDON_IN,
+	/** 16 */ ABANDON_OUT,
+	/** 17 */ ABANDON_INOUT,
 	
 	// cas impossible
-	IMPOSSIBLE
+	/** 18 */ IMPOSSIBLE
 };
 
 
@@ -62,9 +62,9 @@ class Activity
 		/* Attributes */
 		std::vector<Event*> events;
 		std::vector<Label> label_activity;
-		std::map<unsigned, unsigned> puces_with_time;
+		std::map<int, unsigned> puces_with_time;
 		
-		unsigned main_person; // the activity belongs to the main person
+		int main_person; // the activity belongs to the main person
 		bool is_in = false;
 		bool is_out = false;
 		bool is_inout = false;
@@ -74,6 +74,7 @@ class Activity
 
 		/* Methods */
 		bool same_activity		(Event* event);
+		void finding_labels();
 		bool finding_label_in	(unsigned index_ending);
 		bool finding_label_out	(unsigned index_begining);
 		bool finding_label_inout();
@@ -81,29 +82,25 @@ class Activity
 		int first_person_entered();
 		int last_person();
 		unsigned finding_in_out_inout();
-		unsigned identify_different_puces(std::vector<unsigned>& different_puces, 
-			std::map<unsigned, std::vector<Sha*> >& puces_to_SHA, unsigned& first_person_id);
 		
 		void attributes_unknown_alarm(bool only_one_person);
 		void attributes_unknown_SHA(bool only_one_person);
-		void attributes_SHA(unsigned puce, unsigned num_event, bool only_one_person, 
+		void attributes_SHA(int puce, unsigned num_event, bool only_one_person, 
 			unsigned code_sha);
-		void attributes_alarm(unsigned puce, unsigned num_event, bool only_one_person);
+		void attributes_alarm(int puce, unsigned num_event, bool only_one_person);
 		void attributes_events();
-		void split_activities(std::vector<Activity*>& split_activity, unsigned first_person_id);
-		void destroy_map_different_activities(std::map<unsigned, std::vector<Event*> >& different_activities);
-		void finding_labels();
+		void split_activities(std::vector<Activity*>& split_activity, int first_person_id);
+		void destroy_map_different_activities(std::map<int, std::vector<Event*> >& different_activities);
 
 		
 	public:
 		Activity();
 		Activity(Event* event);
-		Activity(std::vector<Event*>& vector_event, unsigned p, std::vector<unsigned>& different_persons);
+		Activity(std::vector<Event*>& vector_event, int p, 
+			std::map<int, unsigned>& puces_with_time_copy, bool one_person);
 		Activity(Activity* copy);  		
 		~Activity();
 		
-		unsigned get_person();
-		unsigned get_nb_persons();
 		
 		void activity_per_person(std::vector<Activity*>& split_activity);
 		void write_file(std::ofstream& output);
@@ -117,6 +114,8 @@ class Activity
 		bool get_is_in();
 		bool get_is_out();
 		bool get_is_inout();
+		
+		int get_person();
 };
 	
 

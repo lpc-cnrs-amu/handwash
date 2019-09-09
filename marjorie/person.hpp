@@ -24,9 +24,9 @@ class Person
 		std::map<Label, unsigned> nb_each_labels;
 		std::map<Label, float> percent_each_labels;
 		
-		unsigned nb_activity_inout_total = 0;
-		unsigned nb_activity_in_total = 0;
-		unsigned nb_activity_out_total = 0;
+		unsigned nb_activities_inout = 0;
+		unsigned nb_activities_in = 0;
+		unsigned nb_activities_out = 0;
 		float SHA_in_percent =  0;
 		float SHA_not_taken_in_percent = 0;
 		float SHA_out_percent = 0;
@@ -34,12 +34,15 @@ class Person
 		float SHA_inout_percent = 0;
 		float SHA_not_taken_inout_percent = 0;
 		
+		
+		
+		
 	public:
-		Person::Person();
+		Person();
 
 		unsigned get_nb_label(Label label);
 
-		unsigned get_nb_SHA_in();
+		unsigned get_nb_SHA_taken_in();
 		unsigned get_nb_SHA_not_taken_in();
 
 		unsigned get_nb_SHA_taken_out();
@@ -54,12 +57,13 @@ class Person
 		void incr_nb_activity_in();
 		void incr_nb_activity_out();
 
-		unsigned get_nb_activity_inout_sure_total();
-		unsigned get_nb_activity_in_sure_total();
-		unsigned get_nb_activity_out_sure_total();
+		unsigned get_nb_activity_inout_total();
+		unsigned get_nb_activity_in_total();
+		unsigned get_nb_activity_out_total();
 
-		void print_person();
-		void write_file(ofstream& output);
+		
+		void write_person(unsigned id, std::ofstream& output);
+		void print_person(unsigned id);
 		
 		void calcul_percent();
 };

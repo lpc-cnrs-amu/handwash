@@ -14,7 +14,7 @@ generate_activities: main_write_activities.o event.o activities.o activity.o sha
 main_write_activities.o: main_write_activities.cpp activities.hpp
 	$(CC) -o main_write_activities.o -c main_write_activities.cpp $(CFLAGS)
 
-event.o: event.cpp event.hpp
+event.o: event.cpp event.hpp sha.hpp
 	$(CC) -o event.o -c event.cpp $(CFLAGS)
 	
 activity.o: activity.cpp activity.hpp event.hpp sha.hpp

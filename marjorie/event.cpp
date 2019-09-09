@@ -20,6 +20,9 @@ Event::Event(Event* event)
 	this->seconds = event->seconds;
 	this->date = event->date;
 	this->time = event->time;
+	this->alarm = event->alarm;
+	if(event->sha != NULL)
+		this->sha = new Sha(event->sha);
 }
 
 unsigned Event::get_id_puce() {	return id_puce; }
@@ -44,14 +47,14 @@ unsigned Event::get_code_sha() { return sha->get_code_sha(); }
 
 void Event::set_in(bool in_or_out) { in = in_or_out; }
 
-void Event::set_SHA(unsigned person_id, bool sure)
+void Event::set_SHA(unsigned code_sha, int person_id, bool sure)
 {
 	if(sha == NULL)
-		sha = new Sha(person_id, sure)
+		sha = new Sha(code_sha, person_id, sure);
 	else
-		sha->set_SHA(person_id, sure)
+		sha->set_SHA(code_sha, person_id, sure);
 }
-void Event::set_alarm(unsigned puce) { alarm = puce; }
+void Event::set_alarm(int puce) { alarm = puce; }
 bool Event::alarm_exist() { return alarm != -1; }
 int Event::get_attribution_alarm() { return alarm; }
 
@@ -110,10 +113,6 @@ int Event::ecart_time(Event* prec)
 	}
 	return -1;
 }
-
-
-
-
 
 
 

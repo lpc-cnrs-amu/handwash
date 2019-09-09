@@ -3,6 +3,7 @@
 #include <string>
 #include <fstream>
 #include <iostream>
+#include "sha.hpp"
 #define IN true
 #define OUT false
 
@@ -68,12 +69,13 @@ class Event
 		std::string get_date();
 		
 		void set_alarm(int puce);
-		void set_SHA(unsigned person_id, bool sure);
+		void set_SHA(unsigned code_sha, int person_id, bool sure);
 		bool alarm_exist();
 		int get_attribution_alarm();
 
 		int get_sha_person_id();
 		bool sha_exist();
+		unsigned get_code_sha();
 };
 	
 

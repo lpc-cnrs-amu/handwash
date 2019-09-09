@@ -48,7 +48,6 @@ Activity::Activity(Activity* copy)
 	unsigned i;
 	
 	this->main_person = copy->main_person;
-	this->inout = copy->inout;
 	this->first_person = copy->first_person;
 	this->is_in = copy->is_in;
 	this->is_out = copy->is_out;
@@ -57,8 +56,8 @@ Activity::Activity(Activity* copy)
 	for(i=0; i < copy->events.size(); ++i)
 		this->events.push_back( new Event(copy->events[i]) );
 		
-	for(i=0; i < copy->persons.size(); ++i)
-		this->persons.push_back( copy->persons[i] );
+	for( auto it = copy->puces_with_time.begin(); it != copy->puces_with_time.end(); ++it )
+		puces_with_time.insert(std::make_pair(it->first, it->second ));
 		
 	for(i=0; i < copy->label_activity.size(); ++i)
 		this->label_activity.push_back( copy->label_activity[i] );
@@ -69,16 +68,16 @@ Activity::Activity(Activity* copy)
 	*
 	* \param filename : file containing every instances in csv format.
 */
-Activity::Activity(vector<Event*>& vector_event, unsigned p, 
-	map<unsigned, unsigned>& puces_with_time_copy, bool one_person)
+Activity::Activity(vector<Event*>& vector_event, int p, 
+	map<int, unsigned>& puces_with_time_copy, bool one_person)
 {
 	unsigned i;
 	
 	main_person = p;
 	only_one_person = one_person;
 	
-	for(auto it = puces_with_time_copy.begin(); it != puces_with_time_copy.end(); ++it)
-		puces_with_time.insert(std::pair<it->first,it->second>);
+	for( auto it = puces_with_time_copy.begin(); it != puces_with_time_copy.end(); ++it )
+		puces_with_time.insert(std::make_pair(it->first, it->second ));
 	
 	for(i=0; i < vector_event.size(); ++i)
 		events.push_back( new Event(vector_event[i]) );
@@ -97,12 +96,10 @@ Label Activity::get_label(unsigned num)
 }
 unsigned Activity::get_nb_label() { return label_activity.size(); }
 
-unsigned Activity::get_person() { return main_person; }
-unsigned Activity::get_nb_persons() { return persons.size(); }
-
 bool Activity::get_is_in() { return is_in; }
 bool Activity::get_is_out() { return is_out; }
 bool Activity::get_is_inout() { return is_inout; }
+int Activity::get_person() { return main_person; }
 
 
 	/* Print functions */
@@ -115,7 +112,7 @@ bool Activity::get_is_inout() { return is_inout; }
 	* \param output : the file.
 */
 void Activity::write_file(ofstream& output)
-{
+{/*
 	unsigned i;
 	
 	output << "PERSON: " << main_person << endl;
@@ -131,7 +128,7 @@ void Activity::write_file(ofstream& output)
 	output << "\t";
 	for(i=0; i<events.size(); ++i)
 		events[i]->print_event(output);
-	
+	*/
 	
 }
 
@@ -144,9 +141,9 @@ void Activity::print_activity()
 	unsigned i;
 	
 	cout << "PERSON: " << main_person << endl;
-	cout << "\tNUMBER OF PERSON: " << persons.size() << endl << "\t";	
-	for(i=0; i < persons.size(); ++i)
-		cout << persons[i] << " ";
+	cout << "\tNUMBER OF PERSON: " << puces_with_time.size() << endl << "\t";	
+	for( auto it=puces_with_time.begin(); it != puces_with_time.end(); ++it )
+		cout << it->first << " ";
 	cout << endl;
 	cout << "\tNUMBER OF LABELS: " << label_activity.size() << endl << "\t";	
 	for(i=0; i < label_activity.size(); ++i)
@@ -293,7 +290,7 @@ void Activity::attributes_unknown_SHA(bool only_one_person)
 				for(unsigned i=0; i < events.size(); ++i)
 				{
 					if( events[i]->sha_exist() && events[i]->get_sha_person_id() == 0 )
-						events[i]->set_SHA(it->first, SHA_SURE);
+						events[i]->set_SHA(events[i]->get_code_sha(), it->first, SHA_SURE);
 				}
 			}
 		}
@@ -318,7 +315,7 @@ void Activity::attributes_unknown_alarm(bool only_one_person)
 	}
 }
 
-void Activity::attributes_SHA(unsigned puce, unsigned num_event, bool only_one_person, 
+void Activity::attributes_SHA(int puce, unsigned num_event, bool only_one_person, 
 	unsigned code_sha)
 {
 	bool unknown_sha = true;
@@ -375,7 +372,7 @@ int Activity::last_person()
 	return last_puce;	
 }
 
-void Activity::attributes_alarm(unsigned puce, unsigned num_event, bool only_one_person)
+void Activity::attributes_alarm(int puce, unsigned num_event, bool only_one_person)
 {
 	bool unknown_alarm = true;
 	
@@ -420,7 +417,7 @@ void Activity::attributes_alarm(unsigned puce, unsigned num_event, bool only_one
 */
 void Activity::attributes_events()
 {
-	unsigned puce;
+	int puce;
 	for(unsigned i=0; i<events.size(); ++i)
 	{
 		puce = events[i]->get_id_puce();
@@ -429,7 +426,7 @@ void Activity::attributes_events()
 		if( puces_with_time.find(puce) == puces_with_time.end() )
 		{
 			puces_with_time[puce] = i;
-			if( puces_with_time.size() > 2 || ( puces_with_time.size() == 2 && puces_with_time.find(0) != puces_with_time.end() ) )
+			if( puces_with_time.size() > 2 || ( puces_with_time.size() == 2 && puces_with_time.find(0) == puces_with_time.end() ) )
 				only_one_person = false;
 		}
 		
@@ -470,17 +467,18 @@ int Activity::first_person_entered()
 }
 
 
-void Activity::split_activities(vector<Activity*>& split_activity, unsigned first_person_id)
+void Activity::split_activities(vector<Activity*>& split_activity, int first_person_id)
 {
-	map<unsigned, vector<Event*> > different_activities; // key = person, value = vector of events
-
+	map<int, vector<Event*> > different_activities; // key = person, value = vector of events
+	int person;
+	
 	// Accords events to each persons
 	for(unsigned i=0; i<events.size(); ++i)
 	{
 		person = events[i]->get_id_puce();
 		
 		// this event is related to everyone
-		if( !events[i]->sha_exist() && !events->alarm_exist() && person==0 )
+		if( ( !events[i]->sha_exist() || (events[i]->sha_exist() && events[i]->get_sha_person_id()==-1) ) && !events[i]->alarm_exist() && person==0 )
 		{
 			for( auto it = puces_with_time.begin(); it != puces_with_time.end(); ++it )
 				if( it->first != 0 )
@@ -492,7 +490,7 @@ void Activity::split_activities(vector<Activity*>& split_activity, unsigned firs
 			if( events[i]->alarm_exist() )
 				different_activities[events[i]->get_attribution_alarm()].push_back( new Event(events[i]) );
 			else if( events[i]->sha_exist() )
-				different_activities[events[i]->get_sha_person_id()()].push_back( new Event(events[i]) );
+				different_activities[events[i]->get_sha_person_id()].push_back( new Event(events[i]) );
 			else
 				different_activities[person].push_back( new Event(events[i]) );
 		}
@@ -532,10 +530,11 @@ void Activity::activity_per_person(vector<Activity*>& split_activity)
 
 	// Who are the person(s) in the current activity ? + events attribution
 	attributes_events();
-	unsigned first_person_id = first_person_entered();
+	int first_person_id = first_person_entered();
 	
 	if(only_one_person)
 	{
+		//cout << "\tONLY ONE" << endl;
 		first_person = true;
 		if(puces_with_time.size()==1)
 		{
@@ -553,6 +552,7 @@ void Activity::activity_per_person(vector<Activity*>& split_activity)
 				}
 			}
 		}
+		//print_activity();
 	}
 	else
 		split_activities(split_activity, first_person_id);
@@ -566,7 +566,7 @@ void Activity::activity_per_person(vector<Activity*>& split_activity)
 	* 
 	* \param different_activities : the map to destroy.
 */
-void Activity::destroy_map_different_activities(map<unsigned, vector<Event*> >& different_activities)
+void Activity::destroy_map_different_activities(map<int, vector<Event*> >& different_activities)
 {
 	unsigned i;
 	for(auto it = different_activities.begin(); it != different_activities.end(); ++it) 
@@ -623,6 +623,10 @@ void Activity::finding_labels()
 	{
 		//cout << " je suis dans inout "<< endl;
 		is_inout = finding_label_inout();
+		/*if(is_inout){
+			cout << "IS INOUT" << endl;
+			print_activity();
+		} */
 	}
 	
 	// in and out
@@ -630,7 +634,15 @@ void Activity::finding_labels()
 	{
 		//cout << "je suis dans in et out " << endl;
 		is_in = finding_label_in(index_out);
+		/*if(is_in){
+			cout << "IS IN" << endl;
+			print_activity();
+		} */
 		is_out = finding_label_out(index_out);
+		/*if(is_out){
+			cout << "IS OUT" << endl;
+			print_activity();
+		} */
 	}
 	
 }
@@ -649,10 +661,10 @@ bool Activity::finding_label_in(unsigned index_ending)
 		id_line_event = events[num_event]->get_unique_id();
 		code_event = events[num_event]->get_event();				
 						
-		if( events[i]->alarm_exist() && events[i]->get_attribution_alarm() == main_person && alarm_index == -1 )
+		if( events[num_event]->alarm_exist() && events[num_event]->get_attribution_alarm() == static_cast<int>(main_person) && alarm_index == -1 )
 			alarm_index = num_event;
 			
-		else if( events[i]->sha_exist() )
+		else if( events[num_event]->sha_exist() )
 		{
 			if( events[num_event]->get_sha_person_id() > 0 )
 			{
@@ -707,9 +719,9 @@ bool Activity::finding_label_in(unsigned index_ending)
 		label_activity.push_back( NOT_IN_ALARM );
 		
 	// Alarm 1, SHA taken 0, SHA taken during alarm 1
-	else if( alarm_index != -1 && SHA_index == -1 && SHA_during_alarm_index_sure != -1 )
+	else if( alarm_index != -1 && SHA_index == -1 && SHA_during_alarm_index != -1 )
 	{
-		if(alarm_index < SHA_during_alarm_index_sure)
+		if(alarm_index < SHA_during_alarm_index)
 			label_activity.push_back( IN_DURING_ALARM );
 		else
 		{
@@ -744,7 +756,7 @@ bool Activity::finding_label_in(unsigned index_ending)
 }
 
 
-bool Activity::finding_label_out(unsigned index_begining, vector<Sha*>& SHA)
+bool Activity::finding_label_out(unsigned index_begining)
 {
 	int alarm_index = -1;
 	int SHA_index = -1;
@@ -753,15 +765,15 @@ bool Activity::finding_label_out(unsigned index_begining, vector<Sha*>& SHA)
 	unsigned code_event;
 	bool abandon_activity = false;
 	
-	for(unsigned num_event=0; num_event < index_ending; ++num_event)
+	for(unsigned num_event=index_begining; num_event < events.size(); ++num_event)
 	{
 		id_line_event = events[num_event]->get_unique_id();
 		code_event = events[num_event]->get_event();				
-						
-		if( events[i]->alarm_exist() && events[i]->get_attribution_alarm() == main_person && alarm_index == -1 )
+		
+		if( events[num_event]->alarm_exist() && events[num_event]->get_attribution_alarm() == static_cast<int>(main_person) && alarm_index == -1 )
 			alarm_index = num_event;
 			
-		else if( events[i]->sha_exist() )
+		else if( events[num_event]->sha_exist() )
 		{
 			if( events[num_event]->get_sha_person_id() > 0 )
 			{
@@ -783,6 +795,7 @@ bool Activity::finding_label_out(unsigned index_begining, vector<Sha*>& SHA)
 	}
 	if( abandon_activity )
 	{
+		
 		label_activity.push_back( ABANDON_OUT );
 		return false;
 	}
@@ -816,9 +829,9 @@ bool Activity::finding_label_out(unsigned index_begining, vector<Sha*>& SHA)
 		label_activity.push_back( NOT_OUT_ALARM );
 		
 	// Alarm 1, SHA taken 0, SHA taken during alarm 1
-	else if( alarm_index != -1 && SHA_index == -1 && SHA_during_alarm_index_sure != -1 )
+	else if( alarm_index != -1 && SHA_index == -1 && SHA_during_alarm_index != -1 )
 	{
-		if(alarm_index < SHA_during_alarm_index_sure)
+		if(alarm_index < SHA_during_alarm_index)
 			label_activity.push_back( OUT_DURING_ALARM );
 		else
 		{
@@ -854,7 +867,7 @@ bool Activity::finding_label_out(unsigned index_begining, vector<Sha*>& SHA)
 }
 
 
-bool Activity::finding_label_inout(vector<Sha*>& SHA)
+bool Activity::finding_label_inout()
 {
 	int alarm_index = -1;
 	int SHA_index = -1;
@@ -863,15 +876,15 @@ bool Activity::finding_label_inout(vector<Sha*>& SHA)
 	unsigned code_event;
 	bool abandon_activity = false;
 	
-	for(unsigned num_event=0; num_event < index_ending; ++num_event)
+	for(unsigned num_event=0; num_event < events.size(); ++num_event)
 	{
 		id_line_event = events[num_event]->get_unique_id();
 		code_event = events[num_event]->get_event();				
 						
-		if( events[i]->alarm_exist() && events[i]->get_attribution_alarm() == main_person && alarm_index == -1 )
+		if( events[num_event]->alarm_exist() && events[num_event]->get_attribution_alarm() == static_cast<int>(main_person) && alarm_index == -1 )
 			alarm_index = num_event;
 			
-		else if( events[i]->sha_exist() )
+		else if( events[num_event]->sha_exist() )
 		{
 			if( events[num_event]->get_sha_person_id() > 0 )
 			{
@@ -926,9 +939,9 @@ bool Activity::finding_label_inout(vector<Sha*>& SHA)
 		label_activity.push_back( NOT_INOUT_ALARM );
 		
 	// Alarm 1, SHA taken 0, SHA taken during alarm 1
-	else if( alarm_index != -1 && SHA_index == -1 && SHA_during_alarm_index_sure != -1 )
+	else if( alarm_index != -1 && SHA_index == -1 && SHA_during_alarm_index != -1 )
 	{
-		if(alarm_index < SHA_during_alarm_index_sure)
+		if(alarm_index < SHA_during_alarm_index)
 			label_activity.push_back( INOUT_DURING_ALARM );
 		else
 		{

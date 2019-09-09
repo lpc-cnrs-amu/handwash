@@ -108,12 +108,12 @@ void Activities::write_file(char* filename)
 	}
 	unsigned nb_act=0;
 	for(unsigned i=0; i<activities.size(); ++i)
-	{
-		if(activities[i]->get_person() == 425 /*&& activities[i]->get_nb_persons() != 1*/)
+	{/*
+		if(activities[i]->get_person() == 425 )
 		{
 			activities[i]->write_file(output);
 			++nb_act;
-		}
+		}*/
 	}
 	output << "NUMBER ACT :" << nb_act;
 	output.close();
