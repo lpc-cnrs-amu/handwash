@@ -52,6 +52,18 @@ Activity::Activity(Activity* copy)
 	this->is_in = copy->is_in;
 	this->is_out = copy->is_out;
 	this->is_inout = copy->is_inout;
+	
+	this->alarm_index_in = copy->alarm_index_in;
+	this->SHA_index_in = copy->SHA_index_in;
+	this->SHA_during_alarm_index_in = copy->SHA_during_alarm_index_in;
+	
+	this->alarm_index_out = copy->alarm_index_out;
+	this->SHA_index_out = copy->SHA_index_out;
+	this->SHA_during_alarm_index_out = copy->SHA_during_alarm_index_out;
+	
+	this->alarm_index_inout = copy->alarm_index_inout;
+	this->SHA_index_inout = copy->SHA_index_inout;
+	this->SHA_during_alarm_index_inout = copy->SHA_during_alarm_index_inout;
 			
 	for(i=0; i < copy->events.size(); ++i)
 		this->events.push_back( new Event(copy->events[i]) );
@@ -100,6 +112,163 @@ bool Activity::get_is_in() { return is_in; }
 bool Activity::get_is_out() { return is_out; }
 bool Activity::get_is_inout() { return is_inout; }
 int Activity::get_person() { return main_person; }
+
+bool Activity::is_abandon_inout()
+{
+	return find(label_activity.begin(), label_activity.end(), 
+		ABANDON_INOUT) != label_activity.end();
+}
+bool Activity::is_abandon_in()
+{
+	return find(label_activity.begin(), label_activity.end(), 
+		ABANDON_IN) != label_activity.end();
+}
+bool Activity::is_abandon_out()
+{
+	return find(label_activity.begin(), label_activity.end(), 
+		ABANDON_OUT) != label_activity.end();
+}
+
+
+unsigned Activity::get_index_out()
+{
+	for( unsigned i=0; i<events.size(); ++i )
+		if( !events[i]->get_in() )
+			return i;
+	return 0;
+}
+
+string Activity::get_start_time(bool out)
+{
+	unsigned index_out = get_index_out();
+	
+	// the start for the 'out', so it's not the activity's start
+	if( out && index_out != 0 )
+		return events[index_out]->get_date() + " " + events[index_out]->get_time();	
+	else
+		return events[0]->get_date() + " " + events[0]->get_time();
+		
+	return "NO OUT";
+}
+
+
+string Activity::get_end_time(bool in)
+{
+	unsigned index_out = get_index_out();
+	
+	// the end for the 'in', so it's not the activity's end
+	if( in && index_out != 0 )
+		return events[index_out-1]->get_date() + " " + events[index_out-1]->get_time();	
+	else
+		return events[events.size()-1]->get_date() + " " + events[events.size()-1]->get_time();
+		
+	return "NO IN";
+}
+
+int Activity::get_duration(unsigned in_out_inout)
+{
+	unsigned index_out = get_index_out();
+	
+	if( in_out_inout == 0 && index_out == 0 )
+		return events[events.size()-1]->ecart_time(events[0]);
+	else if( in_out_inout == 1 && index_out != 0 )
+		return events[index_out-1]->ecart_time(events[0]);
+	else if( in_out_inout == 2 && index_out != 0 )
+		return events[events.size()-1]->ecart_time(events[index_out]);
+		
+	return -1;
+}
+
+Label Activity::get_label_in()
+{
+	for( unsigned i=0; i<label_activity.size(); ++i )
+	{
+		if( label_activity[i] == IN_NO_ALARM || 
+			label_activity[i] == IN_AFTER_ALARM || 
+			label_activity[i] == IN_DURING_ALARM || 
+			label_activity[i] == NOT_IN_NO_ALARM || 
+			label_activity[i] == NOT_IN_ALARM || 
+			label_activity[i] == ABANDON_IN )
+			return label_activity[i];
+	}
+	return IMPOSSIBLE;
+}
+
+Label Activity::get_label_out()
+{
+	for( unsigned i=0; i<label_activity.size(); ++i )
+	{
+		if( label_activity[i] == OUT_NO_ALARM || 
+			label_activity[i] == OUT_AFTER_ALARM || 
+			label_activity[i] == OUT_DURING_ALARM || 
+			label_activity[i] == NOT_OUT_NO_ALARM || 
+			label_activity[i] == NOT_OUT_ALARM || 
+			label_activity[i] == ABANDON_OUT )
+			return label_activity[i];
+	}
+	return IMPOSSIBLE;
+}
+
+Label Activity::get_label_inout()
+{
+	for( unsigned i=0; i<label_activity.size(); ++i )
+	{
+		if( label_activity[i] == INOUT_NO_ALARM || 
+			label_activity[i] == INOUT_AFTER_ALARM || 
+			label_activity[i] == INOUT_DURING_ALARM || 
+			label_activity[i] == NOT_INOUT_NO_ALARM || 
+			label_activity[i] == NOT_INOUT_ALARM || 
+			label_activity[i] == ABANDON_INOUT )
+			return label_activity[i];
+	}
+	return IMPOSSIBLE;
+}
+
+int Activity::get_alarm_index_in()
+{
+	return alarm_index_in;
+}
+
+int Activity::get_SHA_index_in()
+{
+	return SHA_index_in;
+}
+
+int Activity::get_SHA_during_alarm_index_in()
+{
+	return SHA_during_alarm_index_in;
+}
+
+int Activity::get_alarm_index_out()
+{
+	return alarm_index_out;
+}
+
+int Activity::get_SHA_index_out()
+{
+	return SHA_index_out;
+}
+
+int Activity::get_SHA_during_alarm_index_out()
+{
+	return SHA_during_alarm_index_out;
+}
+
+int Activity::get_alarm_index_inout()
+{
+	return alarm_index_inout;
+}
+
+int Activity::get_SHA_index_inout()
+{
+	return SHA_index_inout;
+}
+
+int Activity::get_SHA_during_alarm_index_inout()
+{
+	return SHA_during_alarm_index_inout;
+}
+	
 
 
 	/* Print functions */
@@ -649,34 +818,29 @@ void Activity::finding_labels()
 
 bool Activity::finding_label_in(unsigned index_ending)
 {
-	int alarm_index = -1;
-	int SHA_index = -1;
-	int SHA_during_alarm_index = -1;
-	unsigned id_line_event;
 	unsigned code_event;
 	bool abandon_activity = false;
 	
 	for(unsigned num_event=0; num_event < index_ending; ++num_event)
 	{
-		id_line_event = events[num_event]->get_unique_id();
 		code_event = events[num_event]->get_event();				
-						
-		if( events[num_event]->alarm_exist() && events[num_event]->get_attribution_alarm() == static_cast<int>(main_person) && alarm_index == -1 )
-			alarm_index = num_event;
+							
+		if( events[num_event]->alarm_exist() && events[num_event]->get_attribution_alarm() == static_cast<int>(main_person) && alarm_index_in == -1 )
+			alarm_index_in = num_event;
 			
 		else if( events[num_event]->sha_exist() )
 		{
 			if( events[num_event]->get_sha_person_id() > 0 )
 			{
-				if( code_event == CODE_SHA && SHA_index == -1)
-					SHA_index = num_event;
-				else if( code_event == CODE_SHA_DURING_ALARM && SHA_during_alarm_index == -1 )
-					SHA_during_alarm_index = num_event;
+				if( code_event == CODE_SHA && SHA_index_in == -1)
+					SHA_index_in = num_event;
+				else if( code_event == CODE_SHA_DURING_ALARM && SHA_during_alarm_index_in == -1 )
+					SHA_during_alarm_index_in = num_event;
 				abandon_activity = false;
 			}
 			else
 			{
-				if( SHA_index == -1 && SHA_during_alarm_index == -1 )
+				if( SHA_index_in == -1 && SHA_during_alarm_index_in == -1 )
 					abandon_activity = true;
 				else
 					abandon_activity = false;
@@ -684,6 +848,9 @@ bool Activity::finding_label_in(unsigned index_ending)
 			}
 		}
 	}
+	
+	
+	
 	if( abandon_activity )
 	{
 		label_activity.push_back( ABANDON_IN );
@@ -691,21 +858,21 @@ bool Activity::finding_label_in(unsigned index_ending)
 	}
 	
 	// Alarm 0, SHA taken 0, SHA taken during alarm 0
-	if( alarm_index == -1 && SHA_index == -1 && SHA_during_alarm_index == -1 )
+	if( alarm_index_in == -1 && SHA_index_in == -1 && SHA_during_alarm_index_in == -1 )
 		label_activity.push_back( NOT_IN_NO_ALARM );
 		
 	// Alarm 0, SHA taken 0, SHA taken during alarm 1
-	else if( alarm_index == -1 && SHA_index == -1 && SHA_during_alarm_index != -1 )
+	else if( alarm_index_in == -1 && SHA_index_in == -1 && SHA_during_alarm_index_in != -1 )
 		label_activity.push_back( IN_DURING_ALARM );
 		
 	// Alarm 0, SHA taken 1, SHA taken during alarm 0
-	else if( alarm_index == -1 && SHA_index != -1 && SHA_during_alarm_index == -1 )
+	else if( alarm_index_in == -1 && SHA_index_in != -1 && SHA_during_alarm_index_in == -1 )
 		label_activity.push_back( IN_NO_ALARM );
 		
 	// Alarm 0, SHA taken 1, SHA taken during alarm 1
-	else if( alarm_index == -1 && SHA_index != -1 && SHA_during_alarm_index != -1 )
+	else if( alarm_index_in == -1 && SHA_index_in != -1 && SHA_during_alarm_index_in != -1 )
 	{
-		if(SHA_index < SHA_during_alarm_index)
+		if(SHA_index_in < SHA_during_alarm_index_in)
 		{
 			label_activity.push_back( ABANDON_IN );
 			return false;
@@ -715,13 +882,13 @@ bool Activity::finding_label_in(unsigned index_ending)
 	}
 	
 	// Alarm 1, SHA taken 0, SHA taken during alarm 0
-	else if( alarm_index != -1 && SHA_index == -1 && SHA_during_alarm_index == -1 )
+	else if( alarm_index_in != -1 && SHA_index_in == -1 && SHA_during_alarm_index_in == -1 )
 		label_activity.push_back( NOT_IN_ALARM );
 		
 	// Alarm 1, SHA taken 0, SHA taken during alarm 1
-	else if( alarm_index != -1 && SHA_index == -1 && SHA_during_alarm_index != -1 )
+	else if( alarm_index_in != -1 && SHA_index_in == -1 && SHA_during_alarm_index_in != -1 )
 	{
-		if(alarm_index < SHA_during_alarm_index)
+		if(alarm_index_in < SHA_during_alarm_index_in)
 			label_activity.push_back( IN_DURING_ALARM );
 		else
 		{
@@ -731,16 +898,16 @@ bool Activity::finding_label_in(unsigned index_ending)
 	}
 	
 	// Alarm 1, SHA taken 1, SHA taken during alarm 0
-	else if(alarm_index != -1 && SHA_index != -1 && SHA_during_alarm_index == -1  )
+	else if(alarm_index_in != -1 && SHA_index_in != -1 && SHA_during_alarm_index_in == -1  )
 	{
-		if(alarm_index < SHA_index)
+		if(alarm_index_in < SHA_index_in)
 			label_activity.push_back( IN_AFTER_ALARM );
 		else
 			label_activity.push_back( IN_NO_ALARM );
 	}
 	
 	// Alarm 1, SHA taken 1, SHA taken during alarm 1
-	else if( alarm_index != -1 && SHA_index != -1 && SHA_during_alarm_index != -1 )
+	else if( alarm_index_in != -1 && SHA_index_in != -1 && SHA_during_alarm_index_in != -1 )
 	{
 		label_activity.push_back( ABANDON_IN );
 		return false;
@@ -758,34 +925,29 @@ bool Activity::finding_label_in(unsigned index_ending)
 
 bool Activity::finding_label_out(unsigned index_begining)
 {
-	int alarm_index = -1;
-	int SHA_index = -1;
-	int SHA_during_alarm_index = -1;
-	unsigned id_line_event;
 	unsigned code_event;
 	bool abandon_activity = false;
 	
 	for(unsigned num_event=index_begining; num_event < events.size(); ++num_event)
 	{
-		id_line_event = events[num_event]->get_unique_id();
 		code_event = events[num_event]->get_event();				
 		
-		if( events[num_event]->alarm_exist() && events[num_event]->get_attribution_alarm() == static_cast<int>(main_person) && alarm_index == -1 )
-			alarm_index = num_event;
+		if( events[num_event]->alarm_exist() && events[num_event]->get_attribution_alarm() == static_cast<int>(main_person) && alarm_index_out == -1 )
+			alarm_index_out = num_event;
 			
 		else if( events[num_event]->sha_exist() )
 		{
 			if( events[num_event]->get_sha_person_id() > 0 )
 			{
-				if( code_event == CODE_SHA && SHA_index == -1)
-					SHA_index = num_event;
-				else if( code_event == CODE_SHA_DURING_ALARM && SHA_during_alarm_index == -1 )
-					SHA_during_alarm_index = num_event;
+				if( code_event == CODE_SHA && SHA_index_out == -1)
+					SHA_index_out = num_event;
+				else if( code_event == CODE_SHA_DURING_ALARM && SHA_during_alarm_index_out == -1 )
+					SHA_during_alarm_index_out = num_event;
 				abandon_activity = false;
 			}
 			else
 			{
-				if( SHA_index == -1 && SHA_during_alarm_index == -1 )
+				if( SHA_index_out == -1 && SHA_during_alarm_index_out == -1 )
 					abandon_activity = true;
 				else
 					abandon_activity = false;
@@ -801,21 +963,21 @@ bool Activity::finding_label_out(unsigned index_begining)
 	}
 	
 	// Alarm 0, SHA taken 0, SHA taken during alarm 0
-	if( alarm_index == -1 && SHA_index == -1 && SHA_during_alarm_index == -1 )
+	if( alarm_index_out == -1 && SHA_index_out == -1 && SHA_during_alarm_index_out == -1 )
 		label_activity.push_back( NOT_OUT_NO_ALARM );
 		
 	// Alarm 0, SHA taken 0, SHA taken during alarm 1
-	else if( alarm_index == -1 && SHA_index == -1 && SHA_during_alarm_index != -1 )
+	else if( alarm_index_out == -1 && SHA_index_out == -1 && SHA_during_alarm_index_out != -1 )
 		label_activity.push_back( OUT_DURING_ALARM );
 		
 	// Alarm 0, SHA taken 1, SHA taken during alarm 0
-	else if( alarm_index == -1 && SHA_index != -1 && SHA_during_alarm_index == -1 )
+	else if( alarm_index_out == -1 && SHA_index_out != -1 && SHA_during_alarm_index_out == -1 )
 		label_activity.push_back( OUT_NO_ALARM );
 		
 	// Alarm 0, SHA taken 1, SHA taken during alarm 1
-	else if( alarm_index == -1 && SHA_index != -1 && SHA_during_alarm_index != -1 )
+	else if( alarm_index_out == -1 && SHA_index_out != -1 && SHA_during_alarm_index_out != -1 )
 	{
-		if(SHA_index < SHA_during_alarm_index)
+		if(SHA_index_out < SHA_during_alarm_index_out)
 		{
 			label_activity.push_back( ABANDON_OUT );
 			return false;
@@ -825,13 +987,13 @@ bool Activity::finding_label_out(unsigned index_begining)
 	}
 	
 	// Alarm 1, SHA taken 0, SHA taken during alarm 0
-	else if( alarm_index != -1 && SHA_index == -1 && SHA_during_alarm_index == -1 )
+	else if( alarm_index_out != -1 && SHA_index_out == -1 && SHA_during_alarm_index_out == -1 )
 		label_activity.push_back( NOT_OUT_ALARM );
 		
 	// Alarm 1, SHA taken 0, SHA taken during alarm 1
-	else if( alarm_index != -1 && SHA_index == -1 && SHA_during_alarm_index != -1 )
+	else if( alarm_index_out != -1 && SHA_index_out == -1 && SHA_during_alarm_index_out != -1 )
 	{
-		if(alarm_index < SHA_during_alarm_index)
+		if(alarm_index_out < SHA_during_alarm_index_out)
 			label_activity.push_back( OUT_DURING_ALARM );
 		else
 		{
@@ -841,16 +1003,16 @@ bool Activity::finding_label_out(unsigned index_begining)
 	}
 	
 	// Alarm 1, SHA taken 1, SHA taken during alarm 0
-	else if(alarm_index != -1 && SHA_index != -1 && SHA_during_alarm_index == -1  )
+	else if(alarm_index_out != -1 && SHA_index_out != -1 && SHA_during_alarm_index_out == -1  )
 	{
-		if(alarm_index < SHA_index)
+		if(alarm_index_out < SHA_index_out)
 			label_activity.push_back( OUT_AFTER_ALARM );
 		else
 			label_activity.push_back( OUT_NO_ALARM );
 	}
 	
 	// Alarm 1, SHA taken 1, SHA taken during alarm 1
-	else if( alarm_index != -1 && SHA_index != -1 && SHA_during_alarm_index != -1 )
+	else if( alarm_index_out != -1 && SHA_index_out != -1 && SHA_during_alarm_index_out != -1 )
 	{
 		label_activity.push_back( ABANDON_OUT );
 		return false;
@@ -869,34 +1031,29 @@ bool Activity::finding_label_out(unsigned index_begining)
 
 bool Activity::finding_label_inout()
 {
-	int alarm_index = -1;
-	int SHA_index = -1;
-	int SHA_during_alarm_index = -1;
-	unsigned id_line_event;
 	unsigned code_event;
 	bool abandon_activity = false;
 	
 	for(unsigned num_event=0; num_event < events.size(); ++num_event)
 	{
-		id_line_event = events[num_event]->get_unique_id();
 		code_event = events[num_event]->get_event();				
 						
-		if( events[num_event]->alarm_exist() && events[num_event]->get_attribution_alarm() == static_cast<int>(main_person) && alarm_index == -1 )
-			alarm_index = num_event;
+		if( events[num_event]->alarm_exist() && events[num_event]->get_attribution_alarm() == static_cast<int>(main_person) && alarm_index_inout == -1 )
+			alarm_index_inout = num_event;
 			
 		else if( events[num_event]->sha_exist() )
 		{
 			if( events[num_event]->get_sha_person_id() > 0 )
 			{
-				if( code_event == CODE_SHA && SHA_index == -1)
-					SHA_index = num_event;
-				else if( code_event == CODE_SHA_DURING_ALARM && SHA_during_alarm_index == -1 )
-					SHA_during_alarm_index = num_event;
+				if( code_event == CODE_SHA && SHA_index_inout == -1)
+					SHA_index_inout = num_event;
+				else if( code_event == CODE_SHA_DURING_ALARM && SHA_during_alarm_index_inout == -1 )
+					SHA_during_alarm_index_inout = num_event;
 				abandon_activity = false;
 			}
 			else
 			{
-				if( SHA_index == -1 && SHA_during_alarm_index == -1 )
+				if( SHA_index_inout == -1 && SHA_during_alarm_index_inout == -1 )
 					abandon_activity = true;
 				else
 					abandon_activity = false;
@@ -911,21 +1068,21 @@ bool Activity::finding_label_inout()
 	}
 	
 	// Alarm 0, SHA taken 0, SHA taken during alarm 0
-	if( alarm_index == -1 && SHA_index == -1 && SHA_during_alarm_index == -1 )
+	if( alarm_index_inout == -1 && SHA_index_inout == -1 && SHA_during_alarm_index_inout == -1 )
 		label_activity.push_back( NOT_INOUT_NO_ALARM );
 		
 	// Alarm 0, SHA taken 0, SHA taken during alarm 1
-	else if( alarm_index == -1 && SHA_index == -1 && SHA_during_alarm_index != -1 )
+	else if( alarm_index_inout == -1 && SHA_index_inout == -1 && SHA_during_alarm_index_inout != -1 )
 		label_activity.push_back( INOUT_DURING_ALARM );
 		
 	// Alarm 0, SHA taken 1, SHA taken during alarm 0
-	else if( alarm_index == -1 && SHA_index != -1 && SHA_during_alarm_index == -1 )
+	else if( alarm_index_inout == -1 && SHA_index_inout != -1 && SHA_during_alarm_index_inout == -1 )
 		label_activity.push_back( INOUT_NO_ALARM );
 		
 	// Alarm 0, SHA taken 1, SHA taken during alarm 1
-	else if( alarm_index == -1 && SHA_index != -1 && SHA_during_alarm_index != -1 )
+	else if( alarm_index_inout == -1 && SHA_index_inout != -1 && SHA_during_alarm_index_inout != -1 )
 	{
-		if(SHA_index < SHA_during_alarm_index)
+		if(SHA_index_inout < SHA_during_alarm_index_inout)
 		{
 			label_activity.push_back( ABANDON_INOUT );
 			return false;
@@ -935,13 +1092,13 @@ bool Activity::finding_label_inout()
 	}
 	
 	// Alarm 1, SHA taken 0, SHA taken during alarm 0
-	else if( alarm_index != -1 && SHA_index == -1 && SHA_during_alarm_index == -1 )
+	else if( alarm_index_inout != -1 && SHA_index_inout == -1 && SHA_during_alarm_index_inout == -1 )
 		label_activity.push_back( NOT_INOUT_ALARM );
 		
 	// Alarm 1, SHA taken 0, SHA taken during alarm 1
-	else if( alarm_index != -1 && SHA_index == -1 && SHA_during_alarm_index != -1 )
+	else if( alarm_index_inout != -1 && SHA_index_inout == -1 && SHA_during_alarm_index_inout != -1 )
 	{
-		if(alarm_index < SHA_during_alarm_index)
+		if(alarm_index_inout < SHA_during_alarm_index_inout)
 			label_activity.push_back( INOUT_DURING_ALARM );
 		else
 		{
@@ -951,16 +1108,16 @@ bool Activity::finding_label_inout()
 	}
 	
 	// Alarm 1, SHA taken 1, SHA taken during alarm 0
-	else if(alarm_index != -1 && SHA_index != -1 && SHA_during_alarm_index == -1  )
+	else if(alarm_index_inout != -1 && SHA_index_inout != -1 && SHA_during_alarm_index_inout == -1  )
 	{
-		if(alarm_index < SHA_index)
+		if(alarm_index_inout < SHA_index_inout)
 			label_activity.push_back( INOUT_AFTER_ALARM );
 		else
 			label_activity.push_back( INOUT_NO_ALARM );
 	}
 	
 	// Alarm 1, SHA taken 1, SHA taken during alarm 1
-	else if( alarm_index != -1 && SHA_index != -1 && SHA_during_alarm_index != -1 )
+	else if( alarm_index_inout != -1 && SHA_index_inout != -1 && SHA_during_alarm_index_inout != -1 )
 	{
 		label_activity.push_back( ABANDON_INOUT );
 		return false;

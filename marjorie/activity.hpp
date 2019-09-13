@@ -45,7 +45,7 @@ enum Label
 
 
 /**
- * \file activities.hpp
+ * \file activity.hpp
 */
 
 
@@ -71,6 +71,15 @@ class Activity
 		bool first_person = false; // is the main person also the first person who have entered the room ?
 		bool only_one_person = true; // true => there is one person in the activity, else false
 		
+		int alarm_index_in = -1;
+		int SHA_index_in = -1;
+		int SHA_during_alarm_index_in = -1;
+		int alarm_index_out = -1;
+		int SHA_index_out = -1;
+		int SHA_during_alarm_index_out = -1;
+		int alarm_index_inout = -1;
+		int SHA_index_inout = -1;
+		int SHA_during_alarm_index_inout = -1;	
 
 		/* Methods */
 		bool same_activity		(Event* event);
@@ -82,6 +91,7 @@ class Activity
 		int first_person_entered();
 		int last_person();
 		unsigned finding_in_out_inout();
+		unsigned get_index_out();
 		
 		void attributes_unknown_alarm(bool only_one_person);
 		void attributes_unknown_SHA(bool only_one_person);
@@ -115,7 +125,31 @@ class Activity
 		bool get_is_out();
 		bool get_is_inout();
 		
+		bool is_abandon_inout();
+		bool is_abandon_in();
+		bool is_abandon_out();
+		
 		int get_person();
+		std::string get_start_time(bool out = false);
+		std::string get_end_time(bool in = false);
+		int get_duration(unsigned in_out_inout = 0);
+		
+		Label get_label_inout();
+		Label get_label_in();
+		Label get_label_out();
+		
+		
+		int get_alarm_index_in();
+		int get_SHA_index_in();
+		int get_SHA_during_alarm_index_in();
+		
+		int get_alarm_index_out();
+		int get_SHA_index_out();
+		int get_SHA_during_alarm_index_out();
+		
+		int get_alarm_index_inout();
+		int get_SHA_index_inout();
+		int get_SHA_during_alarm_index_inout();	
 };
 	
 

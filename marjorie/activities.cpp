@@ -6,6 +6,72 @@
 
 using namespace std;
 
+string label_to_str(Label label)
+{
+	switch(label)
+	{
+		case IN_NO_ALARM :
+			return "IN_NO_ALARM";
+			break;
+		case IN_AFTER_ALARM:
+			return "IN_AFTER_ALARM";
+			break;
+		case IN_DURING_ALARM:
+			return "IN_DURING_ALARM";
+			break;
+		case OUT_NO_ALARM:
+			return "OUT_NO_ALARM";
+			break;
+		case OUT_AFTER_ALARM:
+			return "OUT_AFTER_ALARM";
+			break;
+		case OUT_DURING_ALARM:
+			return "OUT_DURING_ALARM";
+			break;	
+		case INOUT_NO_ALARM:
+			return "INOUT_NO_ALARM";
+			break;
+		case INOUT_AFTER_ALARM:
+			return "INOUT_AFTER_ALARM";
+			break;
+		case INOUT_DURING_ALARM:
+			return "INOUT_DURING_ALARM";
+			break;	
+		case NOT_IN_NO_ALARM:
+			return "NOT_IN_NO_ALARM";
+			break;
+		case NOT_IN_ALARM:
+			return "NOT_IN_ALARM";
+			break;
+		case NOT_OUT_NO_ALARM:
+			return "NOT_OUT_NO_ALARM";
+			break;
+		case NOT_OUT_ALARM:
+			return "NOT_OUT_ALARM";
+			break;
+		case NOT_INOUT_NO_ALARM:
+			return "NOT_INOUT_NO_ALARM";
+			break;
+		case NOT_INOUT_ALARM:
+			return "NOT_INOUT_ALARM";
+			break;
+		case ABANDON_IN:
+			return "ABANDON_IN";
+			break;
+		case ABANDON_OUT:
+			return "ABANDON_OUT";
+			break;
+		case ABANDON_INOUT:
+			return "ABANDON_INOUT";
+			break;
+		case IMPOSSIBLE:
+			return "IMPOSSIBLE";
+			break;
+		default:
+			return "NOT A LABEL";
+			break;
+	}	
+}
 
 Activities::~Activities()
 {
@@ -34,7 +100,7 @@ Activities::Activities(char* filename, bool excel_csv)
 	
 	string line;
 	bool append_activity = true;
-	
+	vector<Activity*> split_activity; 
 	Activity* activity_tmp = new Activity();
 	unsigned cpt_line = 0;
 	
@@ -44,15 +110,13 @@ Activities::Activities(char* filename, bool excel_csv)
 		if(cpt_line==1)
 			continue;
 			
-		//activity_tmp->print_activity();
+		// add to the current activity
 		append_activity = activity_tmp->check_and_append_event_to_activity( new Event(line, excel_csv) );
 		
 		if(!append_activity)
 		{
-			vector<Activity*> split_activity; 
 			activity_tmp->activity_per_person(split_activity); 
 			
-			//activity_tmp->print_activity();
 			if(split_activity.size()==0)
 				activities.push_back( new Activity(activity_tmp) );
 			else
@@ -65,15 +129,10 @@ Activities::Activities(char* filename, bool excel_csv)
 			activity_tmp->~Activity();
 			activity_tmp = new Activity( new Event(line, excel_csv) );
 			append_activity = true;
-			
-			//activities[activities.size()-1]->print_activity();
-			//cout << endl << endl;
-			
 		}
 	}
 	if(append_activity)
 	{
-		vector<Activity*> split_activity;
 		activity_tmp->activity_per_person(split_activity);
 		
 		if(split_activity.size()==0)
@@ -87,18 +146,27 @@ Activities::Activities(char* filename, bool excel_csv)
 		
 		activity_tmp->~Activity();
 		activity_tmp = new Activity( new Event(line, excel_csv) );
-		
-		//activities[activities.size()-1]->print_activity();
-		//cout << endl << endl;
 	}
 
 	database.close();
 }
 
 
+char Activities::write_headers(ofstream& output, bool excel, vector<string>& header)
+{
+	char sep = ',';
+	if(excel)
+		sep = ';';
+	for(unsigned i=0; i<header.size(); ++i)
+		if(i != header.size()-1)
+			output << header[i] + sep;
+		else
+			output << header[i] << endl;
+	return sep;
+}
 
 // Write ALL activities
-void Activities::write_file(char* filename)
+void Activities::write_csv_file(char* filename, bool excel, vector<string>& header)
 {
 	ofstream output(filename, ios::out | ios::trunc);
 	if(!output)
@@ -106,15 +174,98 @@ void Activities::write_file(char* filename)
 		cerr << "Impossible to open the file " << filename << endl;
 		exit(EXIT_FAILURE);		
 	}
-	unsigned nb_act=0;
+	
+	char sep = write_headers(output, excel, header);	
+	
+	unsigned unique_id = 1;
+	unsigned activity_id = 1;
+	int puce;
+	
 	for(unsigned i=0; i<activities.size(); ++i)
-	{/*
-		if(activities[i]->get_person() == 425 )
+	{
+		puce = activities[i]->get_person();
+		if(puce == 0)
+			continue;
+		
+		// inout activity => only one row
+		if(activities[i]->get_is_inout())
+		{	
+			write_row(output, i, unique_id, 
+				activity_id, puce, 0, sep);
+			++ activity_id;	
+		}
+		// in and out => 2 rows
+		else
 		{
-			activities[i]->write_file(output);
-			++nb_act;
-		}*/
+			write_row(output, i, unique_id, 
+				activity_id, puce, 1, sep);
+			write_row(output, i, unique_id, 
+				activity_id, puce, 2, sep);	
+			++ activity_id;				
+		}
+		
 	}
-	output << "NUMBER ACT :" << nb_act;
 	output.close();
 }
+
+
+void Activities::write_row(ofstream& output, unsigned num_activity, 
+	unsigned& unique_id, unsigned& activity_id, unsigned puce,
+	unsigned in_out_inout, char sep)
+{
+	output << '"' << unique_id << '"' << sep
+		   << '"' << puce << '"' << sep
+		   << '"' << activity_id << '"' << sep;	
+	
+	if( (in_out_inout==0 && activities[num_activity]->is_abandon_inout()) ||
+		(in_out_inout==1 && activities[num_activity]->is_abandon_in()) ||
+		(in_out_inout==2 && activities[num_activity]->is_abandon_out()) )
+	{
+		output << '"' << 1 << '"' << sep;
+	}
+	else
+		output << '"' << 0 << '"' << sep;
+		
+	// inout
+	if(in_out_inout==0)
+	{
+		output << '"' << "inout" << '"' << sep
+			   << '"' << activities[num_activity]->get_start_time() << '"' << sep
+			   << '"' << activities[num_activity]->get_end_time() << '"' << sep
+			   << '"' << activities[num_activity]->get_duration() << '"' << sep
+			   << '"' << static_cast<int>(activities[num_activity]->get_alarm_index_inout() != -1) << '"' << sep 
+			   << '"' << static_cast<int>(activities[num_activity]->get_SHA_index_inout() != -1) << '"' << sep
+			   << '"' << static_cast<int>(activities[num_activity]->get_SHA_during_alarm_index_inout() != -1) << '"' << sep
+			   << '"' << label_to_str(activities[num_activity]->get_label_inout()) 
+			   << '"' <<  sep << endl;
+	}
+	// in
+	else if(in_out_inout==1)
+	{
+		output << "in" << sep
+			   << '"' << activities[num_activity]->get_start_time() << '"' << sep
+			   << '"' << activities[num_activity]->get_end_time(true) << '"' << sep
+			   << '"' << activities[num_activity]->get_duration(1) << '"' << sep
+			   << '"' << static_cast<int>(activities[num_activity]->get_alarm_index_in() != -1) << '"' << sep 
+			   << '"' << static_cast<int>(activities[num_activity]->get_SHA_index_in() != -1) << '"' << sep
+			   << '"' << static_cast<int>(activities[num_activity]->get_SHA_during_alarm_index_in() != -1) << '"' << sep  
+			   << '"' << label_to_str(activities[num_activity]->get_label_in()) 
+			   << '"' <<  sep << endl;
+	}
+	// out
+	else if(in_out_inout==2)
+	{
+		output << "out" << sep
+			   << '"' << activities[num_activity]->get_start_time(true) << '"' << sep
+			   << '"' << activities[num_activity]->get_end_time() << '"' << sep
+			   << '"' << activities[num_activity]->get_duration(2) << '"' << sep
+			   << '"' << static_cast<int>(activities[num_activity]->get_alarm_index_out() != -1) << '"' << sep
+			   << '"' << static_cast<int>(activities[num_activity]->get_SHA_index_out() != -1) << '"' << sep
+			   << '"' << static_cast<int>(activities[num_activity]->get_SHA_during_alarm_index_out() != -1) << '"' << sep
+			   << '"' << label_to_str(activities[num_activity]->get_label_out()) 
+			   << '"' <<  sep << endl;
+	}
+		
+	++ unique_id;
+}
+
