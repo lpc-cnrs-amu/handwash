@@ -102,6 +102,9 @@ Activity::Activity(Event* event)
 
 	/* Getters */
 
+unsigned Activity::get_chamber() { return events[0]->get_chamber(); }
+
+
 Label Activity::get_label(unsigned num)
 {
 	return label_activity[num];

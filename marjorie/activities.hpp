@@ -21,8 +21,8 @@ class Activities
 		
 		char write_headers(std::ofstream& output, bool excel, std::vector<std::string>& header);
 		void write_row(std::ofstream& output, unsigned num_activity, 
-			unsigned& unique_id, unsigned& activity_id, unsigned puce,
-			unsigned in_out_inout, char sep);
+			unsigned& unique_id, unsigned& activity_id, unsigned puce, 
+			unsigned chamber, unsigned in_out_inout, char sep);
 			
 	public:
 		Activities(char* filename, bool excel_csv);

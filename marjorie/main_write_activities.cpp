@@ -18,7 +18,7 @@ int main(int argc, char** argv)
 	if( !strcmp(argv[2],"1") )
 		excel = true;
 		
-	vector<string> headers {"unique ID", "puce ID", "activity ID",
+	vector<string> headers {"unique ID", "puce ID", "chamber ID", "activity ID",
 		"abandon", "statut", "start time", "end time", "duration",
 		"alarm", "SHA", "SHA during alarm", "label"};
 		

@@ -130,6 +130,7 @@ class Activity
 		bool is_abandon_out();
 		
 		int get_person();
+		unsigned get_chamber();
 		std::string get_start_time(bool out = false);
 		std::string get_end_time(bool in = false);
 		int get_duration(unsigned in_out_inout = 0);

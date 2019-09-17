@@ -179,6 +179,7 @@ void Activities::write_csv_file(char* filename, bool excel, vector<string>& head
 	
 	unsigned unique_id = 1;
 	unsigned activity_id = 1;
+	unsigned chamber;
 	int puce;
 	
 	for(unsigned i=0; i<activities.size(); ++i)
@@ -186,21 +187,22 @@ void Activities::write_csv_file(char* filename, bool excel, vector<string>& head
 		puce = activities[i]->get_person();
 		if(puce == 0)
 			continue;
+		chamber = activities[i]->get_chamber();
 		
 		// inout activity => only one row
 		if(activities[i]->get_is_inout())
 		{	
 			write_row(output, i, unique_id, 
-				activity_id, puce, 0, sep);
+				activity_id, puce, chamber, 0, sep);
 			++ activity_id;	
 		}
 		// in and out => 2 rows
 		else
 		{
 			write_row(output, i, unique_id, 
-				activity_id, puce, 1, sep);
+				activity_id, puce, chamber, 1, sep);
 			write_row(output, i, unique_id, 
-				activity_id, puce, 2, sep);	
+				activity_id, puce, chamber, 2, sep);	
 			++ activity_id;				
 		}
 		
@@ -210,11 +212,12 @@ void Activities::write_csv_file(char* filename, bool excel, vector<string>& head
 
 
 void Activities::write_row(ofstream& output, unsigned num_activity, 
-	unsigned& unique_id, unsigned& activity_id, unsigned puce,
-	unsigned in_out_inout, char sep)
+	unsigned& unique_id, unsigned& activity_id, unsigned puce, 
+	unsigned chamber, unsigned in_out_inout, char sep)
 {
 	output << '"' << unique_id << '"' << sep
 		   << '"' << puce << '"' << sep
+		   << '"' << chamber << '"' << sep
 		   << '"' << activity_id << '"' << sep;	
 	
 	if( (in_out_inout==0 && activities[num_activity]->is_abandon_inout()) ||
