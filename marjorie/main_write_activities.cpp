@@ -25,7 +25,8 @@ int main(int argc, char** argv)
 	auto start = high_resolution_clock::now();
 	
 	Activities act(argv[1], excel);
-	act.write_csv_file(argv[3], excel, headers);
+	//act.write_csv_file(argv[3], excel, headers);
+	act.write_activities_in_file(argv[3]);
 	
 	auto stop = high_resolution_clock::now(); 
 	auto duration = duration_cast<std::chrono::minutes>(stop - start);

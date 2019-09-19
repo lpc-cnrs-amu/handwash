@@ -2,7 +2,7 @@
 #include <algorithm>
 #include <map>
 #define LAST_EVENT events.size()-1
-#define MINUTE_MAX 2
+#define MINUTE_MAX 10
 #define CODE_SHA 8
 #define SHA_SURE true
 #define SHA_POSSIBLE false
@@ -49,6 +49,7 @@ Activity::Activity(Activity* copy)
 	
 	this->main_person = copy->main_person;
 	this->first_person = copy->first_person;
+	this->only_one_person = copy->only_one_person;
 	this->is_in = copy->is_in;
 	this->is_out = copy->is_out;
 	this->is_inout = copy->is_inout;
@@ -103,7 +104,7 @@ Activity::Activity(Event* event)
 	/* Getters */
 
 unsigned Activity::get_chamber() { return events[0]->get_chamber(); }
-
+bool Activity::is_alone() { return only_one_person; }
 
 Label Activity::get_label(unsigned num)
 {
@@ -284,13 +285,13 @@ int Activity::get_SHA_during_alarm_index_inout()
 	* \param output : the file.
 */
 void Activity::write_file(ofstream& output)
-{/*
+{
 	unsigned i;
 	
 	output << "PERSON: " << main_person << endl;
-	output << "\tNUMBER OF PERSON: " << persons.size() << endl << "\t";	
-	for(i=0; i < persons.size(); ++i)
-		output << persons[i] << " ";
+	output << "\tNUMBER OF PERSON: " << puces_with_time.size() << endl << "\t";	
+	for(auto it = puces_with_time.begin(); it != puces_with_time.end(); ++it)
+		output << it->first << " ";
 	output << endl;
 	output << "\tNUMBER OF LABELS: " << label_activity.size() << endl << "\t";	
 	for(i=0; i < label_activity.size(); ++i)
@@ -300,7 +301,6 @@ void Activity::write_file(ofstream& output)
 	output << "\t";
 	for(i=0; i<events.size(); ++i)
 		events[i]->print_event(output);
-	*/
 	
 }
 
@@ -441,7 +441,7 @@ bool Activity::same_activity(Event* event)
 			return true;
 			
 		else if( event->get_hour() == events[LAST_EVENT]->get_hour() && 
-				event->get_minutes() <= events[LAST_EVENT]->get_minutes()+MINUTE_MAX)
+				 event->get_minutes() <= events[LAST_EVENT]->get_minutes()+MINUTE_MAX)
 			return true;
 			
 	}

@@ -139,7 +139,6 @@ class Activity
 		Label get_label_in();
 		Label get_label_out();
 		
-		
 		int get_alarm_index_in();
 		int get_SHA_index_in();
 		int get_SHA_during_alarm_index_in();
@@ -151,6 +150,8 @@ class Activity
 		int get_alarm_index_inout();
 		int get_SHA_index_inout();
 		int get_SHA_during_alarm_index_inout();	
+		
+		bool is_alone();
 };
 	
 

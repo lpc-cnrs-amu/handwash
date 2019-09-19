@@ -29,6 +29,7 @@ class Activities
 		~Activities();
 		
 		void write_csv_file(char* filename, bool excel, std::vector<std::string>& header);
+		void write_activities_in_file(char* filename);
 };
 	
 

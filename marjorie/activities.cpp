@@ -152,6 +152,35 @@ Activities::Activities(char* filename, bool excel_csv)
 }
 
 
+// Write ALL activities
+void Activities::write_activities_in_file(char* filename)
+{
+	/*ofstream output(filename, ios::out | ios::trunc);
+	if(!output)
+	{
+		cerr << "Impossible to open the file " << filename << endl;
+		exit(EXIT_FAILURE);		
+	}*/
+	
+	unsigned alone = 0;
+	unsigned several_persons = 0;
+	for(unsigned i=0; i<activities.size(); ++i)
+	{
+		//activities[i]->write_file(output);
+		if(activities[i]->is_alone())
+			++ alone;
+		else
+			++ several_persons;
+	}
+
+	cout << "nb activities alone = " << alone << endl;
+	cout << "nb activities several persons = " << several_persons << endl;
+	cout << "nb activities = " << alone + several_persons << endl;
+	//output.close();
+}
+
+
+
 char Activities::write_headers(ofstream& output, bool excel, vector<string>& header)
 {
 	char sep = ',';
@@ -165,7 +194,7 @@ char Activities::write_headers(ofstream& output, bool excel, vector<string>& hea
 	return sep;
 }
 
-// Write ALL activities
+
 void Activities::write_csv_file(char* filename, bool excel, vector<string>& header)
 {
 	ofstream output(filename, ios::out | ios::trunc);
