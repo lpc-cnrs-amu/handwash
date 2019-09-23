@@ -82,7 +82,9 @@ class Activity
 		int SHA_during_alarm_index_inout = -1;	
 
 		/* Methods */
-		bool same_activity		(Event* event);
+		void pretreat_activity();
+		void remove_only_5_6();
+		int same_activity		(Event* event);
 		void finding_labels();
 		bool finding_label_in	(unsigned index_ending);
 		bool finding_label_out	(unsigned index_begining);
@@ -116,7 +118,7 @@ class Activity
 		void write_file(std::ofstream& output);
 		void print_activity();
 		void append_event_to_activity(Event* event);
-		bool check_and_append_event_to_activity(Event* event);
+		int check_and_append_event_to_activity(Event* event);
 		
 		Label get_label(unsigned num);
 		unsigned get_nb_label();

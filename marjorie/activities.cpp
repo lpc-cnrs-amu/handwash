@@ -99,21 +99,27 @@ Activities::Activities(char* filename, bool excel_csv)
 	}
 	
 	string line;
-	bool append_activity = true;
+	int append_activity = 1;
 	vector<Activity*> split_activity; 
 	Activity* activity_tmp = new Activity();
 	unsigned cpt_line = 0;
 	
 	while(std::getline(database, line))
 	{
+		// skip the header
 		++cpt_line;
 		if(cpt_line==1)
 			continue;
 			
-		// add to the current activity
+		// add to the current activity if the event is in the current activity
 		append_activity = activity_tmp->check_and_append_event_to_activity( new Event(line, excel_csv) );
 		
-		if(!append_activity)
+		// ignore the event
+		if(append_activity == -1)
+			continue;
+		
+		// The event is in another activity
+		if(append_activity == 0)
 		{
 			activity_tmp->activity_per_person(split_activity); 
 			
@@ -128,25 +134,19 @@ Activities::Activities(char* filename, bool excel_csv)
 			
 			activity_tmp->~Activity();
 			activity_tmp = new Activity( new Event(line, excel_csv) );
-			append_activity = true;
 		}
 	}
-	if(append_activity)
+
+	activity_tmp->activity_per_person(split_activity);
+	if(split_activity.size()==0)
+		activities.push_back( new Activity(activity_tmp) );
+	else
 	{
-		activity_tmp->activity_per_person(split_activity);
-		
-		if(split_activity.size()==0)
-			activities.push_back( new Activity(activity_tmp) );
-		else
-		{
-			for(unsigned nb_activities=0; nb_activities < split_activity.size(); ++nb_activities)
-				activities.push_back( new Activity(split_activity[nb_activities]) );
-		}
-		
-		
-		activity_tmp->~Activity();
-		activity_tmp = new Activity( new Event(line, excel_csv) );
+		for(unsigned nb_activities=0; nb_activities < split_activity.size(); ++nb_activities)
+			activities.push_back( new Activity(split_activity[nb_activities]) );
 	}
+	activity_tmp->~Activity();
+
 
 	database.close();
 }
@@ -155,18 +155,18 @@ Activities::Activities(char* filename, bool excel_csv)
 // Write ALL activities
 void Activities::write_activities_in_file(char* filename)
 {
-	/*ofstream output(filename, ios::out | ios::trunc);
+	ofstream output(filename, ios::out | ios::trunc);
 	if(!output)
 	{
 		cerr << "Impossible to open the file " << filename << endl;
 		exit(EXIT_FAILURE);		
-	}*/
+	}
 	
 	unsigned alone = 0;
 	unsigned several_persons = 0;
 	for(unsigned i=0; i<activities.size(); ++i)
 	{
-		//activities[i]->write_file(output);
+		activities[i]->write_file(output);
 		if(activities[i]->is_alone())
 			++ alone;
 		else
@@ -176,7 +176,7 @@ void Activities::write_activities_in_file(char* filename)
 	cout << "nb activities alone = " << alone << endl;
 	cout << "nb activities several persons = " << several_persons << endl;
 	cout << "nb activities = " << alone + several_persons << endl;
-	//output.close();
+	output.close();
 }
 
 

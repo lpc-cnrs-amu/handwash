@@ -1,9 +1,15 @@
-
+#include <algorithm>
 #include "event.hpp"
 #define SECOND_MAX 10
 
 using namespace std;
 
+
+const vector<Code> Event::correct_codes( 
+	{CODE_OPEN_DOOR, CODE_CLOSE_DOOR, CODE_ALARM, CODE_SHA_DURING_ALARM,
+	CODE_SHA, CODE_SHOE_IN, CODE_SHOE_OUT, CODE_INSERTION_BOTTLE_SHA,
+	CODE_REMOVE_BOTTLE_SHA,	CODE_RESET_MACHINE,	CODE_INSERTION_USB_KEY,
+	CODE_EXCEEDING_DOSE_NUMBER_SHA});
 
 Event::Event(Event* event)
 {
@@ -65,6 +71,12 @@ int Event::get_sha_person_id()
 	return sha->get_person_id(); 
 }
 bool Event::sha_exist() { return sha != NULL; }
+
+
+bool Event::code_correct()
+{
+	return find(correct_codes.begin(), correct_codes.end(), id_event) != correct_codes.end();
+}
 
 
 /** renvoie l'écart de temps en secondes entre l'event appelé et son precedent*/

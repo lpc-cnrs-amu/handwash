@@ -3,13 +3,8 @@
 #include <map>
 #define LAST_EVENT events.size()-1
 #define MINUTE_MAX 10
-#define CODE_SHA 8
 #define SHA_SURE true
 #define SHA_POSSIBLE false
-#define CODE_OPEN_DOOR 5
-#define CODE_CLOSE_DOOR 6
-#define CODE_ALARM 7
-#define CODE_SHA_DURING_ALARM 10
 #define MIN_SECONDS 5
 
 using namespace std;
@@ -337,15 +332,18 @@ void Activity::print_activity()
 	* 
 	* \param event : an event.
 	* 
-	* \return True if we have appended the event to the activity, else false
+	* \return -1 if we have to ignored the event (useless code)
+	* 		   1 if we can append this event
+	* 		   0 if we can't append this event
 */
-bool Activity::check_and_append_event_to_activity(Event* event)
+int Activity::check_and_append_event_to_activity(Event* event)
 {
-	if( !same_activity(event) )
-		return false;
+	int result = same_activity(event);
+	if( result != 1 )
+		return result;
 		
 	events.push_back( new Event(event) );
-	return true;
+	return 1;
 }
 
 /**
@@ -370,14 +368,28 @@ void Activity::append_event_to_activity(Event* event)
 	* 
 	* \param event : an event.
 	* 
-	* \return True if we can append this event, else false.
+	* \return -1 if we have to ignored the event (useless code)
+	* 		   1 if we can append this event
+	* 		   0 if we can't append this event
 */
-bool Activity::same_activity(Event* event)
+int Activity::same_activity(Event* event)
 {
-	if(events.empty())
-		return true;
+	
+	// si c'est un code interprété : on ne le prend pas en compte
+	if( !event->code_correct() )
+		return -1;
+	
+	// si SHA avant entrée est différent d'au plus 2 secondes => ne pas le prendre en compte
+	/** REFAIRE ECART TIME */
+	if( events.size() == 1 && 
+		( (events[LAST_EVENT]->get_event() == CODE_SHA || events[LAST_EVENT]->get_event() == CODE_SHA_DURING_ALARM) 
+		&& event->ecart_time(events[LAST_EVENT]) > 2) )
+		return 0;
+	
+	if( events.empty() )
+		return 1;
 	if( events[LAST_EVENT]->get_chamber() != event->get_chamber() ) 	
-		return false;
+		return 0;
 	
 		
 	// Case : not the same date
@@ -395,7 +407,7 @@ bool Activity::same_activity(Event* event)
 			event->get_hour() == 0 && 
 			event->get_minutes() <= events[LAST_EVENT]->get_minutes()+MINUTE_MAX
 		   )
-			return true;
+			return 1;
 		
 		// Case : same year
 		else if( events[LAST_EVENT]->get_year() == event->get_year() )
@@ -412,7 +424,7 @@ bool Activity::same_activity(Event* event)
 					event->get_hour() == 0 && 
 					event->get_minutes() <= events[LAST_EVENT]->get_minutes()+MINUTE_MAX
 				   )
-					return true;
+					return 1;
 			}
 			
 			// Case : same month, not the same day BUT same event
@@ -424,7 +436,7 @@ bool Activity::same_activity(Event* event)
 					event->get_hour() == 0 && 
 					event->get_minutes() <= events[LAST_EVENT]->get_minutes()+MINUTE_MAX
 				  )
-					return true;
+					return 1;
 			}
 		}
 		
@@ -438,15 +450,15 @@ bool Activity::same_activity(Event* event)
 			event->get_hour() == events[LAST_EVENT]->get_hour()+1 && 
 			60 - events[LAST_EVENT]->get_minutes() + event->get_minutes() <= MINUTE_MAX
 		   )
-			return true;
+			return 1;
 			
 		else if( event->get_hour() == events[LAST_EVENT]->get_hour() && 
 				 event->get_minutes() <= events[LAST_EVENT]->get_minutes()+MINUTE_MAX)
-			return true;
+			return 1;
 			
 	}
 
-	return false;
+	return 0;
 }
 
 
@@ -672,6 +684,7 @@ void Activity::split_activities(vector<Activity*>& split_activity, int first_per
 	for( auto it = different_activities.begin(); it != different_activities.end(); ++it ) 
 	{		
 		split_activity.push_back( new Activity(it->second, it->first, puces_with_time, false) ); 
+		split_activity[split_activity.size()-1]->pretreat_activity();
 		if( it->first == first_person_id )
 			split_activity[split_activity.size()-1]->first_person = true;
 		
@@ -711,6 +724,7 @@ void Activity::activity_per_person(vector<Activity*>& split_activity)
 		if(puces_with_time.size()==1)
 		{
 			main_person = puces_with_time.begin()->first;
+			pretreat_activity();
 			finding_labels();				
 		}
 		else
@@ -720,6 +734,7 @@ void Activity::activity_per_person(vector<Activity*>& split_activity)
 				if(it2->first != 0)
 				{
 					main_person = it2->first;
+					pretreat_activity();
 					finding_labels();
 				}
 			}
@@ -728,8 +743,100 @@ void Activity::activity_per_person(vector<Activity*>& split_activity)
 	}
 	else
 		split_activities(split_activity, first_person_id);
-		
 }
+
+// On supprime les puces 0 après un 6 s'il n'y a que des puces 0
+void Activity::pretreat_activity()
+{
+	remove_only_5_6();
+	
+	unsigned code, puce, j;
+	bool remove = false;
+	
+	for(unsigned i=0; i<events.size(); ++i)
+	{
+		code = events[i]->get_event();
+		if( code == CODE_CLOSE_DOOR )
+		{
+			remove = true;
+			for(j = i+1; j<events.size(); ++j)
+			{
+				puce = events[j]->get_id_puce();
+				if( puce != 0 )
+				{
+					remove = false;
+					break;
+				}
+			}
+		}
+		if(remove)
+		{
+			for(j = i+1; j<events.size(); ++j)
+				events[j]->~Event();
+			events.erase(events.begin() + (i+1), events.end());
+			break;
+		}
+	}
+}
+
+void Activity::remove_only_5_6()
+{
+	unsigned last_index = 0;
+	
+	for(unsigned i=0; i < events.size(); i += 2)
+	{
+		if(i+1 < events.size())
+		{
+			if( (events[i]->get_event() == CODE_OPEN_DOOR && 
+				 events[i+1]->get_event() != CODE_CLOSE_DOOR) ||
+				(events[i]->get_event() != CODE_OPEN_DOOR && 
+				 events[i+1]->get_event() == CODE_CLOSE_DOOR) ||
+				(events[i]->get_event() != CODE_OPEN_DOOR && 
+				 events[i+1]->get_event() != CODE_CLOSE_DOOR) )
+			{
+				last_index = i;
+				break;
+			}
+		}
+	}
+	events.erase(events.begin(), events.begin() + last_index);
+}
+
+
+/*
+void Activity::cut_activity()
+{
+	unsigned code, code_next, code_next_2, puce, j;
+	
+	for(unsigned i=0; i<events.size(); ++i)
+	{
+		code = events[i]->get_event();
+		if( code == CODE_CLOSE_DOOR )
+		{
+		
+			if(i+1 < events.size())
+			{
+				if(events[i+1]->get_event() == CODE_ALARM)
+				{
+					if(i+2 < events.size())
+					{
+						code_next_2 = events[i+2]->get_event();
+						if(code_next_2 == CODE_ALARM || code_next_2 == CODE_CLOSE_DOOR || code_next_2 == CODE_OPEN_DOOR)
+							CUT ACTIVITY
+						if(code_next_2 == CODE_SHA && events[i+2]->get_id_puce() == 0)
+					}
+				}
+				else if()
+				{
+					
+				}
+
+				
+			}
+		}		
+	}	
+}
+*/
 
 
 /**

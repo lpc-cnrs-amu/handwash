@@ -3,9 +3,28 @@
 #include <string>
 #include <fstream>
 #include <iostream>
+#include <vector>
 #include "sha.hpp"
 #define IN true
 #define OUT false
+
+enum Code
+{
+	CODE_SHOE_IN = 1,
+	CODE_SHOE_OUT = 2,
+	CODE_INSERTION_BOTTLE_SHA = 3,
+	CODE_REMOVE_BOTTLE_SHA = 4,
+	CODE_OPEN_DOOR = 5,
+	CODE_CLOSE_DOOR = 6,
+	CODE_ALARM = 7,
+	CODE_SHA = 8,
+	CODE_SHA_DURING_ALARM = 10,
+	CODE_RESET_MACHINE = 15,
+	CODE_INSERTION_USB_KEY = 16,
+	CODE_EXCEEDING_DOSE_NUMBER_SHA = 37	
+};
+
+
 
 /**
  * \file event.hpp
@@ -36,6 +55,8 @@ class Event
 		
 		Sha* sha = NULL;
 		int alarm = -1;
+		
+		static const std::vector<Code> correct_codes;
 		
 		void split_time();
 		void split_date();
@@ -76,6 +97,7 @@ class Event
 		int get_sha_person_id();
 		bool sha_exist();
 		unsigned get_code_sha();
+		bool code_correct();
 };
 	
 
