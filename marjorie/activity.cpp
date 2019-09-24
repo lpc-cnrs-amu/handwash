@@ -91,6 +91,39 @@ Activity::Activity(vector<Event*>& vector_event, int p,
 		events.push_back( new Event(vector_event[i]) );
 }
 
+Activity::Activity(Activity* copy, vector<Event*>& vector_event)
+{
+	unsigned i;
+	
+	this->main_person = copy->main_person;
+	this->first_person = copy->first_person;
+	this->only_one_person = copy->only_one_person;
+	this->is_in = copy->is_in;
+	this->is_out = copy->is_out;
+	this->is_inout = copy->is_inout;
+	
+	this->alarm_index_in = copy->alarm_index_in;
+	this->SHA_index_in = copy->SHA_index_in;
+	this->SHA_during_alarm_index_in = copy->SHA_during_alarm_index_in;
+	
+	this->alarm_index_out = copy->alarm_index_out;
+	this->SHA_index_out = copy->SHA_index_out;
+	this->SHA_during_alarm_index_out = copy->SHA_during_alarm_index_out;
+	
+	this->alarm_index_inout = copy->alarm_index_inout;
+	this->SHA_index_inout = copy->SHA_index_inout;
+	this->SHA_during_alarm_index_inout = copy->SHA_during_alarm_index_inout;
+			
+	for(i=0; i < vector_event.size(); ++i)
+		this->events.push_back( new Event(vector_event[i]) );
+		
+	for( auto it = copy->puces_with_time.begin(); it != copy->puces_with_time.end(); ++it )
+		puces_with_time.insert(std::make_pair(it->first, it->second ));
+		
+	for(i=0; i < copy->label_activity.size(); ++i)
+		this->label_activity.push_back( copy->label_activity[i] );
+}
+
 Activity::Activity(Event* event)
 {
 	events.push_back( new Event(event) );
@@ -461,6 +494,41 @@ int Activity::same_activity(Event* event)
 	return 0;
 }
 
+/**
+	* \name attributes_events
+	* \brief Attributes the events "SHA" and "alarm" to their owners.
+	* 
+	* Fills the "puces_with_time" map with all the persons in the current activity
+	* and their number of entrance.
+	* 
+*/
+void Activity::attributes_events()
+{
+	int puce;
+	for(unsigned i=0; i<events.size(); ++i)
+	{
+		puce = events[i]->get_id_puce();
+		
+		// if we didn't add the person yet (first time entering the room) we add them to puces_with_time
+		if( puces_with_time.find(puce) == puces_with_time.end() )
+		{
+			puces_with_time[puce] = i;
+			if( puces_with_time.size() > 2 || ( puces_with_time.size() == 2 && puces_with_time.find(0) == puces_with_time.end() ) )
+				only_one_person = false;
+		}
+		
+		if( events[i]->get_event() == CODE_SHA || events[i]->get_event() == CODE_SHA_DURING_ALARM )
+			attributes_SHA(puce, i, only_one_person, events[i]->get_event());
+			
+		else if( events[i]->get_event() == CODE_ALARM )
+			attributes_alarm(puce, i, only_one_person);
+	}
+	
+	// attribue les SHA inconnues s'il n'y a eu qu'une personne dans l'activité
+	attributes_unknown_SHA(only_one_person);
+	attributes_unknown_alarm(only_one_person);
+}
+
 
 	/* Split activities if there is several persons in one activity */
 void Activity::attributes_unknown_SHA(bool only_one_person)
@@ -589,162 +657,6 @@ void Activity::attributes_alarm(int puce, unsigned num_event, bool only_one_pers
 	}	
 }
 
-
-
-/**
-	* \name attributes_events
-	* \brief Attributes the events "SHA" and "alarm" to their owners.
-	* 
-	* Fills the "puces_with_time" map with all the persons in the current activity
-	* and their number of entrance.
-	* 
-*/
-void Activity::attributes_events()
-{
-	int puce;
-	for(unsigned i=0; i<events.size(); ++i)
-	{
-		puce = events[i]->get_id_puce();
-		
-		// if we didn't add the person yet (first time entering the room) we add them to puces_with_time
-		if( puces_with_time.find(puce) == puces_with_time.end() )
-		{
-			puces_with_time[puce] = i;
-			if( puces_with_time.size() > 2 || ( puces_with_time.size() == 2 && puces_with_time.find(0) == puces_with_time.end() ) )
-				only_one_person = false;
-		}
-		
-		if( events[i]->get_event() == CODE_SHA || events[i]->get_event() == CODE_SHA_DURING_ALARM )
-			attributes_SHA(puce, i, only_one_person, events[i]->get_event());
-			
-		else if( events[i]->get_event() == CODE_ALARM )
-			attributes_alarm(puce, i, only_one_person);
-	}
-	
-	// attribue les SHA inconnues s'il n'y a eu qu'une personne dans l'activité
-	attributes_unknown_SHA(only_one_person);
-	attributes_unknown_alarm(only_one_person);
-}
-
-// Identify who is the first person who has entered the room
-int Activity::first_person_entered()
-{
-	int first_puce = -1;
-	unsigned prec = 1000;
-	if( puces_with_time.size() > 0 )
-	{
-		if( puces_with_time.size() == 1 )
-			return puces_with_time.begin()->first;
-		else
-		{
-			for( auto it = puces_with_time.begin(); it != puces_with_time.end(); ++it )
-			{
-				if( it->first != 0 && it->second < prec)
-				{
-					first_puce = it->first;
-					prec = it->second;
-				}
-			}
-		}
-	}
-	return first_puce;
-}
-
-
-void Activity::split_activities(vector<Activity*>& split_activity, int first_person_id)
-{
-	map<int, vector<Event*> > different_activities; // key = person, value = vector of events
-	int person;
-	
-	// Accords events to each persons
-	for(unsigned i=0; i<events.size(); ++i)
-	{
-		person = events[i]->get_id_puce();
-		
-		// this event is related to everyone
-		if( ( !events[i]->sha_exist() || (events[i]->sha_exist() && events[i]->get_sha_person_id()==-1) ) && !events[i]->alarm_exist() && person==0 )
-		{
-			for( auto it = puces_with_time.begin(); it != puces_with_time.end(); ++it )
-				if( it->first != 0 )
-					different_activities[it->first].push_back( new Event(events[i]) );
-		}
-		// this event is related to a specific person
-		else
-		{
-			if( events[i]->alarm_exist() )
-				different_activities[events[i]->get_attribution_alarm()].push_back( new Event(events[i]) );
-			else if( events[i]->sha_exist() )
-				different_activities[events[i]->get_sha_person_id()].push_back( new Event(events[i]) );
-			else
-				different_activities[person].push_back( new Event(events[i]) );
-		}
-	}	
-	
-	// Create activities for each persons with the events we accorded to each persons
-	for( auto it = different_activities.begin(); it != different_activities.end(); ++it ) 
-	{		
-		split_activity.push_back( new Activity(it->second, it->first, puces_with_time, false) ); 
-		split_activity[split_activity.size()-1]->pretreat_activity();
-		if( it->first == first_person_id )
-			split_activity[split_activity.size()-1]->first_person = true;
-		
-		// find labels for the Activity we just created
-		for( auto it2 = puces_with_time.begin(); it2 != puces_with_time.end(); ++it2 ) 
-			if( it->first == it2->first )
-				split_activity[split_activity.size()-1]->finding_labels();
-	}
-	
-	
-	// Release the allocated memory for the different_activities map
-	destroy_map_different_activities(different_activities);
-}
-
-/**
-	* \name activity_per_person
-	* \brief Split activities if there is several persons in one activity.
-	* 
-	* \param split_activity : vector to be filled with the activities split from the current activity.
-*/
-void Activity::activity_per_person(vector<Activity*>& split_activity)
-{
-	// Removes all previous activities not related to our business anymore
-	for(unsigned i=0; i<split_activity.size(); ++i)
-		split_activity[i]->~Activity();
-	split_activity.clear();
-
-
-	// Who are the person(s) in the current activity ? + events attribution
-	attributes_events();
-	int first_person_id = first_person_entered();
-	
-	if(only_one_person)
-	{
-		//cout << "\tONLY ONE" << endl;
-		first_person = true;
-		if(puces_with_time.size()==1)
-		{
-			main_person = puces_with_time.begin()->first;
-			pretreat_activity();
-			finding_labels();				
-		}
-		else
-		{
-			for(auto it2 = puces_with_time.begin(); it2 != puces_with_time.end(); ++it2) 
-			{
-				if(it2->first != 0)
-				{
-					main_person = it2->first;
-					pretreat_activity();
-					finding_labels();
-				}
-			}
-		}
-		//print_activity();
-	}
-	else
-		split_activities(split_activity, first_person_id);
-}
-
 // On supprime les puces 0 après un 6 s'il n'y a que des puces 0
 void Activity::pretreat_activity()
 {
@@ -787,12 +699,13 @@ void Activity::remove_only_5_6()
 	{
 		if(i+1 < events.size())
 		{
-			if( (events[i]->get_event() == CODE_OPEN_DOOR && 
-				 events[i+1]->get_event() != CODE_CLOSE_DOOR) ||
-				(events[i]->get_event() != CODE_OPEN_DOOR && 
-				 events[i+1]->get_event() == CODE_CLOSE_DOOR) ||
-				(events[i]->get_event() != CODE_OPEN_DOOR && 
-				 events[i+1]->get_event() != CODE_CLOSE_DOOR) )
+
+			if( (events[i]->get_event() != CODE_OPEN_DOOR ||
+				 events[i+1]->get_event() != CODE_CLOSE_DOOR) &&
+				(events[i]->get_event() == CODE_OPEN_DOOR ||
+				 events[i+1]->get_event() != CODE_OPEN_DOOR) &&
+				(events[i]->get_event() != CODE_CLOSE_DOOR ||
+				 events[i+1]->get_event() != CODE_OPEN_DOOR))
 			{
 				last_index = i;
 				break;
@@ -802,41 +715,286 @@ void Activity::remove_only_5_6()
 	events.erase(events.begin(), events.begin() + last_index);
 }
 
-
-/*
-void Activity::cut_activity()
+void Activity::cut_activity(vector<Activity*>& split_activity)
 {
 	unsigned code, code_next, code_next_2, puce, j;
+	vector<Event*> cumulative_events;
+	
+	for(unsigned i=0; i<events.size(); ++i)
+	{
+		cumulative_events.push_back(new Event(events[i]));
+		code = events[i]->get_event();
+		if( code == CODE_CLOSE_DOOR )
+		{
+			if(i+1 < events.size())
+			{
+				code_next = events[i+1]->get_event();
+				if(code_next == CODE_ALARM)
+				{
+					cumulative_events.push_back(new Event(events[i+1]));
+					++i;
+					if(i+1 < events.size())
+					{
+						code_next_2 = events[i+1]->get_event();
+						if(code_next_2 == CODE_ALARM || code_next_2 == CODE_OPEN_DOOR)
+							cut_activity_bis(split_activity, cumulative_events);
+						else if(code_next_2 == CODE_SHA && events[i+1]->get_sha_person_id() <= 0)
+							cut_activity_bis(split_activity, cumulative_events);
+					}
+				}
+				else if(code_next == CODE_OPEN_DOOR)
+					cut_activity_bis(split_activity, cumulative_events);
+				else if(code_next == CODE_SHA && events[i+1]->get_sha_person_id() <= 0)
+					cut_activity_bis(split_activity, cumulative_events);
+			}
+		}		
+	}	
+}
+
+void Activity::cut_activity_bis(vector<Activity*>& split_activity,
+	vector<Event*>& cumulative_events)
+{
+	split_activity.push_back(new Activity(this, cumulative_events));
+	for(unsigned i=0; i<cumulative_events.size(); ++i)
+		cumulative_events[i]->~Event();
+	cumulative_events.clear();
+}
+
+
+void Activity::remove_after_6()
+{
+	unsigned code, code_next, puce, j;
+	bool remove = false;
 	
 	for(unsigned i=0; i<events.size(); ++i)
 	{
 		code = events[i]->get_event();
 		if( code == CODE_CLOSE_DOOR )
 		{
-		
-			if(i+1 < events.size())
+			remove = true;
+			for(j = i+1; j<events.size(); ++j)
 			{
-				if(events[i+1]->get_event() == CODE_ALARM)
+				puce = events[j]->get_id_puce();
+				code_next = events[j]->get_event();
+				if( puce != 0 && code_next != CODE_ALARM )
 				{
-					if(i+2 < events.size())
-					{
-						code_next_2 = events[i+2]->get_event();
-						if(code_next_2 == CODE_ALARM || code_next_2 == CODE_CLOSE_DOOR || code_next_2 == CODE_OPEN_DOOR)
-							CUT ACTIVITY
-						if(code_next_2 == CODE_SHA && events[i+2]->get_id_puce() == 0)
-					}
+					remove = false;
+					break;
 				}
-				else if()
-				{
-					
-				}
+			}
+		}
+		if(remove)
+		{
+			for(j = i+1; j<events.size(); ++j)
+				events[j]->~Event();
+			events.erase(events.begin() + (i+1), events.end());
+			break;
+		}
+	}
+}
 
+
+// Identify who is the first person who has entered the room
+int Activity::first_person_entered()
+{
+	int first_puce = -1;
+	unsigned prec = 1000;
+	if( puces_with_time.size() > 0 )
+	{
+		if( puces_with_time.size() == 1 )
+			return puces_with_time.begin()->first;
+		else
+		{
+			for( auto it = puces_with_time.begin(); it != puces_with_time.end(); ++it )
+			{
+				if( it->first != 0 && it->second < prec)
+				{
+					first_puce = it->first;
+					prec = it->second;
+				}
+			}
+		}
+	}
+	return first_puce;
+}
+
+
+
+/** a refaire */
+void Activity::split_activities(vector<Activity*>& split_activity, int first_person_id)
+{
+	map<int, vector<Event*> > different_activities; // key = person, value = vector of events
+	vector<Activity*> tmp_cut_activity;
+	vector<Activity*> save_activity;
+	vector<unsigned> indexes;
+	int person;
+	
+	// Accords events to each persons
+	for(unsigned i=0; i<events.size(); ++i)
+	{
+		person = events[i]->get_id_puce();
+		
+		// this event is related to everyone
+		if( ( !events[i]->sha_exist() || (events[i]->sha_exist() && events[i]->get_sha_person_id()==-1) ) && !events[i]->alarm_exist() && person==0 )
+		{
+			for( auto it = puces_with_time.begin(); it != puces_with_time.end(); ++it )
+				if( it->first != 0 )
+					different_activities[it->first].push_back( new Event(events[i]) );
+		}
+		// this event is related to a specific person
+		else
+		{
+			if( events[i]->alarm_exist() )
+				different_activities[events[i]->get_attribution_alarm()].push_back( new Event(events[i]) );
+			else if( events[i]->sha_exist() )
+				different_activities[events[i]->get_sha_person_id()].push_back( new Event(events[i]) );
+			else
+				different_activities[person].push_back( new Event(events[i]) );
+		}
+	}	
+	
+	// Create activities for each persons with the events we accorded to each persons
+	for( auto it = different_activities.begin(); it != different_activities.end(); ++it ) 
+	{		
+		split_activity.push_back( new Activity(it->second, it->first, puces_with_time, false) ); 
+		split_activity[split_activity.size()-1]->pretreat_activity();
+		if( it->first == first_person_id )
+			split_activity[split_activity.size()-1]->first_person = true;
+
+		// find labels for the Activity we just created
+		for( auto it2 = puces_with_time.begin(); it2 != puces_with_time.end(); ++it2 ) 
+		{
+			if( it->first == it2->first )
+			{
+				split_activity[split_activity.size()-1]->cut_activity(tmp_cut_activity);
+				if(tmp_cut_activity.size()==0)
+				{
+					split_activity[split_activity.size()-1]->remove_after_6();
+					split_activity[split_activity.size()-1]->finding_labels();	
+				}
+				else
+				{
+					for(unsigned i=0; i<tmp_cut_activity.size(); ++i)
+					{
+						tmp_cut_activity[i]->remove_after_6();
+						tmp_cut_activity[i]->finding_labels();	
+						
+						save_activity.push_back(new Activity(tmp_cut_activity[i])); // save les tmp_cut_activity		
+					}
+					
+					indexes.push_back(split_activity.size()-1); // (save les indexes pour voir lesquels on supp)
+				}	
 				
 			}
-		}		
-	}	
+			destroy_vector(tmp_cut_activity); // mettre à zero tmp_cut_activity
+			
+			// ne pas calculer l'activité de split_activity (save les indexes pour voir lesquels on garde pas)
+			// A FAIRE
+			
+			
+		}
+	}
+	add_activity(split_activity, save_activity); // mettre tous les save activity dans split_activity
+	destroy_vector(save_activity);
+	
+	// Release the allocated memory for the different_activities map
+	destroy_map_different_activities(different_activities);
 }
+
+
+void destroy_vector(vector<Activity*>& vect)
+{
+	for(unsigned i=0; i<vect.size(); ++i)
+		vect[i]->~Activity();
+	vect.clear();
+}
+
+void add_activity(vector<Activity*>& destination, vector<Activity*>& receive)
+{
+	for(unsigned i=0; i<receive.size(); ++i)
+		destination.push_back(new Activity(receive[i]));
+}
+
+
+
+/**
+	* \name activity_per_person
+	* \brief Split activities if there is several persons in one activity.
+	* 
+	* \param split_activity : vector to be filled with the activities split from the current activity.
 */
+void Activity::activity_per_person(vector<Activity*>& split_activity)
+{
+	// Removes all previous activities not related to our business anymore
+	for(unsigned i=0; i<split_activity.size(); ++i)
+		split_activity[i]->~Activity();
+	split_activity.clear();
+
+
+	// Who are the person(s) in the current activity ? + events attribution
+	attributes_events();
+	int first_person_id = first_person_entered();
+	
+	if(only_one_person)
+	{
+		//cout << "\tONLY ONE" << endl;
+		first_person = true;
+		if(puces_with_time.size()==1)
+		{
+			main_person = puces_with_time.begin()->first;
+			pretreat_activity();
+			
+			cut_activity(split_activity);
+			if(split_activity.size()==0)
+			{
+				remove_after_6();
+				finding_labels();	
+			}
+			else
+			{
+				for(unsigned i=0; i<split_activity.size(); ++i)
+				{
+					split_activity[i]->remove_after_6();
+					split_activity[i]->finding_labels();					
+				}
+			}			
+		}
+		else
+		{
+			for(auto it2 = puces_with_time.begin(); it2 != puces_with_time.end(); ++it2) 
+			{
+				if(it2->first != 0)
+				{
+					main_person = it2->first;
+					pretreat_activity();
+					cut_activity(split_activity);
+					if(split_activity.size()==0)
+					{
+						remove_after_6();
+						finding_labels();	
+					}
+					else
+					{
+						for(unsigned i=0; i<split_activity.size(); ++i)
+						{
+							split_activity[i]->remove_after_6();
+							split_activity[i]->finding_labels();					
+						}
+					}
+				}
+			}
+		}
+		//print_activity();
+	}
+	else
+		split_activities(split_activity, first_person_id);
+}
+
+
+
+
+
+
 
 
 /**
