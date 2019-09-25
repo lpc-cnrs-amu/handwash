@@ -424,7 +424,6 @@ int Activity::same_activity(Event* event)
 	if( events[LAST_EVENT]->get_chamber() != event->get_chamber() ) 	
 		return 0;
 	
-		
 	// Case : not the same date
 	if( events[LAST_EVENT]->get_date() != event->get_date() )
 	{
@@ -717,7 +716,7 @@ void Activity::remove_only_5_6()
 
 void Activity::cut_activity(vector<Activity*>& split_activity)
 {
-	unsigned code, code_next, code_next_2, puce, j;
+	unsigned code, code_next, code_next_2;
 	vector<Event*> cumulative_events;
 	
 	for(unsigned i=0; i<events.size(); ++i)
@@ -736,19 +735,26 @@ void Activity::cut_activity(vector<Activity*>& split_activity)
 					if(i+1 < events.size())
 					{
 						code_next_2 = events[i+1]->get_event();
-						if(code_next_2 == CODE_ALARM || code_next_2 == CODE_OPEN_DOOR)
-							cut_activity_bis(split_activity, cumulative_events);
+						if(code_next_2 == CODE_OPEN_DOOR)
+						{
+							if(i+2 < events.size() && events[i+2]->get_event() == CODE_SHOE_IN)
+								cut_activity_bis(split_activity, cumulative_events);
+						}
 						else if(code_next_2 == CODE_SHA && events[i+1]->get_sha_person_id() <= 0)
 							cut_activity_bis(split_activity, cumulative_events);
 					}
 				}
 				else if(code_next == CODE_OPEN_DOOR)
-					cut_activity_bis(split_activity, cumulative_events);
+				{
+					if(i+2 < events.size() && events[i+2]->get_event() == CODE_SHOE_IN)
+						cut_activity_bis(split_activity, cumulative_events);
+				}
 				else if(code_next == CODE_SHA && events[i+1]->get_sha_person_id() <= 0)
 					cut_activity_bis(split_activity, cumulative_events);
 			}
 		}		
-	}	
+	}
+	cut_activity_bis(split_activity, cumulative_events);
 }
 
 void Activity::cut_activity_bis(vector<Activity*>& split_activity,
@@ -818,15 +824,25 @@ int Activity::first_person_entered()
 	return first_puce;
 }
 
+void destroy_vector(vector<Activity*>& vect)
+{
+	for(unsigned i=0; i<vect.size(); ++i)
+		vect[i]->~Activity();
+	vect.clear();
+}
 
+void add_activity(vector<Activity*>& destination, vector<Activity*>& send)
+{
+	destroy_vector(destination);
+	for(unsigned i=0; i<send.size(); ++i)
+		destination.push_back(new Activity(send[i]));
+}
 
-/** a refaire */
-void Activity::split_activities(vector<Activity*>& split_activity, int first_person_id)
+void Activity::split_activities(vector<Activity*>& split_activity,int first_person_id)
 {
 	map<int, vector<Event*> > different_activities; // key = person, value = vector of events
 	vector<Activity*> tmp_cut_activity;
 	vector<Activity*> save_activity;
-	vector<unsigned> indexes;
 	int person;
 	
 	// Accords events to each persons
@@ -868,10 +884,7 @@ void Activity::split_activities(vector<Activity*>& split_activity, int first_per
 			{
 				split_activity[split_activity.size()-1]->cut_activity(tmp_cut_activity);
 				if(tmp_cut_activity.size()==0)
-				{
-					split_activity[split_activity.size()-1]->remove_after_6();
-					split_activity[split_activity.size()-1]->finding_labels();	
-				}
+					cout << "ERROR" << endl;
 				else
 				{
 					for(unsigned i=0; i<tmp_cut_activity.size(); ++i)
@@ -881,17 +894,10 @@ void Activity::split_activities(vector<Activity*>& split_activity, int first_per
 						
 						save_activity.push_back(new Activity(tmp_cut_activity[i])); // save les tmp_cut_activity		
 					}
-					
-					indexes.push_back(split_activity.size()-1); // (save les indexes pour voir lesquels on supp)
 				}	
 				
 			}
 			destroy_vector(tmp_cut_activity); // mettre à zero tmp_cut_activity
-			
-			// ne pas calculer l'activité de split_activity (save les indexes pour voir lesquels on garde pas)
-			// A FAIRE
-			
-			
 		}
 	}
 	add_activity(split_activity, save_activity); // mettre tous les save activity dans split_activity
@@ -900,21 +906,6 @@ void Activity::split_activities(vector<Activity*>& split_activity, int first_per
 	// Release the allocated memory for the different_activities map
 	destroy_map_different_activities(different_activities);
 }
-
-
-void destroy_vector(vector<Activity*>& vect)
-{
-	for(unsigned i=0; i<vect.size(); ++i)
-		vect[i]->~Activity();
-	vect.clear();
-}
-
-void add_activity(vector<Activity*>& destination, vector<Activity*>& receive)
-{
-	for(unsigned i=0; i<receive.size(); ++i)
-		destination.push_back(new Activity(receive[i]));
-}
-
 
 
 /**
@@ -930,14 +921,12 @@ void Activity::activity_per_person(vector<Activity*>& split_activity)
 		split_activity[i]->~Activity();
 	split_activity.clear();
 
-
 	// Who are the person(s) in the current activity ? + events attribution
 	attributes_events();
 	int first_person_id = first_person_entered();
 	
 	if(only_one_person)
 	{
-		//cout << "\tONLY ONE" << endl;
 		first_person = true;
 		if(puces_with_time.size()==1)
 		{
@@ -945,22 +934,21 @@ void Activity::activity_per_person(vector<Activity*>& split_activity)
 			pretreat_activity();
 			
 			cut_activity(split_activity);
+			
 			if(split_activity.size()==0)
-			{
-				remove_after_6();
-				finding_labels();	
-			}
+				cout << "ERROR" << endl;
 			else
 			{
 				for(unsigned i=0; i<split_activity.size(); ++i)
 				{
 					split_activity[i]->remove_after_6();
-					split_activity[i]->finding_labels();					
+					split_activity[i]->finding_labels();
 				}
 			}			
 		}
 		else
 		{
+			
 			for(auto it2 = puces_with_time.begin(); it2 != puces_with_time.end(); ++it2) 
 			{
 				if(it2->first != 0)
@@ -969,16 +957,13 @@ void Activity::activity_per_person(vector<Activity*>& split_activity)
 					pretreat_activity();
 					cut_activity(split_activity);
 					if(split_activity.size()==0)
-					{
-						remove_after_6();
-						finding_labels();	
-					}
+						cout << "ERROR" << endl;
 					else
 					{
 						for(unsigned i=0; i<split_activity.size(); ++i)
 						{
 							split_activity[i]->remove_after_6();
-							split_activity[i]->finding_labels();					
+							split_activity[i]->finding_labels();
 						}
 					}
 				}
@@ -989,12 +974,6 @@ void Activity::activity_per_person(vector<Activity*>& split_activity)
 	else
 		split_activities(split_activity, first_person_id);
 }
-
-
-
-
-
-
 
 
 /**

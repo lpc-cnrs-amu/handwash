@@ -53,8 +53,8 @@ void get_persons_stats(char* filename, bool excel_csv, map<int, Person*>& person
 	}
 	
 	string line;
-	bool append_activity = true;
-	vector<Activity*> split_activity; 
+	int append_activity = true;
+	vector<Activity*> split_activity;
 	Activity* activity_tmp = new Activity();
 	unsigned cpt_line = 0;
 	
@@ -64,56 +64,43 @@ void get_persons_stats(char* filename, bool excel_csv, map<int, Person*>& person
 		if(cpt_line==1)
 			continue;
 		
-		// add to the current activity
+		// add to the current activity if the event is in the current activity
 		append_activity = activity_tmp->check_and_append_event_to_activity( new Event(line, excel_csv) );
 		
+		// ignore the event
+		if(append_activity == -1)
+			continue;
+		
 		// the current event is in another activity
-		if(!append_activity)
+		if(append_activity == 0)
 		{
 			activity_tmp->activity_per_person(split_activity);
 			
 			if(split_activity.size()==0)
-			{
-				update_persons_stats(activity_tmp, person_stats, activity_tmp->get_person());
-
-			}
-				
+				cout << "error" << endl;
 			else
 			{
 				for(unsigned nb_activities=0; nb_activities < split_activity.size(); ++nb_activities)
-				{
 					update_persons_stats(split_activity[nb_activities], person_stats, split_activity[nb_activities]->get_person());
-				}
 			}
 			
 			activity_tmp->~Activity();
 			activity_tmp = new Activity( new Event(line, excel_csv) );
-			append_activity = true;
 		}
 	}
-	if(append_activity)
-	{
-		activity_tmp->activity_per_person(split_activity);
-		
-		// sur (1 personne dans l'activité)
-		if(split_activity.size()==0)
-		{
-			update_persons_stats(activity_tmp, person_stats, activity_tmp->get_person());
 
-		}
-			
-		// possible (plusieurs personnes dans l'activité)
-		else
-		{
-			for(unsigned nb_activities=0; nb_activities < split_activity.size(); ++nb_activities)
-			{
-				update_persons_stats(split_activity[nb_activities], person_stats, split_activity[nb_activities]->get_person());
-			}
-		}
-		
-		activity_tmp->~Activity();
-		activity_tmp = new Activity( new Event(line, excel_csv) );
+	activity_tmp->activity_per_person(split_activity);
+	
+	// sur (1 personne dans l'activité)
+	if(split_activity.size()==0)
+		cout << "error" << endl;
+	else
+	{
+		for(unsigned nb_activities=0; nb_activities < split_activity.size(); ++nb_activities)
+			update_persons_stats(split_activity[nb_activities], person_stats, split_activity[nb_activities]->get_person());
 	}
+	
+	activity_tmp->~Activity();
 
 	database.close();
 }

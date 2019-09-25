@@ -101,8 +101,14 @@ class Activity
 			unsigned code_sha);
 		void attributes_alarm(int puce, unsigned num_event, bool only_one_person);
 		void attributes_events();
-		void split_activities(std::vector<Activity*>& split_activity, int first_person_id);
+		void split_activities(std::vector<Activity*>& split_activity, 
+			int first_person_id);
+	
 		void destroy_map_different_activities(std::map<int, std::vector<Event*> >& different_activities);
+		void cut_activity(std::vector<Activity*>& split_activity);
+		void cut_activity_bis(std::vector<Activity*>& split_activity,
+			std::vector<Event*>& cumulative_events);
+		void remove_after_6();
 
 		
 	public:
@@ -110,7 +116,8 @@ class Activity
 		Activity(Event* event);
 		Activity(std::vector<Event*>& vector_event, int p, 
 			std::map<int, unsigned>& puces_with_time_copy, bool one_person);
-		Activity(Activity* copy);  		
+		Activity(Activity* copy);
+		Activity(Activity* copy, std::vector<Event*>& vector_event);
 		~Activity();
 		
 		

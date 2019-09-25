@@ -124,7 +124,7 @@ Activities::Activities(char* filename, bool excel_csv)
 			activity_tmp->activity_per_person(split_activity); 
 			
 			if(split_activity.size()==0)
-				activities.push_back( new Activity(activity_tmp) );
+				cout << "ERROR" << endl;
 			else
 			{
 				for(unsigned nb_activities=0; nb_activities < split_activity.size(); ++nb_activities)
@@ -139,7 +139,7 @@ Activities::Activities(char* filename, bool excel_csv)
 
 	activity_tmp->activity_per_person(split_activity);
 	if(split_activity.size()==0)
-		activities.push_back( new Activity(activity_tmp) );
+		cout << "ERROR" << endl;
 	else
 	{
 		for(unsigned nb_activities=0; nb_activities < split_activity.size(); ++nb_activities)
