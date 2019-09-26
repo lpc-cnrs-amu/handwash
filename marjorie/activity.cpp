@@ -420,7 +420,10 @@ int Activity::same_activity(Event* event)
 		return 0;
 	
 	if( events.empty() )
+	{
+		event->print_event();
 		return 1;
+	}
 	if( events[LAST_EVENT]->get_chamber() != event->get_chamber() ) 	
 		return 0;
 	
@@ -701,7 +704,7 @@ void Activity::remove_only_5_6()
 
 			if( (events[i]->get_event() != CODE_OPEN_DOOR ||
 				 events[i+1]->get_event() != CODE_CLOSE_DOOR) &&
-				(events[i]->get_event() == CODE_OPEN_DOOR ||
+				(events[i]->get_event() != CODE_OPEN_DOOR ||
 				 events[i+1]->get_event() != CODE_OPEN_DOOR) &&
 				(events[i]->get_event() != CODE_CLOSE_DOOR ||
 				 events[i+1]->get_event() != CODE_OPEN_DOOR))
@@ -711,6 +714,10 @@ void Activity::remove_only_5_6()
 			}
 		}
 	}
+	cout << "LAST INDEX = " << last_index << endl;
+	for(unsigned i=0; i<last_index; ++i)
+		events[i]->~Event();
+	
 	events.erase(events.begin(), events.begin() + last_index);
 }
 
