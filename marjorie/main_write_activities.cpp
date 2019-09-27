@@ -8,9 +8,9 @@ using namespace std::chrono;
 
 int main(int argc, char** argv) 
 {
-	if(argc != 4)
+	if(argc != 5)
 	{
-		cerr << "Usage: " << argv[0] << " filename (in csv format) excel_csv_or_not (1 or 0) filename_output" << endl; 
+		cerr << "Usage: " << argv[0] << " filename (in csv format) excel_csv_or_not (1 or 0) filename_output csv" << endl; 
 		exit(EXIT_FAILURE);
 	}
 
@@ -25,8 +25,11 @@ int main(int argc, char** argv)
 	auto start = high_resolution_clock::now();
 	
 	Activities act(argv[1], excel);
-	//act.write_csv_file(argv[3], excel, headers);
-	act.write_activities_in_file(argv[3]);
+	
+	if( !strcmp(argv[4],"csv") )
+		act.write_csv_file(argv[3], excel, headers);
+	else
+		act.write_activities_in_file(argv[3]);
 	
 	auto stop = high_resolution_clock::now(); 
 	auto duration = duration_cast<std::chrono::minutes>(stop - start);

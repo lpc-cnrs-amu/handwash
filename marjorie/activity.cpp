@@ -48,6 +48,9 @@ Activity::Activity(Activity* copy)
 	this->is_in = copy->is_in;
 	this->is_out = copy->is_out;
 	this->is_inout = copy->is_inout;
+	this->is_in_abandon = copy->is_in_abandon;
+	this->is_out_abandon = copy->is_out_abandon;
+	this->is_inout_abandon = copy->is_inout_abandon;
 	
 	this->alarm_index_in = copy->alarm_index_in;
 	this->SHA_index_in = copy->SHA_index_in;
@@ -101,6 +104,9 @@ Activity::Activity(Activity* copy, vector<Event*>& vector_event)
 	this->is_in = copy->is_in;
 	this->is_out = copy->is_out;
 	this->is_inout = copy->is_inout;
+	this->is_in_abandon = copy->is_in_abandon;
+	this->is_out_abandon = copy->is_out_abandon;
+	this->is_inout_abandon = copy->is_inout_abandon;
 	
 	this->alarm_index_in = copy->alarm_index_in;
 	this->SHA_index_in = copy->SHA_index_in;
@@ -147,18 +153,15 @@ int Activity::get_person() { return main_person; }
 
 bool Activity::is_abandon_inout()
 {
-	return find(label_activity.begin(), label_activity.end(), 
-		ABANDON_INOUT) != label_activity.end();
+	return is_inout_abandon;
 }
 bool Activity::is_abandon_in()
 {
-	return find(label_activity.begin(), label_activity.end(), 
-		ABANDON_IN) != label_activity.end();
+	return is_in_abandon;
 }
 bool Activity::is_abandon_out()
 {
-	return find(label_activity.begin(), label_activity.end(), 
-		ABANDON_OUT) != label_activity.end();
+	return is_out_abandon;
 }
 
 
@@ -350,9 +353,36 @@ void Activity::print_activity()
 		cout << label_activity[i] << " ";
 	cout << endl;
 	
+	if(is_inout)
+		cout << "\tINOUT" << endl;
+	else
+		cout << "\tPAS INOUT" << endl;
+	if(is_in)
+		cout << "\tIN" << endl;
+	else
+		cout << "\tPAS IN" << endl;
+	if(is_out)
+		cout << "\tOUT" << endl;
+	else
+		cout << "\tPAS OUT" << endl;
+	
 	for(i=0; i<events.size(); ++i)
 		events[i]->print_event();
-	
+		
+/*
+		bool first_person = false; // is the main person also the first person who have entered the room ?
+		bool only_one_person = true; // true => there is one person in the activity, else false
+		
+		int alarm_index_in = -1;
+		int SHA_index_in = -1;
+		int SHA_during_alarm_index_in = -1;
+		int alarm_index_out = -1;
+		int SHA_index_out = -1;
+		int SHA_during_alarm_index_out = -1;
+		int alarm_index_inout = -1;
+		int SHA_index_inout = -1;
+		int SHA_during_alarm_index_inout = -1;	
+	*/
 }
 
 
@@ -420,10 +450,7 @@ int Activity::same_activity(Event* event)
 		return 0;
 	
 	if( events.empty() )
-	{
-		event->print_event();
 		return 1;
-	}
 	if( events[LAST_EVENT]->get_chamber() != event->get_chamber() ) 	
 		return 0;
 	
@@ -714,7 +741,7 @@ void Activity::remove_only_5_6()
 			}
 		}
 	}
-	cout << "LAST INDEX = " << last_index << endl;
+	
 	for(unsigned i=0; i<last_index; ++i)
 		events[i]->~Event();
 	
@@ -747,8 +774,6 @@ void Activity::cut_activity(vector<Activity*>& split_activity)
 							if(i+2 < events.size() && events[i+2]->get_event() == CODE_SHOE_IN)
 								cut_activity_bis(split_activity, cumulative_events);
 						}
-						else if(code_next_2 == CODE_SHA && events[i+1]->get_sha_person_id() <= 0)
-							cut_activity_bis(split_activity, cumulative_events);
 					}
 				}
 				else if(code_next == CODE_OPEN_DOOR)
@@ -756,8 +781,6 @@ void Activity::cut_activity(vector<Activity*>& split_activity)
 					if(i+2 < events.size() && events[i+2]->get_event() == CODE_SHOE_IN)
 						cut_activity_bis(split_activity, cumulative_events);
 				}
-				else if(code_next == CODE_SHA && events[i+1]->get_sha_person_id() <= 0)
-					cut_activity_bis(split_activity, cumulative_events);
 			}
 		}		
 	}
@@ -838,11 +861,15 @@ void destroy_vector(vector<Activity*>& vect)
 	vect.clear();
 }
 
-void add_activity(vector<Activity*>& destination, vector<Activity*>& send)
+void Activity::add_activity(vector<Activity*>& destination, vector<Activity*>& send)
 {
 	destroy_vector(destination);
 	for(unsigned i=0; i<send.size(); ++i)
+	{
 		destination.push_back(new Activity(send[i]));
+		if(destination[destination.size()-1]->events[0]->get_unique_id() == 3024865)
+			destination[destination.size()-1]->print_activity();
+	}
 }
 
 void Activity::split_activities(vector<Activity*>& split_activity,int first_person_id)
@@ -897,9 +924,11 @@ void Activity::split_activities(vector<Activity*>& split_activity,int first_pers
 					for(unsigned i=0; i<tmp_cut_activity.size(); ++i)
 					{
 						tmp_cut_activity[i]->remove_after_6();
-						tmp_cut_activity[i]->finding_labels();	
+						tmp_cut_activity[i]->finding_labels();
+						if(tmp_cut_activity[i]->events[0]->get_unique_id() == 3024865)
+							tmp_cut_activity[i]->print_activity();
+						save_activity.push_back(new Activity(tmp_cut_activity[i])); // save les tmp_cut_activity
 						
-						save_activity.push_back(new Activity(tmp_cut_activity[i])); // save les tmp_cut_activity		
 					}
 				}	
 				
@@ -998,6 +1027,17 @@ void Activity::destroy_map_different_activities(map<int, vector<Event*> >& diffe
 }
 
 
+bool Activity::is_correct()
+{
+	for(unsigned i=0; i<events.size(); ++i)
+	{
+		if(events[i]->get_id_puce() != 0)
+			return true;
+	}
+	return false;
+	
+}
+
 
 
 	/* Finding labels */
@@ -1032,6 +1072,8 @@ unsigned Activity::finding_in_out_inout()
 		index_out = event_out;
 		events[event_out]->set_in(OUT);
 	}
+	if(events[0]->get_unique_id() == 3024865)
+		cout << "INDEX OUT = " << index_out << endl;
 	
 	return index_out;
 }
@@ -1040,32 +1082,31 @@ unsigned Activity::finding_in_out_inout()
 void Activity::finding_labels()
 {	
 	unsigned index_out = finding_in_out_inout();
-		
+	bool result;
+	
 	// inout
 	if(index_out == 0)
 	{
-		//cout << " je suis dans inout "<< endl;
-		is_inout = finding_label_inout();
-		/*if(is_inout){
-			cout << "IS INOUT" << endl;
-			print_activity();
-		} */
+		result = finding_label_inout();
+		if(!result)
+			is_inout_abandon = true;
+		else
+			is_inout = true;
 	}
 	
 	// in and out
 	else
 	{
-		//cout << "je suis dans in et out " << endl;
-		is_in = finding_label_in(index_out);
-		/*if(is_in){
-			cout << "IS IN" << endl;
-			print_activity();
-		} */
-		is_out = finding_label_out(index_out);
-		/*if(is_out){
-			cout << "IS OUT" << endl;
-			print_activity();
-		} */
+		result = finding_label_in(index_out);
+		if(!result)
+			is_in_abandon = true;
+		else
+			is_in = true;
+		result = finding_label_out(index_out);
+		if(!result)
+			is_out_abandon = true;
+		else
+			is_out = true;
 	}
 	
 }
@@ -1211,7 +1252,6 @@ bool Activity::finding_label_out(unsigned index_begining)
 	}
 	if( abandon_activity )
 	{
-		
 		label_activity.push_back( ABANDON_OUT );
 		return false;
 	}
@@ -1295,6 +1335,7 @@ bool Activity::finding_label_inout()
 		if( events[num_event]->alarm_exist() && events[num_event]->get_attribution_alarm() == static_cast<int>(main_person) && alarm_index_inout == -1 )
 			alarm_index_inout = num_event;
 			
+			
 		else if( events[num_event]->sha_exist() )
 		{
 			if( events[num_event]->get_sha_person_id() > 0 )
@@ -1315,15 +1356,24 @@ bool Activity::finding_label_inout()
 			}
 		}
 	}
+	
+	if(events[0]->get_unique_id() == 3024865)
+		cout << "\t\t\t" << alarm_index_inout << " " << SHA_index_inout << " " << SHA_during_alarm_index_inout << endl<< endl;	
+	
 	if( abandon_activity )
 	{
 		label_activity.push_back( ABANDON_INOUT );
 		return false;
 	}
+	if(events[0]->get_unique_id() == 3024865)
+		cout << "JE SUIS LA" << endl << endl;
+
 	
 	// Alarm 0, SHA taken 0, SHA taken during alarm 0
-	if( alarm_index_inout == -1 && SHA_index_inout == -1 && SHA_during_alarm_index_inout == -1 )
+	if( alarm_index_inout == -1 && SHA_index_inout == -1 && SHA_during_alarm_index_inout == -1 ){
+		
 		label_activity.push_back( NOT_INOUT_NO_ALARM );
+	}
 		
 	// Alarm 0, SHA taken 0, SHA taken during alarm 1
 	else if( alarm_index_inout == -1 && SHA_index_inout == -1 && SHA_during_alarm_index_inout != -1 )

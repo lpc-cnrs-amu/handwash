@@ -128,7 +128,10 @@ Activities::Activities(char* filename, bool excel_csv)
 			else
 			{
 				for(unsigned nb_activities=0; nb_activities < split_activity.size(); ++nb_activities)
-					activities.push_back( new Activity(split_activity[nb_activities]) );
+				{
+					if(split_activity[nb_activities]->is_correct())
+						activities.push_back( new Activity(split_activity[nb_activities]) );
+				}
 			}
 			
 			
@@ -143,7 +146,10 @@ Activities::Activities(char* filename, bool excel_csv)
 	else
 	{
 		for(unsigned nb_activities=0; nb_activities < split_activity.size(); ++nb_activities)
-			activities.push_back( new Activity(split_activity[nb_activities]) );
+		{
+			if(split_activity[nb_activities]->is_correct())
+				activities.push_back( new Activity(split_activity[nb_activities]) );
+		}
 	}
 	activity_tmp->~Activity();
 
@@ -165,7 +171,7 @@ void Activities::write_activities_in_file(char* filename)
 	unsigned alone = 0;
 	unsigned several_persons = 0;
 	for(unsigned i=0; i<activities.size(); ++i)
-	{
+	{	
 		activities[i]->write_file(output);
 		if(activities[i]->is_alone())
 			++ alone;
@@ -219,7 +225,7 @@ void Activities::write_csv_file(char* filename, bool excel, vector<string>& head
 		chamber = activities[i]->get_chamber();
 		
 		// inout activity => only one row
-		if(activities[i]->get_is_inout())
+		if(activities[i]->get_is_inout() || activities[i]->is_abandon_inout())
 		{	
 			write_row(output, i, unique_id, 
 				activity_id, puce, chamber, 0, sep);

@@ -68,6 +68,9 @@ class Activity
 		bool is_in = false;
 		bool is_out = false;
 		bool is_inout = false;
+		bool is_in_abandon = false;
+		bool is_out_abandon = false;
+		bool is_inout_abandon = false;
 		bool first_person = false; // is the main person also the first person who have entered the room ?
 		bool only_one_person = true; // true => there is one person in the activity, else false
 		
@@ -82,6 +85,7 @@ class Activity
 		int SHA_during_alarm_index_inout = -1;	
 
 		/* Methods */
+		void add_activity(std::vector<Activity*>& destination, std::vector<Activity*>& send);
 		void pretreat_activity();
 		void remove_only_5_6();
 		int same_activity		(Event* event);
@@ -161,6 +165,7 @@ class Activity
 		int get_SHA_during_alarm_index_inout();	
 		
 		bool is_alone();
+		bool is_correct();
 };
 	
 

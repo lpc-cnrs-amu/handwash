@@ -81,7 +81,8 @@ void get_persons_stats(char* filename, bool excel_csv, map<int, Person*>& person
 			else
 			{
 				for(unsigned nb_activities=0; nb_activities < split_activity.size(); ++nb_activities)
-					update_persons_stats(split_activity[nb_activities], person_stats, split_activity[nb_activities]->get_person());
+					if(split_activity[nb_activities]->is_correct())
+						update_persons_stats(split_activity[nb_activities], person_stats, split_activity[nb_activities]->get_person());
 			}
 			
 			activity_tmp->~Activity();
@@ -97,7 +98,8 @@ void get_persons_stats(char* filename, bool excel_csv, map<int, Person*>& person
 	else
 	{
 		for(unsigned nb_activities=0; nb_activities < split_activity.size(); ++nb_activities)
-			update_persons_stats(split_activity[nb_activities], person_stats, split_activity[nb_activities]->get_person());
+			if(split_activity[nb_activities]->is_correct())
+				update_persons_stats(split_activity[nb_activities], person_stats, split_activity[nb_activities]->get_person());
 	}
 	
 	activity_tmp->~Activity();
