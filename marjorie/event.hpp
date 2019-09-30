@@ -98,6 +98,8 @@ class Event
 		bool sha_exist();
 		unsigned get_code_sha();
 		bool code_correct();
+		bool is_sup_or_eq(Event* event_bis);
+		bool is_inf_or_eq(Event* event_bis);
 };
 	
 

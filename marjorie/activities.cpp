@@ -172,11 +172,16 @@ void Activities::write_activities_in_file(char* filename)
 	unsigned several_persons = 0;
 	for(unsigned i=0; i<activities.size(); ++i)
 	{	
-		activities[i]->write_file(output);
-		if(activities[i]->is_alone())
-			++ alone;
-		else
-			++ several_persons;
+		if(activities[i]->is_abandon_inout() || 
+			activities[i]->is_abandon_in() ||
+			activities[i]->is_abandon_out() )
+		{
+			activities[i]->write_file(output);
+			if(activities[i]->is_alone())
+				++ alone;
+			else
+				++ several_persons;
+		}
 	}
 
 	cout << "nb activities alone = " << alone << endl;

@@ -64,6 +64,7 @@ class Activity
 		std::vector<Label> label_activity;
 		std::map<int, unsigned> puces_with_time;
 		
+		//unsigned enter_position;
 		int main_person; // the activity belongs to the main person
 		bool is_in = false;
 		bool is_out = false;
@@ -85,6 +86,7 @@ class Activity
 		int SHA_during_alarm_index_inout = -1;	
 
 		/* Methods */
+		void set_nb_persons(std::vector<Activity*>& split_activity);
 		void add_activity(std::vector<Activity*>& destination, std::vector<Activity*>& send);
 		void pretreat_activity();
 		void remove_only_5_6();

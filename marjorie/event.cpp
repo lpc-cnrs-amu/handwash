@@ -127,6 +127,17 @@ int Event::ecart_time(Event* prec)
 }
 
 
+bool Event::is_sup_or_eq(Event* event_bis)
+{
+	return year > event_bis->year || month > event_bis->month || day > event_bis->day ||
+		hour > event_bis->hour || minutes > event_bis->minutes || seconds >= event_bis->seconds;
+}
+bool Event::is_inf_or_eq(Event* event_bis)
+{
+	return year < event_bis->year || month < event_bis->month || day < event_bis->day ||
+		hour < event_bis->hour || minutes < event_bis->minutes || seconds <= event_bis->seconds;
+}
+
 
 Event::Event(string line, bool excel_csv)
 {

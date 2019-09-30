@@ -42,6 +42,7 @@ Activity::Activity(Activity* copy)
 {
 	unsigned i;
 	
+	//this->enter_position = copy->enter_position;
 	this->main_person = copy->main_person;
 	this->first_person = copy->first_person;
 	this->only_one_person = copy->only_one_person;
@@ -98,6 +99,7 @@ Activity::Activity(Activity* copy, vector<Event*>& vector_event)
 {
 	unsigned i;
 	
+	//this->enter_position = copy->enter_position;
 	this->main_person = copy->main_person;
 	this->first_person = copy->first_person;
 	this->only_one_person = copy->only_one_person;
@@ -137,6 +139,7 @@ Activity::Activity(Event* event)
 
 	/* Getters */
 
+//unsigned Activity::get_enter_position() { return enter_position; }
 unsigned Activity::get_chamber() { return events[0]->get_chamber(); }
 bool Activity::is_alone() { return only_one_person; }
 
@@ -328,10 +331,14 @@ void Activity::write_file(ofstream& output)
 	for(i=0; i < label_activity.size(); ++i)
 		output << label_activity[i] << " ";
 	output << endl;
-	
-	output << "\t";
+	output << "abandon inout : " << is_inout_abandon << endl;
+	output << "abandon in : " << is_in_abandon << endl;
+	output << "abandon out : " << is_out_abandon << endl;
 	for(i=0; i<events.size(); ++i)
+	{
+		output << "\t";
 		events[i]->print_event(output);
+	}
 	
 }
 
@@ -924,11 +931,7 @@ void Activity::split_activities(vector<Activity*>& split_activity,int first_pers
 					for(unsigned i=0; i<tmp_cut_activity.size(); ++i)
 					{
 						tmp_cut_activity[i]->remove_after_6();
-						tmp_cut_activity[i]->finding_labels();
-						if(tmp_cut_activity[i]->events[0]->get_unique_id() == 3024865)
-							tmp_cut_activity[i]->print_activity();
 						save_activity.push_back(new Activity(tmp_cut_activity[i])); // save les tmp_cut_activity
-						
 					}
 				}	
 				
@@ -936,11 +939,59 @@ void Activity::split_activities(vector<Activity*>& split_activity,int first_pers
 			destroy_vector(tmp_cut_activity); // mettre à zero tmp_cut_activity
 		}
 	}
+	
+	
 	add_activity(split_activity, save_activity); // mettre tous les save activity dans split_activity
 	destroy_vector(save_activity);
 	
+	set_nb_persons(split_activity);
+	
+	for(unsigned i=0; i<split_activity.size(); ++i)
+		split_activity[i]->finding_labels();
+
+	
 	// Release the allocated memory for the different_activities map
 	destroy_map_different_activities(different_activities);
+}
+
+
+void Activity::set_nb_persons(vector<Activity*>& split_activity)
+{
+	bool alone = true;
+	for(unsigned i = 0; i<split_activity.size(); ++i)
+	{
+		alone = true;
+		
+		// don't compare with an activity with no one
+		if(split_activity[i]->main_person == 0)
+			continue;
+		
+		for(unsigned j=0; j<split_activity.size(); ++j)
+		{
+			// don't compare the same activity
+			if(i == j)
+				continue;
+			// don't compare with an activity with no one
+			if(split_activity[j]->main_person == 0)
+				continue;
+			
+			if( ( split_activity[i]->events[split_activity[i]->events.size()-1]->is_sup_or_eq(split_activity[j]->events[0]) ) && 
+				( split_activity[i]->events[0]->is_inf_or_eq(split_activity[j]->events[split_activity[j]->events.size()-1]) ) )
+			{
+				split_activity[j]->only_one_person = false;
+				split_activity[j]->first_person = false;		
+				alone = false;
+				break;
+			}
+				
+		}
+		
+		if(alone)
+		{
+			split_activity[i]->only_one_person = true;
+			split_activity[i]->first_person = true;
+		}
+	}
 }
 
 
@@ -1144,7 +1195,8 @@ bool Activity::finding_label_in(unsigned index_ending)
 		}
 	}
 	
-	
+	if(only_one_person)
+		abandon_activity = false;
 	
 	if( abandon_activity )
 	{
@@ -1250,6 +1302,10 @@ bool Activity::finding_label_out(unsigned index_begining)
 			}
 		}
 	}
+	
+	if(only_one_person)
+		abandon_activity = false;
+		
 	if( abandon_activity )
 	{
 		label_activity.push_back( ABANDON_OUT );
@@ -1357,18 +1413,15 @@ bool Activity::finding_label_inout()
 		}
 	}
 	
-	if(events[0]->get_unique_id() == 3024865)
-		cout << "\t\t\t" << alarm_index_inout << " " << SHA_index_inout << " " << SHA_during_alarm_index_inout << endl<< endl;	
-	
+	if(only_one_person)
+		abandon_activity = false;
+		
 	if( abandon_activity )
 	{
 		label_activity.push_back( ABANDON_INOUT );
 		return false;
 	}
-	if(events[0]->get_unique_id() == 3024865)
-		cout << "JE SUIS LA" << endl << endl;
 
-	
 	// Alarm 0, SHA taken 0, SHA taken during alarm 0
 	if( alarm_index_inout == -1 && SHA_index_inout == -1 && SHA_during_alarm_index_inout == -1 ){
 		
