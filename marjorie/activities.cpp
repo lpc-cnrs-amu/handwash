@@ -2,6 +2,7 @@
 #include <iostream>
 #include <fstream>
 #include <algorithm>
+#include <string.h>
 #include <map>
 
 using namespace std;
@@ -129,7 +130,7 @@ Activities::Activities(char* filename, bool excel_csv)
 			{
 				for(unsigned nb_activities=0; nb_activities < split_activity.size(); ++nb_activities)
 				{
-					if(split_activity[nb_activities]->is_correct())
+					if(split_activity[nb_activities]->is_correct() && split_activity[nb_activities]->get_person() != 0)
 						activities.push_back( new Activity(split_activity[nb_activities]) );
 				}
 			}
@@ -147,7 +148,7 @@ Activities::Activities(char* filename, bool excel_csv)
 	{
 		for(unsigned nb_activities=0; nb_activities < split_activity.size(); ++nb_activities)
 		{
-			if(split_activity[nb_activities]->is_correct())
+			if(split_activity[nb_activities]->is_correct() && split_activity[nb_activities]->get_person() != 0)
 				activities.push_back( new Activity(split_activity[nb_activities]) );
 		}
 	}
@@ -172,16 +173,11 @@ void Activities::write_activities_in_file(char* filename)
 	unsigned several_persons = 0;
 	for(unsigned i=0; i<activities.size(); ++i)
 	{	
-		if(activities[i]->is_abandon_inout() || 
-			activities[i]->is_abandon_in() ||
-			activities[i]->is_abandon_out() )
-		{
-			activities[i]->write_file(output);
-			if(activities[i]->is_alone())
-				++ alone;
-			else
-				++ several_persons;
-		}
+		activities[i]->write_file(output);
+		if(activities[i]->is_alone())
+			++ alone;
+		else
+			++ several_persons;
 	}
 
 	cout << "nb activities alone = " << alone << endl;
@@ -258,8 +254,9 @@ void Activities::write_row(ofstream& output, unsigned num_activity,
 	output << '"' << unique_id << '"' << sep
 		   << '"' << puce << '"' << sep
 		   << '"' << chamber << '"' << sep
-		   << '"' << activity_id << '"' << sep;	
-	
+		   << '"' << activity_id << '"' << sep
+		   << '"' << activities[num_activity]->get_message_abandon() << '"' << sep;
+	/*
 	if( (in_out_inout==0 && activities[num_activity]->is_abandon_inout()) ||
 		(in_out_inout==1 && activities[num_activity]->is_abandon_in()) ||
 		(in_out_inout==2 && activities[num_activity]->is_abandon_out()) )
@@ -268,6 +265,7 @@ void Activities::write_row(ofstream& output, unsigned num_activity,
 	}
 	else
 		output << '"' << 0 << '"' << sep;
+	*/
 		
 	// inout
 	if(in_out_inout==0)
@@ -280,7 +278,7 @@ void Activities::write_row(ofstream& output, unsigned num_activity,
 			   << '"' << static_cast<int>(activities[num_activity]->get_SHA_index_inout() != -1) << '"' << sep
 			   << '"' << static_cast<int>(activities[num_activity]->get_SHA_during_alarm_index_inout() != -1) << '"' << sep
 			   << '"' << label_to_str(activities[num_activity]->get_label_inout()) 
-			   << '"' <<  sep << endl;
+			   << '"' << endl;
 	}
 	// in
 	else if(in_out_inout==1)
@@ -293,7 +291,7 @@ void Activities::write_row(ofstream& output, unsigned num_activity,
 			   << '"' << static_cast<int>(activities[num_activity]->get_SHA_index_in() != -1) << '"' << sep
 			   << '"' << static_cast<int>(activities[num_activity]->get_SHA_during_alarm_index_in() != -1) << '"' << sep  
 			   << '"' << label_to_str(activities[num_activity]->get_label_in()) 
-			   << '"' <<  sep << endl;
+			   << '"' << endl;
 	}
 	// out
 	else if(in_out_inout==2)
@@ -306,7 +304,7 @@ void Activities::write_row(ofstream& output, unsigned num_activity,
 			   << '"' << static_cast<int>(activities[num_activity]->get_SHA_index_out() != -1) << '"' << sep
 			   << '"' << static_cast<int>(activities[num_activity]->get_SHA_during_alarm_index_out() != -1) << '"' << sep
 			   << '"' << label_to_str(activities[num_activity]->get_label_out()) 
-			   << '"' <<  sep << endl;
+			   << '"' << endl;
 	}
 		
 	++ unique_id;

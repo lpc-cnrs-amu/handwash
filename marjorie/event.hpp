@@ -5,6 +5,7 @@
 #include <iostream>
 #include <vector>
 #include "sha.hpp"
+#include "time.hpp"
 #define IN true
 #define OUT false
 
@@ -44,23 +45,16 @@ class Event
 		bool in = true; 		// is the event in the "in" section or the "out" section ?
 		unsigned id_puce;		// id of the puce (representing a person)
 		unsigned id_chamber;	// id of the chamber
-		unsigned year;
-		unsigned month;	
-		unsigned day;
-		unsigned hour;
-		unsigned minutes;
-		unsigned seconds;
-		std::string date;		// date like 2018-01-17
-		std::string time;		// time like 16:29:02.100
+		Time* time_ = NULL;
 		
 		Sha* sha = NULL;
 		int alarm = -1;
 		
 		static const std::vector<Code> correct_codes;
 		
-		void split_time();
 		void split_date();
-		
+		void split_time();
+
 	public:
 		Event(Event* event);
 		Event(std::string line, bool excel_csv);
@@ -97,6 +91,7 @@ class Event
 		int get_sha_person_id();
 		bool sha_exist();
 		unsigned get_code_sha();
+		Time* get_time_object();
 		bool code_correct();
 		bool is_sup_or_eq(Event* event_bis);
 		bool is_inf_or_eq(Event* event_bis);

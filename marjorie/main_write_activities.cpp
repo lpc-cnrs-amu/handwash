@@ -25,6 +25,7 @@ int main(int argc, char** argv)
 	auto start = high_resolution_clock::now();
 	
 	Activities act(argv[1], excel);
+	cout << "All activities OK !" << endl;
 	
 	if( !strcmp(argv[4],"csv") )
 		act.write_csv_file(argv[3], excel, headers);

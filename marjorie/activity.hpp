@@ -60,11 +60,12 @@ class Activity
 {
 	private:
 		/* Attributes */
-		std::vector<Event*> events;
+		
 		std::vector<Label> label_activity;
 		std::map<int, unsigned> puces_with_time;
 		
-		//unsigned enter_position;
+		Time* start_time = NULL;
+		Time* end_time = NULL;
 		int main_person; // the activity belongs to the main person
 		bool is_in = false;
 		bool is_out = false;
@@ -83,7 +84,9 @@ class Activity
 		int SHA_during_alarm_index_out = -1;
 		int alarm_index_inout = -1;
 		int SHA_index_inout = -1;
-		int SHA_during_alarm_index_inout = -1;	
+		int SHA_during_alarm_index_inout = -1;
+		
+		std::string message_abandon = "valide";
 
 		/* Methods */
 		void set_nb_persons(std::vector<Activity*>& split_activity);
@@ -118,6 +121,7 @@ class Activity
 
 		
 	public:
+	std::vector<Event*> events;
 		Activity();
 		Activity(Event* event);
 		Activity(std::vector<Event*>& vector_event, int p, 
@@ -135,6 +139,8 @@ class Activity
 		
 		Label get_label(unsigned num);
 		unsigned get_nb_label();
+		
+		std::string get_message_abandon();
 		
 		bool get_is_in();
 		bool get_is_out();
@@ -168,6 +174,9 @@ class Activity
 		
 		bool is_alone();
 		bool is_correct();
+		
+		unsigned set_start_time();
+		unsigned set_end_time();
 };
 	
 

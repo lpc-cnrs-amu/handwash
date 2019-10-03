@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <ctime>
 #include "event.hpp"
 #define SECOND_MAX 10
 
@@ -18,17 +19,11 @@ Event::Event(Event* event)
 	this->in = event->in; 
 	this->id_puce = event->id_puce;
 	this->id_chamber = event->id_chamber;
-	this->year = event->year;
-	this->month = event->month;
-	this->day = event->day;
-	this->hour = event->hour;
-	this->minutes = event->minutes;
-	this->seconds = event->seconds;
-	this->date = event->date;
-	this->time = event->time;
 	this->alarm = event->alarm;
 	if(event->sha != NULL)
 		this->sha = new Sha(event->sha);
+	if(event->time_ != NULL)
+		this->time_ = new Time(event->time_);
 }
 
 unsigned Event::get_id_puce() {	return id_puce; }
@@ -36,16 +31,19 @@ unsigned Event::get_unique_id() { return unique_id; }
 unsigned Event::get_chamber() { return id_chamber; }
 unsigned Event::get_event() { return id_event; }
 
-unsigned Event::get_hour() { return hour; }
-unsigned Event::get_minutes() { return minutes; }
-unsigned Event::get_seconds() { return seconds; }
+unsigned Event::get_hour() { return time_->get_hour(); }
+unsigned Event::get_minutes() { return time_->get_minutes(); }
+unsigned Event::get_seconds() { return time_->get_seconds(); }
 
-unsigned Event::get_year() { return year; }
-unsigned Event::get_month() { return month; }
-unsigned Event::get_day() { return day; }
+unsigned Event::get_year() { return time_->get_year(); }
+unsigned Event::get_month() { return time_->get_month(); }
+unsigned Event::get_day() { return time_->get_day(); }
 
-string Event::get_time() { return time; }
-string Event::get_date() { return date; }
+string Event::get_time() { return time_->get_time(); }
+string Event::get_date() { return time_->get_date(); }
+void Event::split_date() { time_->split_date(); }
+void Event::split_time() { time_->split_time(); }
+
 
 bool Event::get_in() { return in; }
 
@@ -71,7 +69,7 @@ int Event::get_sha_person_id()
 	return sha->get_person_id(); 
 }
 bool Event::sha_exist() { return sha != NULL; }
-
+Time* Event::get_time_object() { return time_; }
 
 bool Event::code_correct()
 {
@@ -79,19 +77,26 @@ bool Event::code_correct()
 }
 
 
-/** renvoie l'écart de temps en secondes entre l'event appelé et son precedent*/
 int Event::ecart_time(Event* prec)
+{
+	return time_->ecart_time(prec->time_);
+}
+
+/** renvoie l'écart de temps en secondes entre l'event appelé et son precedent*/
+/*
+float Event::ecart_time(Event* prec, int unity)
 {	
 	unsigned difference_seconds = 0;
 	unsigned difference_mins = 0;
+	unsigned difference_hour = 0;
 	
-	unsigned sec = this->seconds;
-	int min =  (int) this->minutes;
-	int h =  (int) this->hour;
+	unsigned sec = this->get_seconds();
+	int min =  (int) this->get_minutes();
+	int h =  (int) this->get_hour();
 		
-	if(h >= (int)prec->hour)
+	if(h >= (int)prec->get_hour())
 	{
-		if(prec->seconds > sec)
+		if(prec->get_seconds() > sec)
 		{
 			-- min;
 			if( min == -1 )
@@ -99,18 +104,18 @@ int Event::ecart_time(Event* prec)
 			sec += 60;
 		}
 
-		difference_seconds = sec - prec->seconds;
-		if((int)prec->minutes > min)
+		difference_seconds = sec - prec->get_seconds();
+		if((int)prec->get_minutes() > min)
 		{
 			min += 60;
 		}
-		difference_mins = (min - prec->minutes) * 60;
+		difference_mins = (min - prec->get_minutes()) * 60;
 		
 		return difference_mins + difference_seconds;
 	}
 	else
 	{
-		if(prec->seconds > sec)
+		if(prec->get_seconds() > sec)
 		{
 			-- min;
 			if( min == -1 )
@@ -118,24 +123,28 @@ int Event::ecart_time(Event* prec)
 			sec += 60;
 		}		
 		
-		difference_seconds = sec - prec->seconds;
-		difference_mins = 60 - prec->minutes + min -1;
-		
-		return difference_seconds + difference_mins;
+		difference_seconds = sec - prec->get_seconds();
+		difference_mins = 60 - prec->get_minutes() + min -1;
+		difference_hour = 24 - prec->get_hour() + h -1;
+
+		return difference_seconds + difference_mins*60;
+
+			
 	}
 	return -1;
 }
+*/
 
 
 bool Event::is_sup_or_eq(Event* event_bis)
 {
-	return year > event_bis->year || month > event_bis->month || day > event_bis->day ||
-		hour > event_bis->hour || minutes > event_bis->minutes || seconds >= event_bis->seconds;
+	return get_year() > event_bis->get_year() || get_month() > event_bis->get_month() || get_day() > event_bis->get_day() ||
+		get_hour() > event_bis->get_hour() || get_minutes() > event_bis->get_minutes() || get_seconds() >= event_bis->get_seconds();
 }
 bool Event::is_inf_or_eq(Event* event_bis)
 {
-	return year < event_bis->year || month < event_bis->month || day < event_bis->day ||
-		hour < event_bis->hour || minutes < event_bis->minutes || seconds <= event_bis->seconds;
+	return get_year() < event_bis->get_year() || get_month() < event_bis->get_month() || get_day() < event_bis->get_day() ||
+		get_hour() < event_bis->get_hour() || get_minutes() < event_bis->get_minutes() || get_seconds() <= event_bis->get_seconds();
 }
 
 
@@ -171,12 +180,13 @@ Event::Event(string line, bool excel_csv)
 		
 		else if(cpt==3)
 		{
+			time_ = new Time();
 			pos_date = token.find(" ");
-			date = token.substr(0, pos_date);
-			split_date();
+			time_->set_date(token.substr(0, pos_date));
+			time_->split_date();
 			token.erase(0, pos_date + 1);
-			time = token;
-			split_time();
+			time_->set_time(token);
+			time_->split_time();
 		}
 		
 		
@@ -194,14 +204,14 @@ void Event::print_event()
 		 << in << "] id_puce: ["
 		 << id_puce << "] id_chamber: ["
 		 << id_chamber << "] year: ["
-		 << year << "] month: ["
-		 << month << "] day: ["
-		 << day << "] hour: ["
-		 << hour << "] minutes: ["
-		 << minutes << "] seconds: ["
-		 << seconds << "] date: ["
-		 << date << "] time: ["
-		 << time << "]\n";
+		 << get_year() << "] month: ["
+		 << get_month() << "] day: ["
+		 << get_day() << "] hour: ["
+		 << get_hour() << "] minutes: ["
+		 << get_minutes() << "] seconds: ["
+		 << get_seconds() << "] date: ["
+		 << get_date() << "] time: ["
+		 << get_time() << "]\n";
 }
 
 void Event::print_event(ofstream& output)
@@ -211,81 +221,26 @@ void Event::print_event(ofstream& output)
 		 << in << "] id_puce: ["
 		 << id_puce << "] id_chamber: ["
 		 << id_chamber << "] year: ["
-		 << year << "] month: ["
-		 << month << "] day: ["
-		 << day << "] hour: ["
-		 << hour << "] minutes: ["
-		 << minutes << "] seconds: ["
-		 << seconds << "] date: ["
-		 << date << "] time: ["
-		 << time << "]\n";
-}
-
-
-
-void Event::split_date()
-{
-	string token;
-	string date_tmp = date;
-	string delimiter = "-";
-	size_t pos = 0;
-	unsigned cpt = 0;
-	while( cpt < 3 )
-	{
-		if(cpt != 2)
-			pos = date_tmp.find(delimiter);
-		else
-			pos =  std::string::npos ;
-			
-		token = date_tmp.substr(0, pos);
-		if(cpt==0)
-			year = stoi(token);
-		else if(cpt==1)
-			month = stoi(token);
-		else if(cpt==2)
-			day = stoi(token);
-		++cpt;
-		date_tmp.erase(0, pos + delimiter.length());
-	}
-}
-
-void Event::split_time()
-{
-	string token;
-	string time_tmp = time;
-	string delimiter = ":";
-	size_t pos = 0;
-	unsigned cpt = 0;
-	while( cpt < 3 )
-	{
-		if(cpt != 2)
-			pos = time_tmp.find(delimiter);
-		else
-			pos =  std::string::npos ;
-		
-		token = time_tmp.substr(0, pos);
-		if(cpt==0)
-			hour = stoi(token);
-		else if(cpt==1)
-			minutes = stoi(token);
-		else if(cpt==2)
-			seconds = stoi(token);
-		++cpt;
-		time_tmp.erase(0, pos + delimiter.length());
-	}
-	
+		 << get_year() << "] month: ["
+		 << get_month() << "] day: ["
+		 << get_day() << "] hour: ["
+		 << get_hour() << "] minutes: ["
+		 << get_minutes() << "] seconds: ["
+		 << get_seconds() << "] date: ["
+		 << get_date() << "] time: ["
+		 << get_time() << "]\n";
 }
 
 //Gives the last day of a month
 unsigned Event::last_day_month()
 {
-	switch(month)
+	switch(get_month())
 	{
 		case 1:
 			return 31;
 			break;
 		case 2:
-			if(year%4==0)
+			if(get_year()%4==0)
 				return 29;
 			return 28;
 			break;		
@@ -320,7 +275,7 @@ unsigned Event::last_day_month()
 			return 31;
 			break;
 		default:
-			cerr << "WARNING ! unidentified month : " << month << endl;
+			cerr << "WARNING ! unidentified month : " << get_month() << endl;
 			return 0;
 			break;
 	}

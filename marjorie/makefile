@@ -5,16 +5,16 @@ EXEC=generate_activities persons_stats
 
 all: $(EXEC)
 
-persons_stats: main_write_persons_stats.o event.o activities.o activity.o person.o sha.o
-	$(CC) -o persons_stats main_write_persons_stats.o event.o activities.o activity.o person.o sha.o $(LDFLAGS)
+persons_stats: main_write_persons_stats.o event.o activities.o activity.o person.o sha.o time.o
+	$(CC) -o persons_stats main_write_persons_stats.o event.o activities.o activity.o person.o sha.o time.o $(LDFLAGS)
 
-generate_activities: main_write_activities.o event.o activities.o activity.o sha.o
-	$(CC) -o generate_activities main_write_activities.o event.o activities.o activity.o sha.o $(LDFLAGS)
+generate_activities: main_write_activities.o event.o activities.o activity.o sha.o time.o
+	$(CC) -o generate_activities main_write_activities.o event.o activities.o activity.o sha.o time.o $(LDFLAGS)
 	
 main_write_activities.o: main_write_activities.cpp activities.hpp
 	$(CC) -o main_write_activities.o -c main_write_activities.cpp $(CFLAGS)
 
-event.o: event.cpp event.hpp sha.hpp
+event.o: event.cpp event.hpp sha.hpp time.hpp
 	$(CC) -o event.o -c event.cpp $(CFLAGS)
 	
 activity.o: activity.cpp activity.hpp event.hpp sha.hpp
@@ -31,6 +31,9 @@ person.o: person.cpp person.hpp
 	
 sha.o: sha.cpp sha.hpp
 	$(CC) -o sha.o -c sha.cpp $(CFLAGS)
+	
+time.o: time.cpp time.hpp
+	$(CC) -o time.o -c time.cpp $(CFLAGS)
 		
 clean:
 	rm -rf *.o
