@@ -3,6 +3,7 @@
 #include <string>
 #include <map>
 #include <iomanip>
+#include "activities.hpp"
 #include "person.hpp"
 #include <chrono> 
 
@@ -39,12 +40,15 @@ void update_persons_stats(Activity* activity_tmp, map<int, Person*>& person_stat
 	
 }
 
+
+
 /** On commence par là !
 * On regarde les activités
 * on associe les stats de l'activité à la personne
 */
 void get_persons_stats(char* filename, bool excel_csv, map<int, Person*>& person_stats)
 {
+	/*
 	ifstream database(filename, ios::in);
 	if(!database)
 	{ 
@@ -105,6 +109,13 @@ void get_persons_stats(char* filename, bool excel_csv, map<int, Person*>& person
 	activity_tmp->~Activity();
 
 	database.close();
+	*/
+	Activities act(filename, excel_csv);
+	cout << "All activities OK !" << endl;
+	unsigned nb_activities = act.get_nb_activities();
+	for(unsigned i=0; i<nb_activities; ++i)
+		update_persons_stats(act.activities[i], person_stats, act.get_person(i));
+	
 }
 
 

@@ -138,13 +138,11 @@ float Event::ecart_time(Event* prec, int unity)
 
 bool Event::is_sup_or_eq(Event* event_bis)
 {
-	return get_year() > event_bis->get_year() || get_month() > event_bis->get_month() || get_day() > event_bis->get_day() ||
-		get_hour() > event_bis->get_hour() || get_minutes() > event_bis->get_minutes() || get_seconds() >= event_bis->get_seconds();
+	return time_->is_sup_or_eq(event_bis->time_);
 }
 bool Event::is_inf_or_eq(Event* event_bis)
 {
-	return get_year() < event_bis->get_year() || get_month() < event_bis->get_month() || get_day() < event_bis->get_day() ||
-		get_hour() < event_bis->get_hour() || get_minutes() < event_bis->get_minutes() || get_seconds() <= event_bis->get_seconds();
+	return time_->is_inf_or_eq(event_bis->time_);
 }
 
 

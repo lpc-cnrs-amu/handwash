@@ -39,8 +39,9 @@ enum Label
 	/** 16 */ ABANDON_OUT,
 	/** 17 */ ABANDON_INOUT,
 	
+	/** 18 */ ABANDON,
 	// cas impossible
-	/** 18 */ IMPOSSIBLE
+	/** 19 */ IMPOSSIBLE
 };
 
 
@@ -60,7 +61,7 @@ class Activity
 {
 	private:
 		/* Attributes */
-		
+		std::vector<Event*> events;
 		std::vector<Label> label_activity;
 		std::map<int, unsigned> puces_with_time;
 		
@@ -86,7 +87,9 @@ class Activity
 		int SHA_index_inout = -1;
 		int SHA_during_alarm_index_inout = -1;
 		
-		std::string message_abandon = "valide";
+		std::string message_abandon_in = "valide";
+		std::string message_abandon_out = "valide";
+		std::string message_abandon_inout = "valide";
 
 		/* Methods */
 		void set_nb_persons(std::vector<Activity*>& split_activity);
@@ -121,7 +124,6 @@ class Activity
 
 		
 	public:
-	std::vector<Event*> events;
 		Activity();
 		Activity(Event* event);
 		Activity(std::vector<Event*>& vector_event, int p, 
@@ -140,7 +142,9 @@ class Activity
 		Label get_label(unsigned num);
 		unsigned get_nb_label();
 		
-		std::string get_message_abandon();
+		std::string get_message_abandon_in();
+		std::string get_message_abandon_out();
+		std::string get_message_abandon_inout();
 		
 		bool get_is_in();
 		bool get_is_out();
@@ -177,6 +181,25 @@ class Activity
 		
 		unsigned set_start_time();
 		unsigned set_end_time();
+		
+		void clear_label();
+		void set_label(Label label);
+		void set_message_abandon_in(std::string message);
+		void set_message_abandon_out(std::string message);
+		void set_message_abandon_inout(std::string message);
+		
+		bool is_start_time_inf(Activity* act);
+		bool is_end_time_inf(Activity* act);
+		bool is_start_time_inf_end_time(Activity* act);
+		
+		std::string get_start_time_date();
+		std::string get_start_time_time();
+		void set_is_in(bool set);
+		void set_is_abandon_in(bool set);
+		void set_is_out(bool set);
+		void set_is_abandon_out(bool set);
+		void set_is_inout(bool set);
+		void set_is_abandon_inout(bool set);
 };
 	
 

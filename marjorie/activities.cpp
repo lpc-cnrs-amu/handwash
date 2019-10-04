@@ -65,6 +65,9 @@ string label_to_str(Label label)
 		case ABANDON_INOUT:
 			return "ABANDON_INOUT";
 			break;
+		case ABANDON:
+			return "ABANDON";
+			break;
 		case IMPOSSIBLE:
 			return "IMPOSSIBLE";
 			break;
@@ -84,6 +87,9 @@ Activities::~Activities()
 	activities.clear();
 	cout << "Destroying all activities... " << endl;
 }
+
+unsigned Activities::get_nb_activities() { return activities.size(); }
+int Activities::get_person(unsigned num_activity) { return activities[num_activity]->get_person(); }
 
 /**
 	* \brief Activity Constructor.
@@ -153,9 +159,65 @@ Activities::Activities(char* filename, bool excel_csv)
 		}
 	}
 	activity_tmp->~Activity();
+	
+	relabel_activities_entremelee();
 
 
 	database.close();
+}
+
+bool sort_activities_by_person_then_start_time( Activity *act_1, Activity *act_2 )
+{
+    return (act_1->get_person() < act_2->get_person()) ||
+           (act_1->get_person() == act_2->get_person() && act_1->is_start_time_inf( act_2 ));
+}
+
+void Activities::relabel_activities_entremelee()
+{
+	std::sort( activities.begin(), activities.end(), sort_activities_by_person_then_start_time );
+	for(unsigned i=0; i<activities.size(); ++i)
+	{
+		if(i+1 < activities.size() && activities[i]->get_person() == activities[i+1]->get_person())
+			relabel_act(activities[i], activities[i+1]);
+	}
+}
+
+void Activities::relabel_act(Activity* act_1, Activity* act_2)
+{
+	Label label = ABANDON;
+	/*if(act_1->get_person() == 530 && act_1->get_chamber() == 10 && act_1->get_start_time_date()=="2018-01-06" && act_1->get_start_time_time()=="19:23:42.000")
+		act_1->print_activity();*/	
+	if(act_2->is_end_time_inf(act_1) || act_2->is_start_time_inf_end_time(act_1))
+	{
+		if(act_1->get_is_inout() || act_1->is_abandon_inout())
+		{
+			act_1->set_message_abandon_inout("activite entremelee");
+			act_1->set_is_inout(false);
+			act_1->set_is_abandon_inout(true);
+		}
+			
+		else if( (act_1->get_is_in() || act_1->is_abandon_in()) && (act_1->get_is_out() || act_1->is_abandon_out()))
+		{
+			act_1->set_message_abandon_in("activite entremelee");
+			act_1->set_message_abandon_out("activite entremelee");
+			act_1->set_is_in(false);
+			act_1->set_is_abandon_in(true);
+			act_1->set_is_out(false);
+			act_1->set_is_abandon_out(true);
+		}
+		
+		else
+		{
+			cout << "\t !!! IMPOSSIBLE !!! " << endl;
+			act_1->print_activity();
+			label = IMPOSSIBLE;
+		}
+			
+		act_1->clear_label();
+		act_1->set_label(label);
+		if(act_1->get_person() == 530 && act_1->get_chamber() == 10 && act_1->get_start_time_date()=="2018-01-06" && act_1->get_start_time_time()=="19:23:42.000")
+			cout << act_1->get_message_abandon_in() << " " << act_1->get_message_abandon_out() << endl;
+	}
 }
 
 
@@ -171,6 +233,7 @@ void Activities::write_activities_in_file(char* filename)
 	
 	unsigned alone = 0;
 	unsigned several_persons = 0;
+	
 	for(unsigned i=0; i<activities.size(); ++i)
 	{	
 		activities[i]->write_file(output);
@@ -254,23 +317,13 @@ void Activities::write_row(ofstream& output, unsigned num_activity,
 	output << '"' << unique_id << '"' << sep
 		   << '"' << puce << '"' << sep
 		   << '"' << chamber << '"' << sep
-		   << '"' << activity_id << '"' << sep
-		   << '"' << activities[num_activity]->get_message_abandon() << '"' << sep;
-	/*
-	if( (in_out_inout==0 && activities[num_activity]->is_abandon_inout()) ||
-		(in_out_inout==1 && activities[num_activity]->is_abandon_in()) ||
-		(in_out_inout==2 && activities[num_activity]->is_abandon_out()) )
-	{
-		output << '"' << 1 << '"' << sep;
-	}
-	else
-		output << '"' << 0 << '"' << sep;
-	*/
+		   << '"' << activity_id << '"' << sep;	
 		
 	// inout
 	if(in_out_inout==0)
 	{
-		output << '"' << "inout" << '"' << sep
+		output << '"' << activities[num_activity]->get_message_abandon_inout() << '"' << sep
+			   << '"' << "inout" << '"' << sep
 			   << '"' << activities[num_activity]->get_start_time() << '"' << sep
 			   << '"' << activities[num_activity]->get_end_time() << '"' << sep
 			   << '"' << activities[num_activity]->get_duration() << '"' << sep
@@ -283,7 +336,8 @@ void Activities::write_row(ofstream& output, unsigned num_activity,
 	// in
 	else if(in_out_inout==1)
 	{
-		output << "in" << sep
+		output << '"' << activities[num_activity]->get_message_abandon_in() << '"' << sep
+			   << '"' << "in" << '"' << sep
 			   << '"' << activities[num_activity]->get_start_time() << '"' << sep
 			   << '"' << activities[num_activity]->get_end_time(true) << '"' << sep
 			   << '"' << activities[num_activity]->get_duration(1) << '"' << sep
@@ -296,7 +350,8 @@ void Activities::write_row(ofstream& output, unsigned num_activity,
 	// out
 	else if(in_out_inout==2)
 	{
-		output << "out" << sep
+		output << '"' << activities[num_activity]->get_message_abandon_out() << '"' << sep
+			   << '"' << "out" << '"' << sep
 			   << '"' << activities[num_activity]->get_start_time(true) << '"' << sep
 			   << '"' << activities[num_activity]->get_end_time() << '"' << sep
 			   << '"' << activities[num_activity]->get_duration(2) << '"' << sep

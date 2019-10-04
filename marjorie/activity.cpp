@@ -55,7 +55,9 @@ Activity::Activity(Activity* copy)
 	this->is_in_abandon = copy->is_in_abandon;
 	this->is_out_abandon = copy->is_out_abandon;
 	this->is_inout_abandon = copy->is_inout_abandon;
-	this->message_abandon = copy->message_abandon;
+	this->message_abandon_inout = copy->message_abandon_inout;
+	this->message_abandon_in = copy->message_abandon_in;
+	this->message_abandon_out = copy->message_abandon_out;
 	
 	this->alarm_index_in = copy->alarm_index_in;
 	this->SHA_index_in = copy->SHA_index_in;
@@ -116,7 +118,9 @@ Activity::Activity(Activity* copy, vector<Event*>& vector_event)
 	this->is_in_abandon = copy->is_in_abandon;
 	this->is_out_abandon = copy->is_out_abandon;
 	this->is_inout_abandon = copy->is_inout_abandon;
-	this->message_abandon = copy->message_abandon;
+	this->message_abandon_inout = copy->message_abandon_inout;
+	this->message_abandon_in = copy->message_abandon_in;
+	this->message_abandon_out = copy->message_abandon_out;
 	
 	this->alarm_index_in = copy->alarm_index_in;
 	this->SHA_index_in = copy->SHA_index_in;
@@ -146,7 +150,8 @@ Activity::Activity(Event* event)
 }
 
 	/* Getters */
-
+string Activity::get_start_time_date() { return start_time->get_date(); }
+string Activity::get_start_time_time() { return start_time->get_time(); }
 unsigned Activity::get_chamber() { return events[0]->get_chamber(); }
 bool Activity::is_alone() { return only_one_person; }
 
@@ -230,6 +235,25 @@ int Activity::get_duration(unsigned in_out_inout)
 	return -1;
 }
 
+bool Activity::is_start_time_inf(Activity* act)
+{
+	return start_time->is_inf_or_eq(act->start_time);
+}
+bool Activity::is_end_time_inf(Activity* act)
+{
+	return end_time->is_inf_or_eq(act->end_time);
+}
+bool Activity::is_start_time_inf_end_time(Activity* act)
+{
+	return start_time->is_inf_or_eq(act->end_time);
+}
+
+void Activity::clear_label() { label_activity.clear(); }
+void Activity::set_label(Label label) { label_activity.push_back(label); }
+void Activity::set_message_abandon_inout(string message) { message_abandon_inout = message; }
+void Activity::set_message_abandon_in(string message) { message_abandon_in = message; }
+void Activity::set_message_abandon_out(string message) { message_abandon_out = message; }
+
 Label Activity::get_label_in()
 {
 	for( unsigned i=0; i<label_activity.size(); ++i )
@@ -239,7 +263,8 @@ Label Activity::get_label_in()
 			label_activity[i] == IN_DURING_ALARM || 
 			label_activity[i] == NOT_IN_NO_ALARM || 
 			label_activity[i] == NOT_IN_ALARM || 
-			label_activity[i] == ABANDON_IN )
+			label_activity[i] == ABANDON_IN ||
+			label_activity[i] == ABANDON)
 			return label_activity[i];
 	}
 	return IMPOSSIBLE;
@@ -254,7 +279,8 @@ Label Activity::get_label_out()
 			label_activity[i] == OUT_DURING_ALARM || 
 			label_activity[i] == NOT_OUT_NO_ALARM || 
 			label_activity[i] == NOT_OUT_ALARM || 
-			label_activity[i] == ABANDON_OUT )
+			label_activity[i] == ABANDON_OUT ||
+			label_activity[i] == ABANDON)
 			return label_activity[i];
 	}
 	return IMPOSSIBLE;
@@ -269,13 +295,16 @@ Label Activity::get_label_inout()
 			label_activity[i] == INOUT_DURING_ALARM || 
 			label_activity[i] == NOT_INOUT_NO_ALARM || 
 			label_activity[i] == NOT_INOUT_ALARM || 
-			label_activity[i] == ABANDON_INOUT )
+			label_activity[i] == ABANDON_INOUT ||
+			label_activity[i] == ABANDON)
 			return label_activity[i];
 	}
 	return IMPOSSIBLE;
 }
 
-std::string Activity::get_message_abandon() { return message_abandon; }
+std::string Activity::get_message_abandon_inout() { return message_abandon_inout; }
+std::string Activity::get_message_abandon_in() { return message_abandon_in; }
+std::string Activity::get_message_abandon_out() { return message_abandon_out; }
 
 
 int Activity::get_alarm_index_in()
@@ -323,7 +352,12 @@ int Activity::get_SHA_during_alarm_index_inout()
 	return SHA_during_alarm_index_inout;
 }
 	
-
+void Activity::set_is_in(bool set) { is_in = set; }
+void Activity::set_is_abandon_in(bool set) { is_in_abandon = set; }
+void Activity::set_is_out(bool set) { is_out = set; }
+void Activity::set_is_abandon_out(bool set) { is_out_abandon = set; }
+void Activity::set_is_inout(bool set) { is_inout = set; }
+void Activity::set_is_abandon_inout(bool set) { is_inout_abandon = set; }
 
 	/* Print functions */
 
@@ -339,10 +373,11 @@ void Activity::write_file(ofstream& output)
 	unsigned i;
 	
 	output << "PERSON: " << main_person << endl;
-	output << "\tNUMBER OF PERSON: " << puces_with_time.size() << endl << "\t";	
+	output << "\tNUMBER OF PERSON (begining): " << puces_with_time.size() << endl << "\t";	
 	for(auto it = puces_with_time.begin(); it != puces_with_time.end(); ++it)
 		output << it->first << " ";
 	output << endl;
+	output << "ALONE : " << only_one_person << endl;
 	output << "\tNUMBER OF LABELS: " << label_activity.size() << endl << "\t";	
 	for(i=0; i < label_activity.size(); ++i)
 		output << label_activity[i] << " ";
@@ -367,10 +402,11 @@ void Activity::print_activity()
 	unsigned i;
 	
 	cout << "PERSON: " << main_person << endl;
-	cout << "\tNUMBER OF PERSON: " << puces_with_time.size() << endl << "\t";	
+	cout << "\tNUMBER OF PERSON (begining): " << puces_with_time.size() << endl << "\t";	
 	for( auto it=puces_with_time.begin(); it != puces_with_time.end(); ++it )
 		cout << it->first << " ";
 	cout << endl;
+	cout << "ALONE : " << only_one_person << endl;
 	cout << "\tNUMBER OF LABELS: " << label_activity.size() << endl << "\t";	
 	for(i=0; i < label_activity.size(); ++i)
 		cout << label_activity[i] << " ";
@@ -681,10 +717,11 @@ void Activity::pretreat_activity()
 
 void Activity::remove_only_5_6()
 {
-	unsigned last_index = 0;
+	unsigned last_index = 0, puce = 0;
 	
 	for(unsigned i=0; i < events.size(); i += 2)
 	{
+		/*
 		if(i+1 < events.size())
 		{
 
@@ -698,6 +735,16 @@ void Activity::remove_only_5_6()
 				last_index = i;
 				break;
 			}
+		}
+		*/
+		puce = events[i]->get_id_puce();
+		if(puce != 0)
+		{
+			if(static_cast<int>(i)-1 >= 0)
+				last_index = i-1;
+			else
+				last_index = i;
+			break;
 		}
 	}
 	
@@ -722,7 +769,7 @@ void Activity::cut_activity(vector<Activity*>& split_activity)
 			{
 				code_next = events[i+1]->get_event();
 				puce_next = events[i+1]->get_id_puce();
-				if(code_next == CODE_ALARM || puce_next == 0)
+				if(code_next == CODE_ALARM)
 				{
 					cumulative_events.push_back(new Event(events[i+1]));
 					++i;
@@ -922,7 +969,9 @@ void Activity::set_nb_persons(vector<Activity*>& split_activity)
 		split_activity[i]->set_start_time();
 		split_activity[i]->set_end_time();	
 		if(split_activity[i]->start_time == NULL || split_activity[i]->end_time == NULL)
+		{
 			continue;
+		}	
 		
 		for(unsigned j=0; j<split_activity.size(); ++j)
 		{
@@ -938,7 +987,9 @@ void Activity::set_nb_persons(vector<Activity*>& split_activity)
 			split_activity[j]->set_end_time();
 			
 			if(split_activity[j]->start_time == NULL || split_activity[j]->end_time == NULL)
+			{
 				continue;
+			}
 							
 			if( ( split_activity[i]->end_time->is_sup_or_eq(split_activity[j]->start_time) ) && 
 				( split_activity[i]->start_time->is_inf_or_eq(split_activity[j]->end_time) ) )
@@ -956,8 +1007,8 @@ void Activity::set_nb_persons(vector<Activity*>& split_activity)
 			split_activity[i]->only_one_person = true;
 			split_activity[i]->first_person = true;
 		}
-		
 	}
+
 }
 
 
@@ -1173,32 +1224,32 @@ bool Activity::finding_label_in(unsigned index_ending)
 
 		if(code_event == CODE_EXCEEDING_DOSE_NUMBER_SHA)
 		{
-			label_activity.push_back( ABANDON_INOUT );
-			message_abandon = "code 37";
+			label_activity.push_back( ABANDON_IN );
+			message_abandon_in = "code 37";
 			return false;
 		}
 		if(code_event == CODE_INSERTION_USB_KEY)
 		{
-			label_activity.push_back( ABANDON_INOUT );
-			message_abandon = "code 16";
+			label_activity.push_back( ABANDON_IN );
+			message_abandon_in = "code 16";
 			return false;
 		}
 		if(code_event == CODE_RESET_MACHINE)
 		{
-			label_activity.push_back( ABANDON_INOUT );
-			message_abandon = "code 15";
+			label_activity.push_back( ABANDON_IN );
+			message_abandon_in = "code 15";
 			return false;
 		}
 		if(code_event == CODE_INSERTION_BOTTLE_SHA)
 		{
-			label_activity.push_back( ABANDON_INOUT );
-			message_abandon = "code 3";
+			label_activity.push_back( ABANDON_IN );
+			message_abandon_in = "code 3";
 			return false;
 		}
 		if(code_event == CODE_REMOVE_BOTTLE_SHA)
 		{
-			label_activity.push_back( ABANDON_INOUT );
-			message_abandon = "code 4";
+			label_activity.push_back( ABANDON_IN );
+			message_abandon_in = "code 4";
 			return false;
 		}
 									
@@ -1226,11 +1277,12 @@ bool Activity::finding_label_in(unsigned index_ending)
 		}
 	}
 	
-	if(!has_5_or_6)
+	/*if(!has_5_or_6)
 	{
 		label_activity.push_back( ABANDON_IN );
+		message_abandon_in = "pas de 5 ou de 6";
 		return false;		
-	}
+	}*/
 	
 	if(only_one_person)
 		abandon_activity = false;
@@ -1238,7 +1290,7 @@ bool Activity::finding_label_in(unsigned index_ending)
 	if( abandon_activity )
 	{
 		label_activity.push_back( ABANDON_IN );
-		message_abandon = "SHA impossible à attribuer";
+		message_abandon_in = "SHA impossible a attribuer";
 		return false;
 	}
 	
@@ -1260,7 +1312,7 @@ bool Activity::finding_label_in(unsigned index_ending)
 		if(SHA_index_in < SHA_during_alarm_index_in)
 		{
 			label_activity.push_back( ABANDON_IN );
-			message_abandon = "SHA pris puis SHA pris pendant l'alarme";
+			message_abandon_in = "SHA pris puis SHA pris pendant l'alarme";
 			return false;
 		}
 		else
@@ -1279,7 +1331,7 @@ bool Activity::finding_label_in(unsigned index_ending)
 		else
 		{
 			label_activity.push_back( ABANDON_IN );
-			message_abandon = "SHA pris pendant l'alarme puis alarme";
+			message_abandon_in = "SHA pris pendant l'alarme puis alarme";
 			return false;
 		}
 	}
@@ -1297,14 +1349,14 @@ bool Activity::finding_label_in(unsigned index_ending)
 	else if( alarm_index_in != -1 && SHA_index_in != -1 && SHA_during_alarm_index_in != -1 )
 	{
 		label_activity.push_back( ABANDON_IN );
-		message_abandon = "alarme + SHA pris + SHA pris pendant l'alarme";
+		message_abandon_in = "alarme + SHA pris + SHA pris pendant l'alarme";
 		return false;
 	}
 	
 	else
 	{
 		label_activity.push_back( IMPOSSIBLE );
-		message_abandon = "cas impossible - bug algorithme";
+		message_abandon_in = "cas impossible - bug algorithme";
 		return false;
 	}
 		
@@ -1327,32 +1379,32 @@ bool Activity::finding_label_out(unsigned index_begining)
 			
 		if(code_event == CODE_EXCEEDING_DOSE_NUMBER_SHA)
 		{
-			label_activity.push_back( ABANDON_INOUT );
-			message_abandon = "code 37";
+			label_activity.push_back( ABANDON_OUT );
+			message_abandon_out = "code 37";
 			return false;
 		}
 		if(code_event == CODE_INSERTION_USB_KEY)
 		{
-			label_activity.push_back( ABANDON_INOUT );
-			message_abandon = "code 16";
+			label_activity.push_back( ABANDON_OUT );
+			message_abandon_out = "code 16";
 			return false;
 		}
 		if(code_event == CODE_RESET_MACHINE)
 		{
-			label_activity.push_back( ABANDON_INOUT );
-			message_abandon = "code 15";
+			label_activity.push_back( ABANDON_OUT );
+			message_abandon_out = "code 15";
 			return false;
 		}
 		if(code_event == CODE_INSERTION_BOTTLE_SHA)
 		{
-			label_activity.push_back( ABANDON_INOUT );
-			message_abandon = "code 3";
+			label_activity.push_back( ABANDON_OUT );
+			message_abandon_out = "code 3";
 			return false;
 		}
 		if(code_event == CODE_REMOVE_BOTTLE_SHA)
 		{
-			label_activity.push_back( ABANDON_INOUT );
-			message_abandon = "code 4";
+			label_activity.push_back( ABANDON_OUT );
+			message_abandon_out = "code 4";
 			return false;
 		}
 					
@@ -1380,11 +1432,12 @@ bool Activity::finding_label_out(unsigned index_begining)
 		}
 	}
 	
-	if(!has_5_or_6)
+	/*if(!has_5_or_6)
 	{
 		label_activity.push_back( ABANDON_OUT );
+		message_abandon_out = "pas de 5 ou de 6";
 		return false;		
-	}
+	}*/
 	
 	if(only_one_person)
 		abandon_activity = false;
@@ -1392,7 +1445,7 @@ bool Activity::finding_label_out(unsigned index_begining)
 	if( abandon_activity )
 	{
 		label_activity.push_back( ABANDON_OUT );
-		message_abandon = "SHA impossible à attribuer";
+		message_abandon_out = "SHA impossible a attribuer";
 		return false;
 	}
 	
@@ -1414,7 +1467,7 @@ bool Activity::finding_label_out(unsigned index_begining)
 		if(SHA_index_out < SHA_during_alarm_index_out)
 		{
 			label_activity.push_back( ABANDON_OUT );
-			message_abandon = "SHA pris puis SHA pris pendant l'alarme";
+			message_abandon_out = "SHA pris puis SHA pris pendant l'alarme";
 			return false;
 		}
 		else
@@ -1433,7 +1486,7 @@ bool Activity::finding_label_out(unsigned index_begining)
 		else
 		{
 			label_activity.push_back( ABANDON_OUT );
-			message_abandon = "SHA pris pendant l'alarme puis alarme";
+			message_abandon_out = "SHA pris pendant l'alarme puis alarme";
 			return false;
 		}
 	}
@@ -1451,14 +1504,14 @@ bool Activity::finding_label_out(unsigned index_begining)
 	else if( alarm_index_out != -1 && SHA_index_out != -1 && SHA_during_alarm_index_out != -1 )
 	{
 		label_activity.push_back( ABANDON_OUT );
-		message_abandon = "alarme + SHA pris + SHA pris pendant l'alarme";
+		message_abandon_out = "alarme + SHA pris + SHA pris pendant l'alarme";
 		return false;
 	}
 	
 	else
 	{
 		label_activity.push_back( IMPOSSIBLE );
-		message_abandon = "cas impossible - bug algorithme";
+		message_abandon_out = "cas impossible - bug algorithme";
 		return false;
 	}
 		
@@ -1483,31 +1536,31 @@ bool Activity::finding_label_inout()
 		if(code_event == CODE_EXCEEDING_DOSE_NUMBER_SHA)
 		{
 			label_activity.push_back( ABANDON_INOUT );
-			message_abandon = "code 37";
+			message_abandon_inout = "code 37";
 			return false;
 		}
 		if(code_event == CODE_INSERTION_USB_KEY)
 		{
 			label_activity.push_back( ABANDON_INOUT );
-			message_abandon = "code 16";
+			message_abandon_inout = "code 16";
 			return false;
 		}
 		if(code_event == CODE_RESET_MACHINE)
 		{
 			label_activity.push_back( ABANDON_INOUT );
-			message_abandon = "code 15";
+			message_abandon_inout = "code 15";
 			return false;
 		}
 		if(code_event == CODE_INSERTION_BOTTLE_SHA)
 		{
 			label_activity.push_back( ABANDON_INOUT );
-			message_abandon = "code 3";
+			message_abandon_inout = "code 3";
 			return false;
 		}
 		if(code_event == CODE_REMOVE_BOTTLE_SHA)
 		{
 			label_activity.push_back( ABANDON_INOUT );
-			message_abandon = "code 4";
+			message_abandon_inout = "code 4";
 			return false;
 		}
 							
@@ -1535,12 +1588,12 @@ bool Activity::finding_label_inout()
 		}
 	}
 	
-	if(!has_5_or_6)
+	/*if(!has_5_or_6)
 	{
 		label_activity.push_back( ABANDON_INOUT );
-		message_abandon = "pas de 5 ou de 6";
+		message_abandon_inout = "pas de 5 ou de 6";
 		return false;
-	}
+	}*/
 	
 	if(only_one_person)
 		abandon_activity = false;
@@ -1548,7 +1601,7 @@ bool Activity::finding_label_inout()
 	if( abandon_activity )
 	{
 		label_activity.push_back( ABANDON_INOUT );
-		message_abandon = "SHA impossible à attribuer";
+		message_abandon_inout = "SHA impossible a attribuer";
 		return false;
 	}
 
@@ -1570,7 +1623,7 @@ bool Activity::finding_label_inout()
 		if(SHA_index_inout < SHA_during_alarm_index_inout)
 		{
 			label_activity.push_back( ABANDON_INOUT );
-			message_abandon = "SHA pris puis SHA pris pendant l'alarme";
+			message_abandon_inout = "SHA pris puis SHA pris pendant l'alarme";
 			return false;
 		}
 		else
@@ -1589,7 +1642,7 @@ bool Activity::finding_label_inout()
 		else
 		{
 			label_activity.push_back( ABANDON_INOUT );
-			message_abandon = "SHA pris pendant l'alarme puis alarme";
+			message_abandon_inout = "SHA pris pendant l'alarme puis alarme";
 			return false;
 		}
 	}
@@ -1607,14 +1660,14 @@ bool Activity::finding_label_inout()
 	else if( alarm_index_inout != -1 && SHA_index_inout != -1 && SHA_during_alarm_index_inout != -1 )
 	{
 		label_activity.push_back( ABANDON_INOUT );
-		message_abandon = "alarme + SHA pris + SHA pris pendant l'alarme";
+		message_abandon_inout = "alarme + SHA pris + SHA pris pendant l'alarme";
 		return false;
 	}
 	
 	else
 	{
 		label_activity.push_back( IMPOSSIBLE );
-		message_abandon = "cas impossible - bug algorithme";
+		message_abandon_inout = "cas impossible - bug algorithme";
 		return false;
 	}
 		
