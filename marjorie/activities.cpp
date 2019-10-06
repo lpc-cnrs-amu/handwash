@@ -65,9 +65,6 @@ string label_to_str(Label label)
 		case ABANDON_INOUT:
 			return "ABANDON_INOUT";
 			break;
-		case ABANDON:
-			return "ABANDON";
-			break;
 		case IMPOSSIBLE:
 			return "IMPOSSIBLE";
 			break;
@@ -131,7 +128,7 @@ Activities::Activities(char* filename, bool excel_csv)
 			activity_tmp->activity_per_person(split_activity); 
 			
 			if(split_activity.size()==0)
-				cout << "ERROR" << endl;
+				cout << "ERROR activities line 131" << endl;
 			else
 			{
 				for(unsigned nb_activities=0; nb_activities < split_activity.size(); ++nb_activities)
@@ -149,7 +146,7 @@ Activities::Activities(char* filename, bool excel_csv)
 
 	activity_tmp->activity_per_person(split_activity);
 	if(split_activity.size()==0)
-		cout << "ERROR" << endl;
+		cout << "ERROR activities line 149" << endl;
 	else
 	{
 		for(unsigned nb_activities=0; nb_activities < split_activity.size(); ++nb_activities)
@@ -183,10 +180,7 @@ void Activities::relabel_activities_entremelee()
 }
 
 void Activities::relabel_act(Activity* act_1, Activity* act_2)
-{
-	Label label = ABANDON;
-	/*if(act_1->get_person() == 530 && act_1->get_chamber() == 10 && act_1->get_start_time_date()=="2018-01-06" && act_1->get_start_time_time()=="19:23:42.000")
-		act_1->print_activity();*/	
+{	
 	if(act_2->is_end_time_inf(act_1) || act_2->is_start_time_inf_end_time(act_1))
 	{
 		if(act_1->get_is_inout() || act_1->is_abandon_inout())
@@ -194,6 +188,8 @@ void Activities::relabel_act(Activity* act_1, Activity* act_2)
 			act_1->set_message_abandon_inout("activite entremelee");
 			act_1->set_is_inout(false);
 			act_1->set_is_abandon_inout(true);
+			act_1->clear_label();
+			act_1->set_label(ABANDON_INOUT);
 		}
 			
 		else if( (act_1->get_is_in() || act_1->is_abandon_in()) && (act_1->get_is_out() || act_1->is_abandon_out()))
@@ -204,19 +200,18 @@ void Activities::relabel_act(Activity* act_1, Activity* act_2)
 			act_1->set_is_abandon_in(true);
 			act_1->set_is_out(false);
 			act_1->set_is_abandon_out(true);
+			act_1->clear_label();
+			act_1->set_label(ABANDON_IN);
+			act_1->set_label(ABANDON_OUT);
 		}
 		
 		else
 		{
 			cout << "\t !!! IMPOSSIBLE !!! " << endl;
 			act_1->print_activity();
-			label = IMPOSSIBLE;
+			act_1->clear_label();
+			act_1->set_label(IMPOSSIBLE);
 		}
-			
-		act_1->clear_label();
-		act_1->set_label(label);
-		if(act_1->get_person() == 530 && act_1->get_chamber() == 10 && act_1->get_start_time_date()=="2018-01-06" && act_1->get_start_time_time()=="19:23:42.000")
-			cout << act_1->get_message_abandon_in() << " " << act_1->get_message_abandon_out() << endl;
 	}
 }
 
@@ -318,7 +313,7 @@ void Activities::write_row(ofstream& output, unsigned num_activity,
 		   << '"' << puce << '"' << sep
 		   << '"' << chamber << '"' << sep
 		   << '"' << activity_id << '"' << sep;	
-		
+
 	// inout
 	if(in_out_inout==0)
 	{
@@ -330,6 +325,7 @@ void Activities::write_row(ofstream& output, unsigned num_activity,
 			   << '"' << static_cast<int>(activities[num_activity]->get_alarm_index_inout() != -1) << '"' << sep 
 			   << '"' << static_cast<int>(activities[num_activity]->get_SHA_index_inout() != -1) << '"' << sep
 			   << '"' << static_cast<int>(activities[num_activity]->get_SHA_during_alarm_index_inout() != -1) << '"' << sep
+			   << '"' << static_cast<int>(activities[num_activity]->is_SHA_30_sec_inout__in()) << '"' << sep
 			   << '"' << label_to_str(activities[num_activity]->get_label_inout()) 
 			   << '"' << endl;
 	}
@@ -343,7 +339,8 @@ void Activities::write_row(ofstream& output, unsigned num_activity,
 			   << '"' << activities[num_activity]->get_duration(1) << '"' << sep
 			   << '"' << static_cast<int>(activities[num_activity]->get_alarm_index_in() != -1) << '"' << sep 
 			   << '"' << static_cast<int>(activities[num_activity]->get_SHA_index_in() != -1) << '"' << sep
-			   << '"' << static_cast<int>(activities[num_activity]->get_SHA_during_alarm_index_in() != -1) << '"' << sep  
+			   << '"' << static_cast<int>(activities[num_activity]->get_SHA_during_alarm_index_in() != -1) << '"' << sep
+			   << '"' << static_cast<int>(activities[num_activity]->is_SHA_30_sec_in()) << '"' << sep
 			   << '"' << label_to_str(activities[num_activity]->get_label_in()) 
 			   << '"' << endl;
 	}
@@ -358,6 +355,7 @@ void Activities::write_row(ofstream& output, unsigned num_activity,
 			   << '"' << static_cast<int>(activities[num_activity]->get_alarm_index_out() != -1) << '"' << sep
 			   << '"' << static_cast<int>(activities[num_activity]->get_SHA_index_out() != -1) << '"' << sep
 			   << '"' << static_cast<int>(activities[num_activity]->get_SHA_during_alarm_index_out() != -1) << '"' << sep
+			   << '"' << static_cast<int>(activities[num_activity]->is_SHA_30_sec_out()) << '"' << sep
 			   << '"' << label_to_str(activities[num_activity]->get_label_out()) 
 			   << '"' << endl;
 	}

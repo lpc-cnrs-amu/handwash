@@ -27,13 +27,18 @@ class Person
 		unsigned nb_activities_inout = 0;
 		unsigned nb_activities_in = 0;
 		unsigned nb_activities_out = 0;
+		unsigned nb_SHA_30_sec_inout = 0;
+		unsigned nb_SHA_30_sec_in = 0;
+		unsigned nb_SHA_30_sec_out = 0;
 		float SHA_in_percent =  0;
 		float SHA_not_taken_in_percent = 0;
 		float SHA_out_percent = 0;
 		float SHA_not_taken_out_percent = 0;
 		float SHA_inout_percent = 0;
 		float SHA_not_taken_inout_percent = 0;
-		
+		float percent_SHA_30_sec_inout = 0;
+		float percent_SHA_30_sec_in = 0;
+		float percent_SHA_30_sec_out = 0;		
 		
 		
 		
@@ -56,6 +61,9 @@ class Person
 		void incr_nb_activity_inout();
 		void incr_nb_activity_in();
 		void incr_nb_activity_out();
+		void incr_nb_SHA_30_sec_inout();
+		void incr_nb_SHA_30_sec_in();
+		void incr_nb_SHA_30_sec_out();
 
 		unsigned get_nb_activity_inout_total();
 		unsigned get_nb_activity_in_total();

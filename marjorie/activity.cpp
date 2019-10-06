@@ -263,8 +263,7 @@ Label Activity::get_label_in()
 			label_activity[i] == IN_DURING_ALARM || 
 			label_activity[i] == NOT_IN_NO_ALARM || 
 			label_activity[i] == NOT_IN_ALARM || 
-			label_activity[i] == ABANDON_IN ||
-			label_activity[i] == ABANDON)
+			label_activity[i] == ABANDON_IN)
 			return label_activity[i];
 	}
 	return IMPOSSIBLE;
@@ -279,8 +278,7 @@ Label Activity::get_label_out()
 			label_activity[i] == OUT_DURING_ALARM || 
 			label_activity[i] == NOT_OUT_NO_ALARM || 
 			label_activity[i] == NOT_OUT_ALARM || 
-			label_activity[i] == ABANDON_OUT ||
-			label_activity[i] == ABANDON)
+			label_activity[i] == ABANDON_OUT)
 			return label_activity[i];
 	}
 	return IMPOSSIBLE;
@@ -295,8 +293,7 @@ Label Activity::get_label_inout()
 			label_activity[i] == INOUT_DURING_ALARM || 
 			label_activity[i] == NOT_INOUT_NO_ALARM || 
 			label_activity[i] == NOT_INOUT_ALARM || 
-			label_activity[i] == ABANDON_INOUT ||
-			label_activity[i] == ABANDON)
+			label_activity[i] == ABANDON_INOUT)
 			return label_activity[i];
 	}
 	return IMPOSSIBLE;
@@ -925,7 +922,7 @@ void Activity::split_activities(vector<Activity*>& split_activity,int first_pers
 			{
 				split_activity[split_activity.size()-1]->cut_activity(tmp_cut_activity);
 				if(tmp_cut_activity.size()==0)
-					cout << "ERROR" << endl;
+					cout << "ERROR line 925" << endl;
 				else
 				{
 					for(unsigned i=0; i<tmp_cut_activity.size(); ++i)
@@ -1040,7 +1037,7 @@ void Activity::activity_per_person(vector<Activity*>& split_activity)
 			cut_activity(split_activity);
 			
 			if(split_activity.size()==0)
-				cout << "ERROR" << endl;
+				cout << "ERROR line 1040" << endl;
 			else
 			{
 				for(unsigned i=0; i<split_activity.size(); ++i)
@@ -1061,7 +1058,7 @@ void Activity::activity_per_person(vector<Activity*>& split_activity)
 					pretreat_activity();
 					cut_activity(split_activity);
 					if(split_activity.size()==0)
-						cout << "ERROR" << endl;
+						cout << "ERROR line 1061" << endl;
 					else
 					{
 						for(unsigned i=0; i<split_activity.size(); ++i)
@@ -1106,7 +1103,82 @@ bool Activity::is_correct()
 	
 }
 
-
+bool Activity::is_SHA_30_sec_in()
+{
+	unsigned sha_index = 0;
+	if(SHA_index_in != -1 && SHA_during_alarm_index_in != -1)
+	{
+		if(SHA_index_in < SHA_during_alarm_index_in)
+			sha_index = SHA_index_in;
+		else
+			sha_index = SHA_during_alarm_index_in;
+	}
+	else if(SHA_during_alarm_index_in != -1 )
+		sha_index = SHA_during_alarm_index_in;
+	else if(SHA_index_in != -1)
+		sha_index = SHA_index_in;
+	else
+		return false;
+		
+	return events[sha_index]->ecart_time(start_time) <= 30;
+}
+bool Activity::is_SHA_30_sec_out()
+{
+	unsigned sha_index = 0;
+	if(SHA_index_out != -1 && SHA_during_alarm_index_out != -1)
+	{
+		if(SHA_index_out < SHA_during_alarm_index_out)
+			sha_index = SHA_index_out;
+		else
+			sha_index = SHA_during_alarm_index_out;
+	}
+	else if(SHA_during_alarm_index_out != -1 )
+		sha_index = SHA_during_alarm_index_out;
+	else if(SHA_index_out != -1)
+		sha_index = SHA_index_out;
+	else
+		return false;
+		
+	return end_time->ecart_time(events[sha_index]->get_time_object()) <= 30;
+}
+bool Activity::is_SHA_30_sec_inout__in()
+{
+	unsigned sha_index = 0;
+	if(SHA_index_inout != -1 && SHA_during_alarm_index_inout != -1)
+	{
+		if(SHA_index_inout < SHA_during_alarm_index_inout)
+			sha_index = SHA_index_inout;
+		else
+			sha_index = SHA_during_alarm_index_inout;
+	}
+	else if(SHA_during_alarm_index_inout != -1 )
+		sha_index = SHA_during_alarm_index_inout;
+	else if(SHA_index_inout != -1)
+		sha_index = SHA_index_inout;
+	else
+		return false;
+		
+	return events[sha_index]->ecart_time(start_time) <= 30;
+}
+bool Activity::is_SHA_30_sec_inout__out()
+{
+	unsigned sha_index = 0;
+	if(SHA_index_inout != -1 && SHA_during_alarm_index_inout != -1)
+	{
+		if(SHA_index_inout < SHA_during_alarm_index_inout)
+			sha_index = SHA_index_inout;
+		else
+			sha_index = SHA_during_alarm_index_inout;
+	}
+	else if(SHA_during_alarm_index_inout != -1 )
+		sha_index = SHA_during_alarm_index_inout;
+	else if(SHA_index_inout != -1)
+		sha_index = SHA_index_inout;
+	else
+		return false;
+		
+	return end_time->ecart_time(events[sha_index]->get_time_object()) <= 30;
+}
 
 	/* Finding labels */
 	
@@ -1272,7 +1344,6 @@ bool Activity::finding_label_in(unsigned index_ending)
 					abandon_activity = true;
 				else
 					abandon_activity = false;
-					
 			}
 		}
 	}

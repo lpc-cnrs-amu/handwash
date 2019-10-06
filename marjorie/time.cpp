@@ -107,6 +107,7 @@ int Time::ecart_time(Time* prec)
 	return difftime(mktime ( &actual_timeinfo ), mktime ( &prec_timeinfo ));
 }
 
+
 bool Time::is_sup_or_eq(Time* event_bis)
 {
 	if(year > event_bis->year)

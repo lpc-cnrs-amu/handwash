@@ -63,6 +63,7 @@ class Event
 		void print_event(std::ofstream& output);
 		unsigned last_day_month();
 		int ecart_time(Event* prec);
+		int ecart_time(Time* prec);
 		
 		void set_in(bool in_or_out);
 	

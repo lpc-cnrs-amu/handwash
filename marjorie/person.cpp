@@ -129,6 +129,9 @@ void Person::incr_label(Label label)
 void Person::incr_nb_activity_inout() 	{ ++ nb_activities_inout; }
 void Person::incr_nb_activity_in() 		{ ++ nb_activities_in; 	  }
 void Person::incr_nb_activity_out() 	{ ++ nb_activities_out;   }
+void Person::incr_nb_SHA_30_sec_inout() { ++ nb_SHA_30_sec_inout; }
+void Person::incr_nb_SHA_30_sec_in() 	{ ++ nb_SHA_30_sec_in;	  }
+void Person::incr_nb_SHA_30_sec_out()	{ ++ nb_SHA_30_sec_out;   }
 
 unsigned Person::get_nb_activity_inout_total()  { return nb_activities_inout;   }
 unsigned Person::get_nb_activity_in_total() 	{ return nb_activities_in; 		}
@@ -145,6 +148,7 @@ void Person::calcul_percent()
 		percent_each_labels[IN_DURING_ALARM] = 100 * nb_each_labels[IN_DURING_ALARM] / (float)nb_activities_in;
 		percent_each_labels[NOT_IN_NO_ALARM] = 100 * nb_each_labels[NOT_IN_NO_ALARM] / (float)nb_activities_in;
 		percent_each_labels[NOT_IN_ALARM] = 100 * nb_each_labels[NOT_IN_ALARM] / (float)nb_activities_in;
+		percent_SHA_30_sec_in = 100 * nb_SHA_30_sec_in / (float)nb_activities_in;
 	}
 	
 	// out
@@ -155,6 +159,7 @@ void Person::calcul_percent()
 		percent_each_labels[OUT_DURING_ALARM] = 100 * nb_each_labels[OUT_DURING_ALARM] / (float)nb_activities_out;
 		percent_each_labels[NOT_OUT_NO_ALARM] = 100 * nb_each_labels[NOT_OUT_NO_ALARM] / (float)nb_activities_out;
 		percent_each_labels[NOT_OUT_ALARM] = 100 * nb_each_labels[NOT_OUT_ALARM] / (float)nb_activities_out;
+		percent_SHA_30_sec_out = 100 * nb_SHA_30_sec_out / (float)nb_activities_out;
 	}
 	
 	// inout
@@ -165,15 +170,16 @@ void Person::calcul_percent()
 		percent_each_labels[INOUT_DURING_ALARM] = 100 * nb_each_labels[INOUT_DURING_ALARM] / (float)nb_activities_inout;
 		percent_each_labels[NOT_INOUT_NO_ALARM] = 100 * nb_each_labels[NOT_INOUT_NO_ALARM] / (float)nb_activities_inout;
 		percent_each_labels[NOT_INOUT_ALARM] = 100 * nb_each_labels[NOT_INOUT_ALARM] / (float)nb_activities_inout;
+		percent_SHA_30_sec_inout = 100 * nb_SHA_30_sec_inout / (float)nb_activities_inout;
 	}
 	
 	// abandon de l'activité
 	unsigned nb_total_abandon = get_nb_total_abandon();
 	if( nb_total_abandon != 0 )
 	{
-		percent_each_labels[ABANDON_IN] = 100 * nb_each_labels[ABANDON_IN] / (float)nb_total_abandon;
-		percent_each_labels[ABANDON_OUT] = 100 * nb_each_labels[ABANDON_OUT] / (float)nb_total_abandon;
-		percent_each_labels[ABANDON_INOUT] = 100 * nb_each_labels[ABANDON_INOUT] / (float)nb_total_abandon;
+		percent_each_labels[ABANDON_IN] = 100 * nb_each_labels[ABANDON_IN] / (float)(nb_total_abandon+nb_activities_in);
+		percent_each_labels[ABANDON_OUT] = 100 * nb_each_labels[ABANDON_OUT] / (float)(nb_total_abandon+nb_activities_out);
+		percent_each_labels[ABANDON_INOUT] = 100 * nb_each_labels[ABANDON_INOUT] / (float)(nb_total_abandon+nb_activities_inout);
 	}
 	
 	// cas généraux
@@ -261,7 +267,14 @@ void Person::print_person(unsigned id)
 		<< "\""<< nb_each_labels[ABANDON_OUT] <<"\";"
 		<< "\"" << std::fixed << std::setprecision(2) << percent_each_labels[ABANDON_INOUT] << "\";"
 		<< "\""<< nb_each_labels[ABANDON_INOUT] <<"\";"
-		
+
+		<< "\"" << std::fixed << std::setprecision(2) << percent_SHA_30_sec_in << "\";"
+		<< "\""<< nb_SHA_30_sec_in <<"\";"	
+		<< "\"" << std::fixed << std::setprecision(2) << percent_SHA_30_sec_out << "\";"
+		<< "\""<< nb_SHA_30_sec_out <<"\";"
+		<< "\"" << std::fixed << std::setprecision(2) << percent_SHA_30_sec_inout << "\";"
+		<< "\""<< nb_SHA_30_sec_inout <<"\";"
+				
 		<< "\"" << std::fixed << std::setprecision(2) << percent_each_labels[IMPOSSIBLE] << "\";"
 		<< "\""<< nb_each_labels[IMPOSSIBLE] <<"\";"
 		
@@ -329,6 +342,14 @@ void Person::write_person(unsigned id, ofstream& output)
 		<< "\""<< nb_each_labels[ABANDON_OUT] <<"\";"
 		<< "\"" << std::fixed << std::setprecision(2) << percent_each_labels[ABANDON_INOUT] << "\";"
 		<< "\""<< nb_each_labels[ABANDON_INOUT] <<"\";"
+		
+		<< "\"" << std::fixed << std::setprecision(2) << percent_SHA_30_sec_in << "\";"
+		<< "\""<< nb_SHA_30_sec_in <<"\";"	
+		<< "\"" << std::fixed << std::setprecision(2) << percent_SHA_30_sec_out << "\";"
+		<< "\""<< nb_SHA_30_sec_out <<"\";"
+		<< "\"" << std::fixed << std::setprecision(2) << percent_SHA_30_sec_inout << "\";"
+		<< "\""<< nb_SHA_30_sec_inout <<"\";"
+		
 		
 		<< "\"" << std::fixed << std::setprecision(2) << percent_each_labels[IMPOSSIBLE] << "\";"
 		<< "\""<< nb_each_labels[IMPOSSIBLE] << "\""

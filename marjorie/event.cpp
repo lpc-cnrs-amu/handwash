@@ -81,6 +81,10 @@ int Event::ecart_time(Event* prec)
 {
 	return time_->ecart_time(prec->time_);
 }
+int Event::ecart_time(Time* prec)
+{
+	return time_->ecart_time(prec);
+}
 
 /** renvoie l'écart de temps en secondes entre l'event appelé et son precedent*/
 /*

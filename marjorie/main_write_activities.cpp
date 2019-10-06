@@ -18,9 +18,9 @@ int main(int argc, char** argv)
 	if( !strcmp(argv[2],"1") )
 		excel = true;
 		
-	vector<string> headers {"unique ID", "puce ID", "chamber ID", "activity ID",
-		"abandon", "statut", "start time", "end time", "duration",
-		"alarm", "SHA", "SHA during alarm", "label"};
+	vector<string> headers {"unique ID", "puce ID", "room ID", "activity ID",
+		"abort", "statut", "start time", "end time", "duration",
+		"alarm", "SHA", "SHA during alarm", "SHA within 30 sec", "label"};
 		
 	auto start = high_resolution_clock::now();
 	

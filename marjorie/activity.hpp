@@ -39,9 +39,8 @@ enum Label
 	/** 16 */ ABANDON_OUT,
 	/** 17 */ ABANDON_INOUT,
 	
-	/** 18 */ ABANDON,
 	// cas impossible
-	/** 19 */ IMPOSSIBLE
+	/** 18 */ IMPOSSIBLE
 };
 
 
@@ -200,6 +199,12 @@ class Activity
 		void set_is_abandon_out(bool set);
 		void set_is_inout(bool set);
 		void set_is_abandon_inout(bool set);
+		
+
+		bool is_SHA_30_sec_in();
+		bool is_SHA_30_sec_out();
+		bool is_SHA_30_sec_inout__in();
+		bool is_SHA_30_sec_inout__out();
 };
 	
 

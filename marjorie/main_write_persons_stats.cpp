@@ -27,14 +27,24 @@ void update_persons_stats(Activity* activity_tmp, map<int, Person*>& person_stat
 	if( activity_tmp->get_is_inout() )
 	{
 		person_stats[ p ]->incr_nb_activity_inout();
+		if(activity_tmp->is_SHA_30_sec_inout__in())
+			person_stats[ p ]->incr_nb_SHA_30_sec_inout();
 	}
 	else
 	{
 		if( activity_tmp->get_is_in() )
+		{
 			person_stats[ p ]->incr_nb_activity_in();
+			if(activity_tmp->is_SHA_30_sec_in())
+				person_stats[ p ]->incr_nb_SHA_30_sec_in();
+		}
 		
 		if( activity_tmp->get_is_out() )
-			person_stats[ p ]->incr_nb_activity_out();		
+		{
+			person_stats[ p ]->incr_nb_activity_out();
+			if(activity_tmp->is_SHA_30_sec_out())
+				person_stats[ p ]->incr_nb_SHA_30_sec_out();
+		}	
 	}
 	
 	
@@ -48,68 +58,6 @@ void update_persons_stats(Activity* activity_tmp, map<int, Person*>& person_stat
 */
 void get_persons_stats(char* filename, bool excel_csv, map<int, Person*>& person_stats)
 {
-	/*
-	ifstream database(filename, ios::in);
-	if(!database)
-	{ 
-		cerr << "Impossible to open the file " << filename << endl;
-		exit(EXIT_FAILURE);
-	}
-	
-	string line;
-	int append_activity = true;
-	vector<Activity*> split_activity;
-	Activity* activity_tmp = new Activity();
-	unsigned cpt_line = 0;
-	
-	while(std::getline(database, line))
-	{
-		++cpt_line;
-		if(cpt_line==1)
-			continue;
-		
-		// add to the current activity if the event is in the current activity
-		append_activity = activity_tmp->check_and_append_event_to_activity( new Event(line, excel_csv) );
-		
-		// ignore the event
-		if(append_activity == -1)
-			continue;
-		
-		// the current event is in another activity
-		if(append_activity == 0)
-		{
-			activity_tmp->activity_per_person(split_activity);
-			
-			if(split_activity.size()==0)
-				cout << "error" << endl;
-			else
-			{
-				for(unsigned nb_activities=0; nb_activities < split_activity.size(); ++nb_activities)
-					if(split_activity[nb_activities]->is_correct())
-						update_persons_stats(split_activity[nb_activities], person_stats, split_activity[nb_activities]->get_person());
-			}
-			
-			activity_tmp->~Activity();
-			activity_tmp = new Activity( new Event(line, excel_csv) );
-		}
-	}
-
-	activity_tmp->activity_per_person(split_activity);
-	
-	// sur (1 personne dans l'activité)
-	if(split_activity.size()==0)
-		cout << "error" << endl;
-	else
-	{
-		for(unsigned nb_activities=0; nb_activities < split_activity.size(); ++nb_activities)
-			if(split_activity[nb_activities]->is_correct())
-				update_persons_stats(split_activity[nb_activities], person_stats, split_activity[nb_activities]->get_person());
-	}
-	
-	activity_tmp->~Activity();
-
-	database.close();
-	*/
 	Activities act(filename, excel_csv);
 	cout << "All activities OK !" << endl;
 	unsigned nb_activities = act.get_nb_activities();
@@ -189,6 +137,13 @@ void write_file(map<int, Person*>& person_stats, char* filename)
 		<< "\"ABANDON_OUT number\";"
 		<< "\"ABANDON_INOUT percent\";"
 		<< "\"ABANDON_INOUT number\";"
+		
+		<< "\"SHA in 30 sec percent\";" 
+		<< "\"SHA in 30 sec number\";"
+		<< "\"SHA out 30 sec percent\";"
+		<< "\"SHA out 30 sec number\";"
+		<< "\"SHA inout 30 sec percent\";"
+		<< "\"SHA inout 30 sec number\";"
 		
 		<< "\"IMPOSSIBLE percent\";"
 		<< "\"IMPOSSIBLE number\";"
