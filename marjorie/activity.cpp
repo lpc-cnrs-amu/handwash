@@ -1226,7 +1226,7 @@ unsigned Activity::finding_in_out_inout()
 	unsigned start = set_start_time();
 	unsigned end = set_end_time();
 	
-	for(unsigned i=start; i < end; ++i)
+	for(unsigned i=start; i <= end; ++i)
 	{	
 		if( i > start )
 		{
