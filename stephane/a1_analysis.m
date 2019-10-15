@@ -89,14 +89,14 @@ subplot(1,2,1);
 bar([t1(ind_in,2), t2(ind_in,2)]);
 xlabel('Room');
 ylabel('Count');
-title('Nb evenements 2018');
+title('Nb event 2018');
 legend({'MHT'; 'Activity'})
 
 subplot(1,2,2);
 bar([t1(ind_in,3), t2(ind_in,3)]);
 xlabel('Room');
 ylabel('Percent');
-title('% evenements 2018')
+title('% event 2018')
 legend({'MHT'; 'Activity'})
 
 
@@ -124,7 +124,8 @@ title('Correspondance per person');
 subplot(1,2,2);
 plot(xtab(ind_in,3), ytab(ind_in,3), 'b*');
 hold on;
-plot([min(xtab(ind_in,3)) max(xtab(ind_in,3))], [min(ytab(ind_in,3)) max(ytab(ind_in,3))])
+%plot([min(xtab(ind_in,3)) max(xtab(ind_in,3))], [min(ytab(ind_in,3)) max(ytab(ind_in,3))])
+plot([0 8], [0 8]);
 xlabel('% event');
 ylabel('% activity');
 title(['Correspondance per person, R=' num2str(R(1,2), 4)]);
@@ -148,11 +149,11 @@ ylabel('Count');
 
 
 % question: y'a t il des comportement qui ne sont pas conanoique et sont
-% plus exclu que d'autre? --> representativité de l'echantillon
+% plus exclu que d'autre? --> representativitï¿½ de l'echantillon
 % analyse des abandons par personne, par piece dans activites
 
 % pourcentage d'abandon par personne
-t = activities2018(:,{'puceID', 'abort','statut'});
+t = activities2018(:,{'puceID', 'abort','statut','starttime', 'endtime','activityID', 'SHA', 'SHAwithin30sec'});
 
 t = t(~contains(string(t.statut), 'inout'),:); % take only IN and OUT (not INOUT)
 t = t(ismember(t.puceID, ID200), :); % take only ID with more than 200 activity
@@ -201,9 +202,9 @@ title('Valid activities');
 
 
 % question: un out est-il vraiment un out?
-% --> pourcentage d'activité taguée IN et OUT, mais entrecoupé d'une
-% présence dans une autre pièce.
-% deja codé dans raison d'abandon (activite entremelee)
+% --> pourcentage d'activitï¿½ taguï¿½e IN et OUT, mais entrecoupï¿½ d'une
+% prï¿½sence dans une autre piï¿½ce.
+% deja codï¿½ dans raison d'abandon (activite entremelee)
 t.entrem = double(t.abort == "activite entremelee");
 entrem_per_person = grpstats(t, {'puceID'}, 'mean', 'DataVars',{'entrem'})
 
@@ -220,27 +221,51 @@ title('Interlock activities');
 
 
 
-% histogramme des durée + regarder les gigantesque a quoi elles
+% histogramme des durï¿½e + regarder les gigantesque a quoi elles
 % correspondent
 
-d = activities2018.duration;
-% TODO : make the total durtion of IN + OUT
+t_in = t(t.statut == "in",:);
+t_out = t(t.statut == "out",:);
+ind_out = t_in.abort ~= "valide" | t_out.abort ~= "valide";
+t_in(ind_out,:) = [];
+t_out(ind_out,:) = [];
+isequal(t_in.activityID , t_out.activityID)
+
+t_in.duration = t_out.endtime - t_in.starttime;
+
+
+figure;
+subplot(1,2,1);
+histogram(t_in.duration);
+xlabel('Duration in HMS');
+title('Duree activite IN + OUT');
+subplot(1,2,2);
+histogram(seconds(t_in.duration(seconds(t_in.duration) < 200 )))
+xlabel('Duration in seconds');
 
 % verifier les 2 types de soins (cour: infirmier), long aide-soignat:
-% analyse des durée par tag
+% analyse des durï¿½e par tag
 
 
-
-
-
+figure;
+boxplot(seconds(t_in.duration), t_in.puceID, 'PlotStyle', 'compact')
+title('Boxplot duree par personne');
+xlabel('in seconds');
 
 %% FIGURES FOR SCIENCE
 
+mIN_SHA = grpstats(t_in, {'puceID'}, 'mean', 'DataVars', {'SHA'});
+mOUT_SHA = grpstats(t_out, {'puceID'}, 'mean', 'DataVars', {'SHA'});
 
+isequal(mIN_SHA.puceID, mOUT_SHA.puceID )
 
-
-
-
+figure;
+plot(mIN_SHA.mean_SHA, mOUT_SHA.mean_SHA, 'r*');
+hold on;
+plot([0 1], [0 1]);
+xlabel('% SHA IN');
+ylabel('% SHA OUT');
+title(['SHA IN Vs. SHA OUT']);
 
 
 
