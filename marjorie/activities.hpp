@@ -37,7 +37,6 @@ class Activities
 		unsigned get_nb_activities();
 		int get_person(unsigned num_activity);
 };
-	
 
 
 #endif
