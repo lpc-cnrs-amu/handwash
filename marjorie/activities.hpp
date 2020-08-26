@@ -17,8 +17,6 @@
 class Activities
 {
 	private:
-		
-		
 		void relabel_act(Activity* act_1, Activity* act_2);
 		void relabel_activities_entremelee();
 		
@@ -37,7 +35,6 @@ class Activities
 		unsigned get_nb_activities();
 		int get_person(unsigned num_activity);
 };
-	
 
 
 #endif
